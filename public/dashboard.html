@@ -85,6 +85,34 @@
     .wizard-panel-open {
       right: 0 !important;
     }
+
+    /* Layla Planner Styles */
+    #chat-messages::-webkit-scrollbar,
+    #plan-preview::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #chat-messages::-webkit-scrollbar-track,
+    #plan-preview::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+    }
+
+    #chat-messages::-webkit-scrollbar-thumb,
+    #plan-preview::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    #chat-messages::-webkit-scrollbar-thumb:hover,
+    #plan-preview::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    @media (max-width: 1024px) {
+      #trip-wizard-panel > div:nth-child(2) {
+        grid-template-columns: 1fr !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -202,167 +230,155 @@
   <!-- Trip Planning Wizard - Side Panel -->
   <div id="trip-wizard-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100;" onclick="closeTripWizard()"></div>
 
-  <div id="trip-wizard-panel" style="display: none; position: fixed; top: 0; right: -700px; width: 700px; max-width: 90vw; height: 100vh; background: white; box-shadow: -4px 0 20px rgba(0,0,0,0.15); z-index: 101; transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow-y: auto;">
+  <div id="trip-wizard-panel" style="display: none; position: fixed; top: 0; right: -100%; width: 100%; height: 100vh; background: white; z-index: 101; transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow-y: auto;">
 
-    <!-- Wizard Header -->
-    <div style="position: sticky; top: 0; background: white; border-bottom: 2px solid var(--border); padding: 1.5rem; z-index: 10;">
+    <!-- LAYLA-STYLE TRIP PLANNER -->
+
+    <!-- Top Bar -->
+    <div style="position: sticky; top: 0; background: white; border-bottom: 1px solid var(--border); padding: 1rem 2rem; z-index: 10; backdrop-filter: blur(8px); background: rgba(255,255,255,0.95);">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h2 style="margin: 0;">Plan Your Trip</h2>
-          <p id="wizard-step-title" style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">Basic Information</p>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--primary); display: grid; place-items: center; color: white; font-weight: 700;">L</div>
+          <div>
+            <div style="font-size: 1rem; font-weight: 600;">AI Trip Planner</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary);">Tell me your style & budget, I'll design your trip</div>
+          </div>
         </div>
-        <button class="btn btn-ghost btn-icon" onclick="closeTripWizard()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </div>
-
-      <!-- Progress Bar -->
-      <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-        <div id="progress-step-1" class="progress-bar" style="flex: 1; height: 4px; background: var(--primary); border-radius: 2px; transition: all 0.3s;"></div>
-        <div id="progress-step-2" class="progress-bar" style="flex: 1; height: 4px; background: var(--border); border-radius: 2px; transition: all 0.3s;"></div>
-        <div id="progress-step-3" class="progress-bar" style="flex: 1; height: 4px; background: var(--border); border-radius: 2px; transition: all 0.3s;"></div>
-        <div id="progress-step-4" class="progress-bar" style="flex: 1; height: 4px; background: var(--border); border-radius: 2px; transition: all 0.3s;"></div>
-        <div id="progress-step-5" class="progress-bar" style="flex: 1; height: 4px; background: var(--border); border-radius: 2px; transition: all 0.3s;"></div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button class="btn btn-ghost" onclick="regeneratePlan()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+            Generate Plan
+          </button>
+          <button class="btn btn-ghost" onclick="exportPlanJSON()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export JSON
+          </button>
+          <button class="btn btn-ghost btn-icon" onclick="closeTripWizard()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Wizard Content -->
-    <div style="padding: 1.5rem;">
-
-      <!-- Step 1: Basic Info -->
-      <div id="wizard-step-1" class="wizard-step active">
-        <h3 style="margin-bottom: 1.5rem;">Where are you going?</h3>
-        <form id="trip-info-form" onsubmit="submitTripInfo(event)">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">From (Origin)</label>
-              <input type="text" class="form-input" placeholder="e.g., New York" required id="origin" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">To (Destination)</label>
-              <input type="text" class="form-input" placeholder="e.g., Rome, Italy" required id="destination" />
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label">Start Date</label>
-              <input type="date" class="form-input" required id="start-date" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Duration (days)</label>
-              <input type="number" class="form-input" min="1" max="30" value="7" required id="duration" />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Health Conditions</label>
-            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
-              <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-lg); cursor: pointer;">
-                <input type="checkbox" value="wheelchair_user" />
-                <span style="font-size: 0.875rem;">♿ Wheelchair User</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-lg); cursor: pointer;">
-                <input type="checkbox" value="type_1_diabetes" />
-                <span style="font-size: 0.875rem;">💉 Type 1 Diabetes</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-lg); cursor: pointer;">
-                <input type="checkbox" value="food_allergies" />
-                <span style="font-size: 0.875rem;">🥜 Food Allergies</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; cursor: pointer;">
-              <input type="checkbox" id="solo-travel" />
-              <span>I'm traveling solo</span>
-            </label>
-          </div>
-
-          <button type="submit" class="btn btn-primary" style="width: 100%;">
-            Continue to Flights
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-          </button>
-        </form>
-      </div>
-
-      <!-- Step 2: Flight Search & Selection -->
-      <div id="wizard-step-2" class="wizard-step">
-        <h3 style="margin-bottom: 1rem;">Select Your Flight</h3>
-        <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem;">We'll find the best accessible flights for you</p>
-
-        <div id="flight-search-container">
-          <!-- Loading animation or flight results will appear here -->
+    <!-- Main Content: Chat + Preview -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1.5rem 2rem; max-width: 1400px; margin: 0 auto;">
+      
+      <!-- Left: Chat -->
+      <div class="card" style="display: flex; flex-direction: column; height: 70vh; max-height: 800px;">
+        <div style="padding: 1.25rem; border-bottom: 1px solid var(--border);">
+          <h3 style="margin: 0 0 0.25rem 0; font-size: 1.125rem;">Conversation</h3>
+          <p style="margin: 0; font-size: 0.813rem; color: var(--text-secondary);">Describe your trip in natural language</p>
+        </div>
+        
+        <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+          <!-- Messages will be added here -->
         </div>
 
-        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
-          <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="goToWizardStep(1)">Back</button>
-          <button type="button" class="btn btn-primary" style="flex: 1;" id="continue-to-hotels" onclick="continueToHotels()" disabled>
-            Continue to Hotels
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-          </button>
+        <div style="padding: 1rem; border-top: 1px solid var(--border);">
+          <textarea id="chat-input" class="form-input" rows="3" placeholder="e.g., We're 2 people from Boston going to Paris June 12-18, love museums and food, mid-range budget" style="margin-bottom: 0.75rem; resize: none;"></textarea>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <button class="btn btn-primary" style="flex: 1;" onclick="sendChatMessage()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+              Send
+            </button>
+            <button class="btn btn-ghost" onclick="useSeedExample()">Use Example</button>
+          </div>
+          
+          <!-- Quick Actions -->
+          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+            <span class="badge" style="cursor: pointer; padding: 0.375rem 0.75rem; background: var(--bg-secondary); border: 1px solid var(--border);" onclick="quickAction('birthday')">Birthday Surprise</span>
+            <span class="badge" style="cursor: pointer; padding: 0.375rem 0.75rem; background: var(--bg-secondary); border: 1px solid var(--border);" onclick="quickAction('spa')">Include Spa Day</span>
+            <span class="badge" style="cursor: pointer; padding: 0.375rem 0.75rem; background: var(--bg-secondary); border: 1px solid var(--border);" onclick="quickAction('mid')">Mid Budget</span>
+            <span class="badge" style="cursor: pointer; padding: 0.375rem 0.75rem; background: var(--bg-secondary); border: 1px solid var(--border);" onclick="quickAction('premium')">Premium</span>
+          </div>
         </div>
       </div>
 
-      <!-- Step 3: Hotel Selection -->
-      <div id="wizard-step-3" class="wizard-step">
-        <h3 style="margin-bottom: 1rem;">Select Your Hotel</h3>
-        <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem;">Choose from accessible hotels in your destination</p>
-
-        <div id="hotel-search-container">
-          <!-- Hotel results will appear here -->
+      <!-- Right: Plan Preview -->
+      <div class="card" style="display: flex; flex-direction: column; height: 70vh; max-height: 800px;">
+        <div style="padding: 1.25rem; border-bottom: 1px solid var(--border);">
+          <h3 style="margin: 0 0 0.25rem 0; font-size: 1.125rem;">Plan Preview</h3>
+          <p style="margin: 0; font-size: 0.813rem; color: var(--text-secondary);">Auto-updates as you change preferences</p>
         </div>
-
-        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
-          <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="goToWizardStep(2)">Back</button>
-          <button type="button" class="btn btn-primary" style="flex: 1;" id="continue-to-experiences" onclick="continueToExperiences()" disabled>
-            Continue to Experiences
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
+        
+        <div id="plan-preview" style="flex: 1; overflow-y: auto; padding: 1rem;">
+          <!-- Plan will be rendered here -->
+          <div style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin: 0 auto 1rem;">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
             </svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Step 4: Experience Selection -->
-      <div id="wizard-step-4" class="wizard-step">
-        <h3 style="margin-bottom: 1rem;">Choose Your Experiences</h3>
-        <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem;">Select activities and attractions for your trip</p>
-
-        <div id="experience-search-container">
-          <!-- Experience results will appear here -->
-        </div>
-
-        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
-          <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="goToWizardStep(3)">Back</button>
-          <button type="button" class="btn btn-primary" style="flex: 1;" id="generate-itinerary" onclick="generateItinerary()">
-            Generate My Itinerary
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="m5 12 5 5L20 7" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Step 5: Itinerary Complete -->
-      <div id="wizard-step-5" class="wizard-step">
-        <div id="itinerary-generation-container">
-          <!-- Itinerary generation and final results will appear here -->
+            <p>No plan yet. Describe your trip and I'll generate an itinerary.</p>
+          </div>
         </div>
       </div>
 
     </div>
+
+    <!-- Preferences Panel (Collapsible) -->
+    <div style="border-top: 1px solid var(--border); background: var(--bg-secondary);">
+      <div style="max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem;">
+        <div class="card">
+          <div style="padding: 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3 style="margin: 0 0 0.25rem 0; font-size: 1.125rem;">Preferences</h3>
+              <p style="margin: 0; font-size: 0.813rem; color: var(--text-secondary);">Edit and regenerate to update the plan</p>
+            </div>
+            <button class="btn btn-ghost" onclick="regeneratePlan()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+              </svg>
+              Regenerate
+            </button>
+          </div>
+          <div style="padding: 1.25rem;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label">Destination</label>
+                <input type="text" class="form-input" id="pref-destination" onchange="updatePreference('destination', this.value)"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Origin</label>
+                <input type="text" class="form-input" id="pref-origin" onchange="updatePreference('origin', this.value)"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Travelers</label>
+                <input type="number" class="form-input" id="pref-travelers" min="1" value="2" onchange="updatePreference('travelers', parseInt(this.value))"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Start Date</label>
+                <input type="date" class="form-input" id="pref-start-date" onchange="updatePreference('startDate', this.value)"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">End Date</label>
+                <input type="date" class="form-input" id="pref-end-date" onchange="updatePreference('endDate', this.value)"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Budget</label>
+                <div style="display: flex; gap: 0.5rem;">
+                  <button class="btn btn-ghost" style="flex: 1; font-size: 0.75rem;" id="budget-budget" onclick="selectBudget('budget')">Budget</button>
+                  <button class="btn btn-ghost" style="flex: 1; font-size: 0.75rem;" id="budget-mid" onclick="selectBudget('mid')">Mid</button>
+                  <button class="btn btn-ghost" style="flex: 1; font-size: 0.75rem;" id="budget-premium" onclick="selectBudget('premium')">Premium</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Firebase SDK -->
@@ -455,56 +471,565 @@
       await window.authService.signOut();
     });
 
-    // Wizard functions
+    // ============================================
+    // LAYLA-STYLE TRIP PLANNER FUNCTIONS
+    // ============================================
+
+    // Trip preferences state
+    let tripPrefs = {
+      destination: 'Paris',
+      origin: 'New York (JFK)',
+      travelers: 2,
+      startDate: '',
+      endDate: '',
+      vibes: ['luxury', 'cultural', 'relaxed'],
+      budget: 'mid',
+      specialOccasion: 'none',
+      notes: ''
+    };
+
+    let generatedPlan = null;
+    let chatMessages = [];
+
     function openTripWizard() {
+      // Initialize dates
+      const today = new Date();
+      const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      const weekLater = new Date(nextMonth);
+      weekLater.setDate(weekLater.getDate() + 6);
+      
+      tripPrefs.startDate = nextMonth.toISOString().split('T')[0];
+      tripPrefs.endDate = weekLater.toISOString().split('T')[0];
+
+      // Pre-fill from user profile if available
+      if (userProfile && userProfile.location) {
+        const city = userProfile.location.split(',')[0].trim();
+        tripPrefs.origin = city;
+      }
+
+      // Show panel with slide-in animation
       document.getElementById('trip-wizard-overlay').style.display = 'block';
-      document.getElementById('trip-wizard-panel').style.display = 'block';
+      const panel = document.getElementById('trip-wizard-panel');
+      panel.style.display = 'block';
       setTimeout(() => {
-        document.getElementById('trip-wizard-panel').classList.add('wizard-panel-open');
+        panel.style.right = '0';
       }, 10);
 
-      // Set default start date to tomorrow
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      document.getElementById('start-date').value = tomorrow.toISOString().split('T')[0];
-
-      // Pre-fill health conditions from user profile if available
-      if (userProfile && userProfile.conditions) {
-        // Uncheck all first
-        document.querySelectorAll('#wizard-step-1 input[type="checkbox"]').forEach(cb => {
-          cb.checked = false;
-        });
-
-        // Check the conditions from profile
-        userProfile.conditions.forEach(condition => {
-          const checkbox = document.querySelector(`#wizard-step-1 input[value="${condition}"]`);
-          if (checkbox) {
-            checkbox.checked = true;
-          }
-        });
-
-        console.log('Pre-filled conditions from profile:', userProfile.conditions);
-      }
-
-      // Pre-fill location if available
-      if (userProfile && userProfile.location) {
-        // Extract city from location (e.g., "Austin, USA" -> "Austin")
-        const city = userProfile.location.split(',')[0].trim();
-        document.getElementById('origin').value = city;
-      }
-
-      // Reset to step 1
-      goToWizardStep(1);
+      // Initialize planner
+      initializeLaylaPlannerUI();
     }
 
     function closeTripWizard() {
-      document.getElementById('trip-wizard-panel').classList.remove('wizard-panel-open');
+      const panel = document.getElementById('trip-wizard-panel');
+      panel.style.right = '-100%';
       setTimeout(() => {
         document.getElementById('trip-wizard-overlay').style.display = 'none';
-        document.getElementById('trip-wizard-panel').style.display = 'none';
+        panel.style.display = 'none';
       }, 400);
     }
 
+    function initializeLaylaPlannerUI() {
+      // Clear and set up chat
+      chatMessages = [
+        { role: 'assistant', content: "Hey! I'm your AI trip planner. Tell me your style and budget, and I'll design a trip for you." },
+        { role: 'user', content: 'Create a 7-day Paris itinerary for a birthday getaway' }
+      ];
+      renderChatMessages();
+
+      // Update preferences UI
+      updatePreferencesUI();
+
+      // Generate initial plan
+      regeneratePlan();
+
+      // Add Enter key support for chat input
+      const chatInput = document.getElementById('chat-input');
+      if (chatInput) {
+        chatInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendChatMessage();
+          }
+        });
+      }
+    }
+
+    function renderChatMessages() {
+      const container = document.getElementById('chat-messages');
+      container.innerHTML = '';
+      
+      chatMessages.forEach(msg => {
+        const bubble = document.createElement('div');
+        bubble.style.cssText = `
+          display: flex;
+          justify-content: ${msg.role === 'user' ? 'flex-start' : 'flex-end'};
+        `;
+        
+        const content = document.createElement('div');
+        content.style.cssText = `
+          max-width: 80%;
+          padding: 0.75rem 1rem;
+          border-radius: 1rem;
+          ${msg.role === 'user' 
+            ? 'background: white; border: 1px solid var(--border); color: var(--text-primary);'
+            : 'background: var(--primary); color: white;'}
+        `;
+        content.textContent = msg.content;
+        
+        bubble.appendChild(content);
+        container.appendChild(bubble);
+      });
+
+      // Auto-scroll to bottom
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      // Add user message
+      chatMessages.push({ role: 'user', content: text });
+      input.value = '';
+      renderChatMessages();
+
+      // Parse input and update preferences
+      parseAndUpdatePreferences(text);
+
+      // Generate response
+      setTimeout(() => {
+        const days = calculateDayCount();
+        chatMessages.push({ 
+          role: 'assistant', 
+          content: `I designed a ${days}-day ${tripPrefs.destination} plan. Adjust anything and regenerate when you're ready.` 
+        });
+        renderChatMessages();
+      }, 500);
+    }
+
+    function parseAndUpdatePreferences(text) {
+      const lower = text.toLowerCase();
+
+      // Destination - match "to Paris" or "going to Rome"
+      const destMatch = lower.match(/(?:to|visiting?)\s+([a-z\s\-']+?)(?:\s|,|$|june|july|may|april|march|january|february|august|september|october|november|december|\d)/i);
+      if (destMatch) {
+        tripPrefs.destination = destMatch[1].trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      }
+
+      // Origin - match "from Boston"
+      const originMatch = lower.match(/from\s+([a-z\s\-()]+?)(?:\s+to|\s+going|,|$)/i);
+      if (originMatch) {
+        tripPrefs.origin = originMatch[1].trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      }
+
+      // Travelers - match "2 people" or "3 travelers"
+      const travelersMatch = lower.match(/(\d+)\s*(?:people|person|traveler|traveller|guest)/);
+      if (travelersMatch) {
+        tripPrefs.travelers = Math.max(1, parseInt(travelersMatch[1]));
+      }
+
+      // Dates - match YYYY-MM-DD format
+      const dateMatches = text.match(/\d{4}-\d{2}-\d{2}/g);
+      if (dateMatches && dateMatches.length >= 2) {
+        tripPrefs.startDate = dateMatches[0];
+        tripPrefs.endDate = dateMatches[1];
+      }
+
+      // Vibes
+      if (/(relax|chill|spa|wellness)/i.test(lower) && !tripPrefs.vibes.includes('relaxed')) {
+        tripPrefs.vibes.push('relaxed');
+      }
+      if (/(culture|museum|history|art)/i.test(lower) && !tripPrefs.vibes.includes('cultural')) {
+        tripPrefs.vibes.push('cultural');
+      }
+      if (/(luxury|fancy|5\s*star|michelin|premium)/i.test(lower) && !tripPrefs.vibes.includes('luxury')) {
+        tripPrefs.vibes.push('luxury');
+      }
+      if (/(party|nightlife|club|bar)/i.test(lower) && !tripPrefs.vibes.includes('party')) {
+        tripPrefs.vibes.push('party');
+      }
+
+      // Budget
+      if (/(budget|cheap|affordable)/i.test(lower)) {
+        tripPrefs.budget = 'budget';
+      }
+      if (/(mid|midrange|mid\s*range|moderate)/i.test(lower)) {
+        tripPrefs.budget = 'mid';
+      }
+      if (/(premium|luxury|splurge|high\s*end)/i.test(lower)) {
+        tripPrefs.budget = 'premium';
+      }
+
+      // Special occasions
+      if (/birthday/i.test(lower)) {
+        tripPrefs.specialOccasion = 'birthday';
+      }
+      if (/anniversary/i.test(lower)) {
+        tripPrefs.specialOccasion = 'anniversary';
+      }
+
+      updatePreferencesUI();
+      regeneratePlan();
+    }
+
+    function useSeedExample() {
+      document.getElementById('chat-input').value = "We're 2 people from Boston going to Paris June 12-18, love museums and food, mid-range budget";
+    }
+
+    function quickAction(action) {
+      switch(action) {
+        case 'birthday':
+          tripPrefs.specialOccasion = 'birthday';
+          chatMessages.push({ role: 'user', content: 'Add a birthday surprise' });
+          chatMessages.push({ role: 'assistant', content: 'Added special birthday experiences on Day 3!' });
+          break;
+        case 'spa':
+          if (!tripPrefs.vibes.includes('relaxed')) {
+            tripPrefs.vibes.push('relaxed');
+          }
+          chatMessages.push({ role: 'user', content: 'Include spa day' });
+          chatMessages.push({ role: 'assistant', content: 'Added relaxing spa experiences to your itinerary.' });
+          break;
+        case 'mid':
+          tripPrefs.budget = 'mid';
+          chatMessages.push({ role: 'user', content: 'Set budget to mid-range' });
+          chatMessages.push({ role: 'assistant', content: 'Updated to mid-range budget options.' });
+          break;
+        case 'premium':
+          tripPrefs.budget = 'premium';
+          chatMessages.push({ role: 'user', content: 'Set budget to premium' });
+          chatMessages.push({ role: 'assistant', content: 'Updated to premium luxury options.' });
+          break;
+      }
+      renderChatMessages();
+      updatePreferencesUI();
+      regeneratePlan();
+    }
+
+    function updatePreferencesUI() {
+      document.getElementById('pref-destination').value = tripPrefs.destination;
+      document.getElementById('pref-origin').value = tripPrefs.origin;
+      document.getElementById('pref-travelers').value = tripPrefs.travelers;
+      document.getElementById('pref-start-date').value = tripPrefs.startDate;
+      document.getElementById('pref-end-date').value = tripPrefs.endDate;
+      
+      // Update budget buttons
+      ['budget', 'mid', 'premium'].forEach(b => {
+        const btn = document.getElementById(`budget-${b}`);
+        if (b === tripPrefs.budget) {
+          btn.classList.remove('btn-ghost');
+          btn.classList.add('btn-primary');
+        } else {
+          btn.classList.remove('btn-primary');
+          btn.classList.add('btn-ghost');
+        }
+      });
+    }
+
+    function updatePreference(key, value) {
+      tripPrefs[key] = value;
+      if (key === 'startDate' || key === 'endDate') {
+        updatePreferencesUI();
+      }
+    }
+
+    function selectBudget(budget) {
+      tripPrefs.budget = budget;
+      updatePreferencesUI();
+      regeneratePlan();
+    }
+
+    function calculateDayCount() {
+      if (!tripPrefs.startDate || !tripPrefs.endDate) return 7;
+      const start = new Date(tripPrefs.startDate);
+      const end = new Date(tripPrefs.endDate);
+      const days = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
+      return days;
+    }
+
+    function formatDate(dateStr) {
+      return new Date(dateStr).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+
+    // ============================================
+    // PLAN GENERATOR (Rule-Based)
+    // ============================================
+
+    function generatePlan(prefs) {
+      const daysCount = calculateDayCount();
+      const city = prefs.destination || 'Paris';
+      const vibes = prefs.vibes || [];
+
+      // Hotel options by budget
+      const hotelOptions = {
+        budget: { 
+          name: `Hôtel des Arts ${city}`, 
+          priceFrom: 'From $120/night', 
+          rating: 8.7, 
+          neighborhood: 'City Center', 
+          blurb: 'Cozy rooms near major attractions with plenty of local cafés nearby.' 
+        },
+        mid: { 
+          name: `La Planque Hotel ${city}`, 
+          priceFrom: 'From $230/night', 
+          rating: 9.1, 
+          neighborhood: 'Historic District', 
+          blurb: 'Boutique comfort with great breakfast, tucked in a charming neighborhood.' 
+        },
+        premium: { 
+          name: `Le Bristol ${city}`, 
+          priceFrom: 'From $900/night', 
+          rating: 9.6, 
+          neighborhood: 'Luxury Quarter', 
+          blurb: 'Iconic palace hotel with rooftop pool and refined dining.' 
+        }
+      };
+
+      const hotel = hotelOptions[prefs.budget];
+
+      // Base activities
+      const baseActivities = [
+        'Explore main landmarks and iconic attractions',
+        'Wander historic neighborhoods and local markets',
+        'Visit top museums and cultural sites',
+        'Scenic walk along waterfront or famous streets',
+        'Evening dining at recommended restaurant',
+        'Morning coffee crawl in charming district',
+        'Sunset views from popular viewpoint'
+      ];
+
+      // Vibe-specific additions
+      const luxeAdds = [
+        'Private guided tour with local expert',
+        'Michelin-star dinner experience',
+        'Champagne tasting at renowned venue',
+        'Spa treatment at luxury hotel'
+      ];
+
+      const relaxedAdds = [
+        'Picnic in beautiful park or garden',
+        'Leisurely café hopping session',
+        'Spa afternoon with wellness treatments',
+        'Slow morning at boutique coffee shop'
+      ];
+
+      const culturalAdds = [
+        'Deep dive museum tour with audio guide',
+        'Historical walking tour of old quarter',
+        'Local art gallery exploration',
+        'Traditional performance or concert'
+      ];
+
+      const partyAdds = [
+        'Rooftop cocktails with city views',
+        'Late-night jazz or live music venue',
+        'Trendy nightclub experience',
+        'Bar hopping in nightlife district'
+      ];
+
+      // Build activity pool
+      let activityPool = [...baseActivities];
+      if (vibes.includes('luxury')) activityPool.push(...luxeAdds);
+      if (vibes.includes('relaxed')) activityPool.push(...relaxedAdds);
+      if (vibes.includes('cultural')) activityPool.push(...culturalAdds);
+      if (vibes.includes('party')) activityPool.push(...partyAdds);
+
+      // Generate daily schedule
+      const days = Array.from({ length: daysCount }, (_, i) => {
+        const day = i + 1;
+        const items = activityPool.slice((i * 3) % activityPool.length, ((i * 3) % activityPool.length) + 3);
+        
+        let title = `Day ${day}: Explore & Discover`;
+        if (day === 1) title = `Day 1: Arrival & First Impressions`;
+        if (day === 2) title = `Day 2: Icons & Must-Sees`;
+        if (prefs.specialOccasion === 'birthday' && day === 3) {
+          title = `Day 3: Birthday Celebration ✨`;
+        }
+        
+        return { day, title, items };
+      });
+
+      const vibeDesc = vibes.length > 0 ? vibes.join(', ') : 'balanced';
+      
+      return {
+        title: `${daysCount}-Day ${city} ${vibes.includes('luxury') ? 'Luxury ' : ''}Getaway`,
+        subtitle: `${formatDate(prefs.startDate)} → ${formatDate(prefs.endDate)} • ${prefs.travelers} ${prefs.travelers > 1 ? 'travelers' : 'traveler'}`,
+        flightSummary: `${prefs.origin} → ${city} • Multiple flight options available` + (prefs.budget === 'premium' ? ' • Business class recommended' : ''),
+        hotel: {
+          name: hotel.name,
+          blurb: hotel.blurb,
+          priceFrom: hotel.priceFrom,
+          rating: hotel.rating,
+          neighborhood: hotel.neighborhood
+        },
+        overview: `You'll stay at the wonderful ${hotel.name} and enjoy a mix of ${vibeDesc} experiences, from iconic landmarks to hidden gems.`,
+        days,
+        tips: [
+          'Book popular attractions in advance to skip lines',
+          'Download offline maps for easy navigation',
+          'Try local cuisine at neighborhood restaurants',
+          'Use public transit or walking for authentic experience'
+        ],
+        estCost: prefs.budget === 'budget' 
+          ? '$1,200-$1,800 per person (ex. flights)' 
+          : prefs.budget === 'mid' 
+            ? '$2,000-$3,000 per person (ex. flights)' 
+            : '$4,500+ per person (ex. flights)'
+      };
+    }
+
+    function regeneratePlan() {
+      generatedPlan = generatePlan(tripPrefs);
+      displayPlanPreview(generatedPlan);
+    }
+
+    function displayPlanPreview(plan) {
+      if (!plan) return;
+
+      const container = document.getElementById('plan-preview');
+      container.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+          
+          <!-- Summary Card -->
+          <div style="border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; background: white;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+              <div>
+                <h3 style="margin: 0 0 0.25rem 0; font-size: 1.25rem; font-weight: 600;">${plan.title}</h3>
+                <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">${plan.subtitle}</p>
+              </div>
+            </div>
+            <div style="height: 1px; background: var(--border); margin: 1rem 0;"></div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+              <div style="display: flex; gap: 0.75rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                  <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+                <div>
+                  <div style="font-size: 0.813rem; font-weight: 600; margin-bottom: 0.25rem;">Flight</div>
+                  <div style="font-size: 0.75rem; color: var(--text-secondary);">${plan.flightSummary}</div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.75rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                  <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                <div>
+                  <div style="font-size: 0.813rem; font-weight: 600; margin-bottom: 0.25rem;">${plan.hotel.name}</div>
+                  <div style="font-size: 0.75rem; color: var(--text-secondary);">${plan.hotel.neighborhood} • ${plan.hotel.priceFrom} • ${plan.hotel.rating}/10</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Daily Schedule -->
+          <div style="border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; background: white;">
+            <h4 style="margin: 0 0 1rem 0; font-size: 0.938rem; font-weight: 600;">Daily Schedule</h4>
+            <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+              ${plan.days.map(d => `
+                <div style="display: grid; grid-template-columns: 60px 1fr; gap: 1rem;">
+                  <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">Day ${d.day}</div>
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">${d.title}</div>
+                    <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.813rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.25rem;">
+                      ${d.items.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Tips & Cost -->
+          <div style="border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; background: white;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+              <div>
+                <h4 style="margin: 0 0 0.75rem 0; font-size: 0.938rem; font-weight: 600;">Travel Tips</h4>
+                <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.813rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.25rem;">
+                  ${plan.tips.map(tip => `<li>${tip}</li>`).join('')}
+                </ul>
+              </div>
+              <div>
+                <h4 style="margin: 0 0 0.75rem 0; font-size: 0.938rem; font-weight: 600;">Estimated Cost</h4>
+                <div style="font-size: 0.875rem; color: var(--text-secondary);">${plan.estCost}</div>
+                <div style="margin-top: 1rem;">
+                  <button class="btn btn-primary" style="width: 100%;" onclick="saveGeneratedTrip()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                      <polyline points="17 21 17 13 7 13 7 21"/>
+                      <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    Save This Trip
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
+    function exportPlanJSON() {
+      if (!generatedPlan) {
+        alert('Please generate a plan first');
+        return;
+      }
+
+      const dataStr = JSON.stringify({
+        preferences: tripPrefs,
+        plan: generatedPlan,
+        exported: new Date().toISOString()
+      }, null, 2);
+
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `trip-${tripPrefs.destination.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    async function saveGeneratedTrip() {
+      if (!generatedPlan || !currentUser) return;
+
+      try {
+        const tripDoc = {
+          userId: currentUser.uid,
+          destination: tripPrefs.destination,
+          origin: tripPrefs.origin,
+          startDate: tripPrefs.startDate,
+          endDate: tripPrefs.endDate,
+          travelers: tripPrefs.travelers,
+          budget: tripPrefs.budget,
+          vibes: tripPrefs.vibes,
+          plan: generatedPlan,
+          createdAt: new Date().toISOString(),
+          status: 'planned'
+        };
+
+        await window.db.collection('trips').add(tripDoc);
+        
+        alert('Trip saved successfully!');
+        closeTripWizard();
+        loadTrips(); // Refresh the trips list
+      } catch (error) {
+        console.error('Error saving trip:', error);
+        alert('Failed to save trip. Please try again.');
+      }
+    }
+
+    // Old wizard functions (kept for backward compatibility if needed)
     function goToWizardStep(step) {
       // Hide all steps
       document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));

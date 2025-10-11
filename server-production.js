@@ -11,6 +11,7 @@ import ItineraryGenerator from './src/itineraryGenerator.js';
 import HotelSearch from './src/hotelModule.js';
 import BookingComHotelSearch from './src/bookingComHotelSearch.js';
 import TripPlannerService from './src/tripPlannerService.js';
+import TripAssistantChatbot from './src/tripAssistantChatbot.js';
 import { UserService, TripService } from './src/firebaseAdmin.js';
 import dotenv from 'dotenv';
 
@@ -51,6 +52,7 @@ let dailyChecklistManager;
 let hotelSearch;
 let bookingComHotelSearch;
 let tripPlannerService;
+let tripAssistantChatbot;
 
 // In-memory session storage for chatbot
 const sessions = new Map();
@@ -741,6 +743,125 @@ app.get('/api/user/:user_id/trips', async (req, res) => {
   }
 });
 
+// Trip Assistant Chatbot Endpoint
+app.post('/api/trip-assistant/chat', async (req, res) => {
+  try {
+    const {
+      session_id,
+      message,
+      trip_context = {}
+    } = req.body;
+
+    if (!session_id || !message) {
+      return res.status(400).json({
+        error: 'session_id and message are required'
+      });
+    }
+
+    console.log(`💬 Trip Assistant Chat (Session: ${session_id}): "${message.substring(0, 50)}..."`);
+
+    const response = await tripAssistantChatbot.chat(session_id, message, trip_context);
+
+    res.json({
+      session_id,
+      response: response.text,
+      suggestions: response.suggestions || [],
+      intent: response.intent,
+      actions: response.actions || []
+    });
+
+  } catch (error) {
+    console.error('Trip assistant chat error:', error);
+    res.status(500).json({
+      error: 'Failed to process message',
+      message: error.message
+    });
+  }
+});
+
+// Update Trip with Selected Alternative
+app.post('/api/trip-assistant/update', async (req, res) => {
+  try {
+    const {
+      trip_id,
+      update_type, // 'flight', 'hotel', 'experience'
+      new_item,
+      session_id
+    } = req.body;
+
+    if (!trip_id || !update_type || !new_item) {
+      return res.status(400).json({
+        error: 'trip_id, update_type, and new_item are required'
+      });
+    }
+
+    console.log(`🔄 Updating trip ${trip_id}: ${update_type}`);
+
+    // Get the trip
+    const tripResult = await TripService.getTrip(trip_id);
+    if (!tripResult.success) {
+      return res.status(404).json({ error: 'Trip not found' });
+    }
+
+    const trip = tripResult.data;
+
+    // Update based on type
+    switch (update_type) {
+      case 'flight':
+        if (trip.flights) {
+          trip.flights.outbound = [new_item];
+        }
+        break;
+      case 'hotel':
+        if (trip.hotels) {
+          trip.hotels = [new_item, ...trip.hotels.slice(1)];
+        }
+        break;
+      case 'experience':
+        // Add experience to itinerary
+        if (trip.itinerary && trip.itinerary.days) {
+          // Find a suitable day to add the experience
+          const targetDay = trip.itinerary.days.find(day =>
+            day.activities.some(a => a.type === 'experience')
+          ) || trip.itinerary.days[1]; // Default to day 2
+
+          if (targetDay) {
+            targetDay.activities.push({
+              time: '14:00',
+              title: new_item.name,
+              description: new_item.description,
+              type: 'experience',
+              duration_hours: new_item.duration_hours || '2-3',
+              accessibility: new_item.inclusion_tags || []
+            });
+          }
+        }
+        break;
+    }
+
+    // Save updated trip
+    const updateResult = await TripService.updateTrip(trip_id, trip);
+
+    if (updateResult.success) {
+      res.json({
+        success: true,
+        message: `${update_type} updated successfully`,
+        trip_id,
+        updated_trip: trip
+      });
+    } else {
+      res.status(500).json({ error: updateResult.error });
+    }
+
+  } catch (error) {
+    console.error('Trip update error:', error);
+    res.status(500).json({
+      error: 'Failed to update trip',
+      message: error.message
+    });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
@@ -850,6 +971,11 @@ async function startServer() {
     console.log('🌟 Initializing Trip Planner Service...');
     tripPlannerService = new TripPlannerService(recommender);
     console.log('✅ Trip planner service ready\n');
+
+    // Initialize trip assistant chatbot
+    console.log('💬 Initializing Trip Assistant Chatbot...');
+    tripAssistantChatbot = new TripAssistantChatbot(recommender);
+    console.log('✅ Trip assistant chatbot ready\n');
 
     app.listen(PORT, () => {
       console.log(`🌐 Server listening on http://localhost:${PORT}`);

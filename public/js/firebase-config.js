@@ -11,12 +11,14 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-let app, auth;
+let app, auth, db;
 
 try {
   app = firebase.initializeApp(firebaseConfig);
   auth = firebase.auth();
+  db = firebase.firestore();
   console.log('✅ Firebase initialized successfully');
+  console.log('✅ Firestore initialized successfully');
 } catch (error) {
   console.error('❌ Firebase initialization error:', error);
 }
@@ -38,3 +40,4 @@ auth.onAuthStateChanged((user) => {
 
 // Export for use in other files
 window.firebaseAuth = auth;
+window.firebaseDB = db;

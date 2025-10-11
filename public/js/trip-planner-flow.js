@@ -51,10 +51,18 @@ async function handleChatSubmit() {
     return;
   }
 
+  // Store partial preferences
   planningState.preferences = prefs;
 
+  // Check if we need to ask for more details
+  if (!prefs.startDate) {
+    planningState.step = 'awaiting_dates';
+    addChatMessage(`Great! Planning a trip from ${prefs.origin} to ${prefs.destination} for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''}.\n\nWhen would you like to travel? (e.g., "November 15th" or "15th Nov")`, 'assistant');
+    return;
+  }
+
   // Confirm and show flight options
-  addChatMessage(`Perfect! Planning a ${prefs.budget} trip for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} from ${prefs.origin} to ${prefs.destination}.\n\nSearching for flights...`, 'assistant');
+  addChatMessage(`Perfect! Planning a ${prefs.budget} trip for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} from ${prefs.origin} to ${prefs.destination}.\n\nDates: ${prefs.startDate} to ${prefs.endDate}\n\nSearching for real flights via Amadeus API...`, 'assistant');
 
   // Fetch flights
   await fetchAndDisplayFlights(prefs);
@@ -202,6 +210,41 @@ async function fetchAndDisplayFlights(prefs) {
 }
 
 /**
+ * Convert city name to airport code (simplified - replace with real API call)
+ */
+function cityToAirportCode(cityName) {
+  const airports = {
+    'austin': 'AUS',
+    'rome': 'FCO',
+    'paris': 'CDG',
+    'london': 'LHR',
+    'new york': 'JFK',
+    'los angeles': 'LAX',
+    'tokyo': 'HND',
+    'dubai': 'DXB',
+    'singapore': 'SIN',
+    'sydney': 'SYD',
+    'madrid': 'MAD',
+    'barcelona': 'BCN',
+    'berlin': 'BER',
+    'amsterdam': 'AMS',
+    'bangkok': 'BKK',
+    'hong kong': 'HKG',
+    'toronto': 'YYZ',
+    'vancouver': 'YVR',
+    'france': 'CDG', // Default to Paris
+    'italy': 'FCO', // Default to Rome
+    'spain': 'MAD', // Default to Madrid
+    'germany': 'BER', // Default to Berlin
+    'uk': 'LHR', // Default to London
+    'usa': 'JFK' // Default to New York
+  };
+
+  const normalized = cityName.toLowerCase().trim();
+  return airports[normalized] || 'XXX';
+}
+
+/**
  * Generate multiple flight options (mock for now, will be replaced with real API data)
  */
 function generateFlightOptions(baseFlight, prefs) {
@@ -209,8 +252,12 @@ function generateFlightOptions(baseFlight, prefs) {
   const carriers = ['American Airlines', 'United Airlines', 'Delta', 'Southwest'];
   const cabins = prefs.budget === 'premium' ? ['BUSINESS', 'FIRST'] : ['ECONOMY', 'PREMIUM_ECONOMY'];
 
-  // Base duration: Austin to Rome is roughly 11-14 hours
-  const baseDuration = 660; // 11 hours in minutes
+  // Convert city names to airport codes
+  const departureAirport = cityToAirportCode(prefs.origin);
+  const arrivalAirport = cityToAirportCode(prefs.destination);
+
+  // Base duration varies by route
+  const baseDuration = 660; // 11 hours as default
 
   for (let i = 0; i < 5; i++) {
     const price = baseFlight.priceTotal + (Math.random() * 400 - 200);
@@ -234,8 +281,8 @@ function generateFlightOptions(baseFlight, prefs) {
       stops,
       priceTotal: Math.round(price),
       currency: 'USD',
-      departureAirport: baseFlight.segments[0]?.from || 'AUS',
-      arrivalAirport: baseFlight.segments[baseFlight.segments.length - 1]?.to || 'FCO',
+      departureAirport,
+      arrivalAirport,
       duration: Math.round(duration)
     });
   }

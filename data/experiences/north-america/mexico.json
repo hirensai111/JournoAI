@@ -1,0 +1,36 @@
+[
+  {
+    "id": "exp_mex_001",
+    "name": "Mexico City Zócalo",
+    "country": "Mexico",
+    "city": "Mexico City",
+    "state": "Mexico City",
+    "region": "Central Mexico",
+    "type": "cultural_site",
+    "description": "Historic experience at Mexico City's Zócalo, learning about the city's role as a center of Mexican culture and political heritage. This experience showcases the city's role as a center of national identity.",
+    "cultural_significance": "Mexico City's Zócalo represents the city's role as a center of Mexican culture and its political heritage. This experience highlights the square's significance and the ways in which it has preserved traditional practices for generations. The square embodies the Mexican values of tradition, community, and the importance of preserving cultural heritage. Mexico City's cultural identity represents the evolution of Mexican society and the ways in which traditional practices can be adapted to contemporary needs while maintaining authentic character. The experience demonstrates how cultural identity can bring communities together and create new forms of cultural exchange. Mexico City's Zócalo represents the power of cultural identity to celebrate local heritage while maintaining connections to broader Mexican cultural traditions.",
+    "inclusion_tags": ["wheelchair_accessible", "family_friendly", "lgbtq_friendly", "bipoc_owned"],
+    "age_suitability": {
+      "children": true,
+      "teens": true,
+      "young_adults": true,
+      "adults": true,
+      "seniors": true,
+      "min_age": null,
+      "max_recommended_age": null
+    },
+    "preference_tags": ["cultural_site", "history_heritage", "local_authentic", "family_kids", "art_culture"],
+    "activity_level": "low",
+    "duration_hours": "2-3",
+    "best_time": "afternoon",
+    "price_range": "$$",
+    "accessibility_notes": "Wheelchair accessible throughout, accessible restrooms available",
+    "dietary_accommodations": ["halal", "vegetarian", "vegan", "kosher"],
+    "languages_available": ["spanish", "english", "nahuatl"],
+    "why_authentic": "Historic square with authentic Mexican culture and genuine political heritage, representing local cultural traditions and community values.",
+    "local_tip": "Visit during the afternoon for the most active demonstrations, and try the traditional Mexican tacos at the local vendors.",
+    "coordinates": {"lat": 19.4326, "lng": -99.1332},
+    "address": "Zócalo, Mexico City",
+    "website": "https://www.mexico-city-zocalo.com"
+  }
+]

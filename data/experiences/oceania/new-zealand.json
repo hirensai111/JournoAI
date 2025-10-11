@@ -1,0 +1,36 @@
+[
+  {
+    "id": "exp_nzl_001",
+    "name": "Auckland Sky Tower",
+    "country": "New Zealand",
+    "city": "Auckland",
+    "state": "Auckland",
+    "region": "North Island",
+    "type": "cultural_site",
+    "description": "Urban experience at Auckland's Sky Tower, learning about the city's role as a center of New Zealand culture and modern heritage. This experience showcases the city's role as a center of urban culture.",
+    "cultural_significance": "Auckland's Sky Tower represents the city's role as a center of New Zealand culture and its modern heritage. This experience highlights the tower's significance and the ways in which it has promoted urban development for generations. The tower embodies the New Zealand values of innovation, community, and the importance of preserving modern heritage. Auckland's urban culture represents the evolution of New Zealand society and the ways in which traditional practices can be adapted to contemporary needs while maintaining authentic character. The experience demonstrates how urban culture can bring communities together and create new forms of cultural exchange. Auckland's Sky Tower represents the power of urban culture to celebrate local identity while maintaining connections to broader New Zealand cultural traditions.",
+    "inclusion_tags": ["wheelchair_accessible", "family_friendly", "lgbtq_friendly"],
+    "age_suitability": {
+      "children": true,
+      "teens": true,
+      "young_adults": true,
+      "adults": true,
+      "seniors": true,
+      "min_age": 8,
+      "max_recommended_age": null
+    },
+    "preference_tags": ["cultural_site", "local_authentic", "family_kids", "adventure_sports", "romantic"],
+    "activity_level": "moderate",
+    "duration_hours": "1-2",
+    "best_time": "afternoon",
+    "price_range": "$$",
+    "accessibility_notes": "Wheelchair accessible throughout, accessible restrooms available",
+    "dietary_accommodations": ["halal", "vegetarian", "vegan", "kosher"],
+    "languages_available": ["english", "maori", "chinese", "samoan"],
+    "why_authentic": "Modern tower with authentic New Zealand culture and genuine urban heritage, representing local modern traditions and community values.",
+    "local_tip": "Visit during the afternoon for the most beautiful city views, and try the traditional New Zealand fish and chips at the local restaurants.",
+    "coordinates": {"lat": -36.8485, "lng": 174.7633},
+    "address": "Sky Tower, Auckland",
+    "website": "https://www.auckland-sky-tower.com"
+  }
+]

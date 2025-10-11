@@ -1,0 +1,36 @@
+[
+  {
+    "id": "exp_arg_001",
+    "name": "Buenos Aires Tango Milonga",
+    "country": "Argentina",
+    "city": "Buenos Aires",
+    "state": "Buenos Aires",
+    "region": "Pampas",
+    "type": "cultural_site",
+    "description": "Cultural experience at Buenos Aires' Tango Milonga, learning about the city's role as a center of Argentine culture and tango heritage. This experience showcases the city's role as a center of dance culture.",
+    "cultural_significance": "Buenos Aires' Tango Milonga represents the city's role as a center of Argentine culture and its tango heritage. This experience highlights the milonga's significance and the ways in which it has preserved traditional dance practices for generations. The milonga embodies the Argentine values of passion, community, and the importance of preserving cultural heritage. Buenos Aires' dance culture represents the evolution of Argentine society and the ways in which traditional practices can be adapted to contemporary needs while maintaining authentic character. The experience demonstrates how dance culture can bring communities together and create new forms of cultural exchange. Buenos Aires' Tango Milonga represents the power of dance culture to celebrate local identity while maintaining connections to broader Argentine cultural traditions.",
+    "inclusion_tags": ["wheelchair_accessible", "family_friendly", "lgbtq_friendly", "woman_owned"],
+    "age_suitability": {
+      "children": true,
+      "teens": true,
+      "young_adults": true,
+      "adults": true,
+      "seniors": true,
+      "min_age": 8,
+      "max_recommended_age": null
+    },
+    "preference_tags": ["cultural_site", "music_performance", "local_authentic", "romantic", "nightlife_entertainment"],
+    "activity_level": "moderate",
+    "duration_hours": "2-3",
+    "best_time": "evening",
+    "price_range": "$$",
+    "accessibility_notes": "Wheelchair accessible throughout, accessible restrooms available",
+    "dietary_accommodations": ["halal", "vegetarian", "vegan", "kosher"],
+    "languages_available": ["spanish", "english", "italian"],
+    "why_authentic": "Traditional milonga with authentic Argentine culture and genuine tango heritage, representing local dance traditions and community values.",
+    "local_tip": "Visit during the evening for the most passionate atmosphere, and try the traditional Argentine empanadas at the local restaurants.",
+    "coordinates": {"lat": -34.6118, "lng": -58.3960},
+    "address": "Tango Milonga, Buenos Aires",
+    "website": "https://www.buenos-aires-tango-milonga.com"
+  }
+]

@@ -1,0 +1,36 @@
+[
+  {
+    "id": "exp_bra_001",
+    "name": "Rio de Janeiro Carnival",
+    "country": "Brazil",
+    "city": "Rio de Janeiro",
+    "state": "Rio de Janeiro",
+    "region": "Southeast",
+    "type": "cultural_site",
+    "description": "Cultural experience at Rio's Carnival, learning about the city's role as a center of Brazilian culture and Afro-Brazilian heritage. This experience showcases the city's role as a center of cultural celebration.",
+    "cultural_significance": "Rio's Carnival represents the city's role as a center of Brazilian culture and its Afro-Brazilian heritage. This experience highlights the carnival's significance and the ways in which it has promoted cultural expression for generations. The carnival embodies the Brazilian values of diversity, community, and the importance of preserving cultural heritage. Rio's cultural celebration represents the evolution of Brazilian society and the ways in which traditional practices can be adapted to contemporary needs while maintaining authentic character. The experience demonstrates how cultural celebration can bring communities together and create new forms of cultural exchange. Rio's Carnival represents the power of cultural celebration to celebrate local identity while maintaining connections to broader Brazilian cultural traditions.",
+    "inclusion_tags": ["wheelchair_accessible", "family_friendly", "lgbtq_friendly", "bipoc_owned"],
+    "age_suitability": {
+      "children": true,
+      "teens": true,
+      "young_adults": true,
+      "adults": true,
+      "seniors": true,
+      "min_age": null,
+      "max_recommended_age": null
+    },
+    "preference_tags": ["cultural_site", "music_performance", "local_authentic", "family_kids", "nightlife_entertainment"],
+    "activity_level": "high",
+    "duration_hours": "full-day",
+    "best_time": "seasonal",
+    "price_range": "$$",
+    "accessibility_notes": "Wheelchair accessible throughout, accessible restrooms available",
+    "dietary_accommodations": ["halal", "vegetarian", "vegan", "kosher"],
+    "languages_available": ["portuguese", "english", "spanish"],
+    "why_authentic": "Traditional carnival with authentic Brazilian culture and genuine Afro-Brazilian heritage, representing local cultural traditions and community values.",
+    "local_tip": "Visit during the carnival season for the most vibrant atmosphere, and try the traditional Brazilian feijoada at the local restaurants.",
+    "coordinates": {"lat": -22.9068, "lng": -43.1729},
+    "address": "Carnival, Rio de Janeiro",
+    "website": "https://www.rio-carnival.com"
+  }
+]

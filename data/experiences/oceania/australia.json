@@ -1,0 +1,36 @@
+[
+  {
+    "id": "exp_aus_001",
+    "name": "Sydney Opera House",
+    "country": "Australia",
+    "city": "Sydney",
+    "state": "New South Wales",
+    "region": "New South Wales",
+    "type": "cultural_site",
+    "description": "Cultural experience at Sydney's Opera House, learning about the city's role as a center of Australian culture and performing arts heritage. This experience showcases the city's role as a center of artistic culture.",
+    "cultural_significance": "Sydney's Opera House represents the city's role as a center of Australian culture and its performing arts heritage. This experience highlights the opera house's significance and the ways in which it has promoted artistic expression for generations. The opera house embodies the Australian values of creativity, community, and the importance of preserving artistic heritage. Sydney's artistic culture represents the evolution of Australian society and the ways in which traditional practices can be adapted to contemporary needs while maintaining authentic character. The experience demonstrates how artistic culture can bring communities together and create new forms of cultural exchange. Sydney's Opera House represents the power of artistic culture to celebrate local identity while maintaining connections to broader Australian cultural traditions.",
+    "inclusion_tags": ["wheelchair_accessible", "family_friendly", "lgbtq_friendly"],
+    "age_suitability": {
+      "children": true,
+      "teens": true,
+      "young_adults": true,
+      "adults": true,
+      "seniors": true,
+      "min_age": 8,
+      "max_recommended_age": null
+    },
+    "preference_tags": ["art_culture", "music_performance", "local_authentic", "romantic", "cultural_site"],
+    "activity_level": "low",
+    "duration_hours": "2-3",
+    "best_time": "evening",
+    "price_range": "$$$",
+    "accessibility_notes": "Wheelchair accessible throughout, accessible restrooms available",
+    "dietary_accommodations": ["halal", "vegetarian", "vegan", "kosher"],
+    "languages_available": ["english", "chinese", "arabic", "italian"],
+    "why_authentic": "Iconic opera house with authentic Australian culture and genuine performing arts heritage, representing local artistic traditions and community values.",
+    "local_tip": "Visit during the evening for the most beautiful performances, and try the traditional Australian meat pie at the local restaurants.",
+    "coordinates": {"lat": -33.8568, "lng": 151.2153},
+    "address": "Opera House, Sydney",
+    "website": "https://www.sydney-opera-house.com"
+  }
+]

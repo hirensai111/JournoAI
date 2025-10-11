@@ -1,0 +1,43 @@
+{
+  "last_updated": "2025-10-11T04:00:00Z",
+  "total_experiences": 325,
+  "total_countries": 18,
+  "regions": [
+    {
+      "name": "North America",
+      "countries": ["United States", "Canada", "Mexico"],
+      "total_experiences": 61
+    },
+    {
+      "name": "South America",
+      "countries": ["Brazil", "Argentina"],
+      "total_experiences": 2
+    },
+    {
+      "name": "Europe",
+      "countries": ["United Kingdom", "France", "Italy", "Spain", "Germany"],
+      "total_experiences": 100
+    },
+    {
+      "name": "Asia",
+      "countries": ["Japan", "China", "Thailand", "India", "United Arab Emirates", "Singapore"],
+      "total_experiences": 120
+    },
+    {
+      "name": "Oceania",
+      "countries": ["Australia", "New Zealand"],
+      "total_experiences": 2
+    }
+  ],
+  "inclusion_stats": {
+    "wheelchair_accessible": "97.5%",
+    "woman_owned": "15.1%",
+    "bipoc_owned": "14.5%",
+    "lgbtq_friendly": "88.9%",
+    "family_friendly": "98.8%"
+  },
+  "top_cities": [
+    "Tokyo", "Paris", "London", "New York", "Bangkok",
+    "Barcelona", "Sydney", "Rio de Janeiro", "Dubai", "Singapore"
+  ]
+}

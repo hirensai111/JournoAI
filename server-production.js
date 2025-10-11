@@ -13,6 +13,7 @@ import BookingComHotelSearch from './src/bookingComHotelSearch.js';
 import TripPlannerService from './src/tripPlannerService.js';
 import TripAssistantChatbot from './src/tripAssistantChatbot.js';
 import { UserService, TripService } from './src/firebaseAdmin.js';
+import tripRoutes from './src/routes/tripRoutes.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -40,6 +41,9 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use('/api/', limiter);
+
+// Register trip routes (includes /api/trips/compose endpoint)
+app.use('/api/trips', tripRoutes);
 
 // Initialize recommender and conversation manager
 let recommender;

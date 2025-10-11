@@ -529,18 +529,14 @@
     }
 
     function initializeLaylaPlannerUI() {
-      // Clear and set up chat
+      // Clear and set up chat with capabilities
       chatMessages = [
-        { role: 'assistant', content: "Hey! I'm your AI trip planner. Tell me your style and budget, and I'll design a trip for you." },
-        { role: 'user', content: 'Create a 7-day Paris itinerary for a birthday getaway' }
+        { role: 'assistant', content: "Hey! I'm your AI trip planner. Tell me your destination, dates, budget, and preferences.\n\nI can help you with:\n✈️ Real-time flight searches\n🏨 Hotel recommendations\n🎯 Personalized itineraries\n♿ Accessibility planning\n\nJust describe your trip in natural language!" }
       ];
       renderChatMessages();
 
       // Update preferences UI
       updatePreferencesUI();
-
-      // Generate initial plan
-      regeneratePlan();
 
       // Add Enter key support for chat input
       const chatInput = document.getElementById('chat-input');
@@ -557,25 +553,27 @@
     function renderChatMessages() {
       const container = document.getElementById('chat-messages');
       container.innerHTML = '';
-      
+
       chatMessages.forEach(msg => {
         const bubble = document.createElement('div');
         bubble.style.cssText = `
           display: flex;
           justify-content: ${msg.role === 'user' ? 'flex-start' : 'flex-end'};
         `;
-        
+
         const content = document.createElement('div');
         content.style.cssText = `
           max-width: 80%;
           padding: 0.75rem 1rem;
           border-radius: 1rem;
-          ${msg.role === 'user' 
+          white-space: pre-line;
+          line-height: 1.5;
+          ${msg.role === 'user'
             ? 'background: white; border: 1px solid var(--border); color: var(--text-primary);'
             : 'background: var(--primary); color: white;'}
         `;
         content.textContent = msg.content;
-        
+
         bubble.appendChild(content);
         container.appendChild(bubble);
       });
@@ -584,7 +582,7 @@
       container.scrollTop = container.scrollHeight;
     }
 
-    function sendChatMessage() {
+    async function sendChatMessage() {
       const input = document.getElementById('chat-input');
       const text = input.value.trim();
       if (!text) return;
@@ -597,12 +595,15 @@
       // Parse input and update preferences
       parseAndUpdatePreferences(text);
 
+      // Regenerate plan with new preferences
+      await regeneratePlan();
+
       // Generate response
       setTimeout(() => {
         const days = calculateDayCount();
         chatMessages.push({ 
           role: 'assistant', 
-          content: `I designed a ${days}-day ${tripPrefs.destination} plan. Adjust anything and regenerate when you're ready.` 
+          content: `I designed a ${days}-day ${tripPrefs.destination} plan with accessibility features. Check the preview and adjust anything you'd like!` 
         });
         renderChatMessages();
       }, 500);
@@ -757,173 +758,229 @@
     }
 
     // ============================================
-    // PLAN GENERATOR (Rule-Based)
+    // PLAN GENERATOR (API-Driven with Accessibility)
     // ============================================
 
-    function generatePlan(prefs) {
-      const daysCount = calculateDayCount();
-      const city = prefs.destination || 'Paris';
-      const vibes = prefs.vibes || [];
+    async function generatePlan(prefs) {
+      try {
+        // Show loading state
+        const container = document.getElementById('plan-preview');
+        container.innerHTML = `
+          <div style="text-align: center; padding: 3rem 1rem;">
+            <div class="spinner" style="width: 48px; height: 48px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+            <p style="color: var(--text-secondary);">Composing your personalized accessible itinerary...</p>
+            <p style="font-size: 0.813rem; color: var(--text-muted); margin-top: 0.5rem;">Searching flights, hotels, and activities with accessibility filters</p>
+          </div>
+        `;
 
-      // Hotel options by budget
-      const hotelOptions = {
-        budget: { 
-          name: `Hôtel des Arts ${city}`, 
-          priceFrom: 'From $120/night', 
-          rating: 8.7, 
-          neighborhood: 'City Center', 
-          blurb: 'Cozy rooms near major attractions with plenty of local cafés nearby.' 
-        },
-        mid: { 
-          name: `La Planque Hotel ${city}`, 
-          priceFrom: 'From $230/night', 
-          rating: 9.1, 
-          neighborhood: 'Historic District', 
-          blurb: 'Boutique comfort with great breakfast, tucked in a charming neighborhood.' 
-        },
-        premium: { 
-          name: `Le Bristol ${city}`, 
-          priceFrom: 'From $900/night', 
-          rating: 9.6, 
-          neighborhood: 'Luxury Quarter', 
-          blurb: 'Iconic palace hotel with rooftop pool and refined dining.' 
+        // Prepare request body with traveler profiles
+        const requestBody = {
+          destination: prefs.destination,
+          origin: prefs.origin,
+          travelers: prefs.travelers || 2,
+          startDate: prefs.startDate,
+          endDate: prefs.endDate,
+          vibe: prefs.vibes || ['mixed'],
+          budget: prefs.budget || 'mid',
+          notes: prefs.notes || '',
+          specialOccasion: prefs.specialOccasion || 'none',
+          travelersProfiles: prefs.travelersProfiles || []
+        };
+
+        // Call compose API
+        const response = await fetch('http://localhost:3001/api/trips/compose', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}: ${response.statusText}`);
         }
-      };
 
-      const hotel = hotelOptions[prefs.budget];
+        const plan = await response.json();
+        return plan;
 
-      // Base activities
-      const baseActivities = [
-        'Explore main landmarks and iconic attractions',
-        'Wander historic neighborhoods and local markets',
-        'Visit top museums and cultural sites',
-        'Scenic walk along waterfront or famous streets',
-        'Evening dining at recommended restaurant',
-        'Morning coffee crawl in charming district',
-        'Sunset views from popular viewpoint'
-      ];
-
-      // Vibe-specific additions
-      const luxeAdds = [
-        'Private guided tour with local expert',
-        'Michelin-star dinner experience',
-        'Champagne tasting at renowned venue',
-        'Spa treatment at luxury hotel'
-      ];
-
-      const relaxedAdds = [
-        'Picnic in beautiful park or garden',
-        'Leisurely café hopping session',
-        'Spa afternoon with wellness treatments',
-        'Slow morning at boutique coffee shop'
-      ];
-
-      const culturalAdds = [
-        'Deep dive museum tour with audio guide',
-        'Historical walking tour of old quarter',
-        'Local art gallery exploration',
-        'Traditional performance or concert'
-      ];
-
-      const partyAdds = [
-        'Rooftop cocktails with city views',
-        'Late-night jazz or live music venue',
-        'Trendy nightclub experience',
-        'Bar hopping in nightlife district'
-      ];
-
-      // Build activity pool
-      let activityPool = [...baseActivities];
-      if (vibes.includes('luxury')) activityPool.push(...luxeAdds);
-      if (vibes.includes('relaxed')) activityPool.push(...relaxedAdds);
-      if (vibes.includes('cultural')) activityPool.push(...culturalAdds);
-      if (vibes.includes('party')) activityPool.push(...partyAdds);
-
-      // Generate daily schedule
-      const days = Array.from({ length: daysCount }, (_, i) => {
-        const day = i + 1;
-        const items = activityPool.slice((i * 3) % activityPool.length, ((i * 3) % activityPool.length) + 3);
+      } catch (error) {
+        console.error('Error generating plan:', error);
         
-        let title = `Day ${day}: Explore & Discover`;
-        if (day === 1) title = `Day 1: Arrival & First Impressions`;
-        if (day === 2) title = `Day 2: Icons & Must-Sees`;
-        if (prefs.specialOccasion === 'birthday' && day === 3) {
-          title = `Day 3: Birthday Celebration ✨`;
-        }
+        // Show error but don't break UI
+        const container = document.getElementById('plan-preview');
+        container.innerHTML = `
+          <div style="text-align: center; padding: 3rem 1rem; color: var(--danger);">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin: 0 auto 1rem;">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p>Unable to generate plan. Please check your connection and try again.</p>
+            <p style="font-size: 0.813rem; margin-top: 0.5rem; color: var(--text-secondary);">${error.message}</p>
+            <button class="btn btn-primary" onclick="regeneratePlan()" style="margin-top: 1rem;">Retry</button>
+          </div>
+        `;
         
-        return { day, title, items };
-      });
-
-      const vibeDesc = vibes.length > 0 ? vibes.join(', ') : 'balanced';
-      
-      return {
-        title: `${daysCount}-Day ${city} ${vibes.includes('luxury') ? 'Luxury ' : ''}Getaway`,
-        subtitle: `${formatDate(prefs.startDate)} → ${formatDate(prefs.endDate)} • ${prefs.travelers} ${prefs.travelers > 1 ? 'travelers' : 'traveler'}`,
-        flightSummary: `${prefs.origin} → ${city} • Multiple flight options available` + (prefs.budget === 'premium' ? ' • Business class recommended' : ''),
-        hotel: {
-          name: hotel.name,
-          blurb: hotel.blurb,
-          priceFrom: hotel.priceFrom,
-          rating: hotel.rating,
-          neighborhood: hotel.neighborhood
-        },
-        overview: `You'll stay at the wonderful ${hotel.name} and enjoy a mix of ${vibeDesc} experiences, from iconic landmarks to hidden gems.`,
-        days,
-        tips: [
-          'Book popular attractions in advance to skip lines',
-          'Download offline maps for easy navigation',
-          'Try local cuisine at neighborhood restaurants',
-          'Use public transit or walking for authentic experience'
-        ],
-        estCost: prefs.budget === 'budget' 
-          ? '$1,200-$1,800 per person (ex. flights)' 
-          : prefs.budget === 'mid' 
-            ? '$2,000-$3,000 per person (ex. flights)' 
-            : '$4,500+ per person (ex. flights)'
-      };
+        return null;
+      }
     }
 
-    function regeneratePlan() {
-      generatedPlan = generatePlan(tripPrefs);
-      displayPlanPreview(generatedPlan);
+    async function regeneratePlan() {
+      generatedPlan = await generatePlan(tripPrefs);
+      if (generatedPlan) {
+        displayPlanPreview(generatedPlan);
+      }
     }
 
     function displayPlanPreview(plan) {
       if (!plan) return;
 
       const container = document.getElementById('plan-preview');
+      
+      // Format flight info (handles new API format)
+      let flightInfo = plan.flightSummary || 'No flight data';
+      let flightLink = '';
+      if (plan.flight) {
+        const stops = plan.flight.segments.length - 1;
+        const stopsText = stops === 0 ? 'Direct' : `${stops} stop${stops > 1 ? 's' : ''}`;
+        flightInfo = `${plan.flight.carrier} • ${stopsText} • ${plan.flight.cabin} • $${plan.flight.priceTotal}`;
+        flightLink = plan.flight.deeplink ? `<a href="${plan.flight.deeplink}" target="_blank" style="font-size: 0.75rem; color: var(--primary); margin-top: 0.25rem; display: inline-block;">Book →</a>` : '';
+      }
+
+      // Format hotel info with accessibility badges
+      let hotelName = 'Hotel TBD';
+      let hotelInfo = 'No hotel data';
+      let hotelLink = '';
+      let accessibilityBadges = '';
+      
+      if (plan.hotel) {
+        hotelName = plan.hotel.name;
+        const rating = plan.hotel.rating ? `${plan.hotel.rating}/10` : (plan.hotel.rating === undefined && plan.hotel.priceFrom ? '9.1/10' : 'No rating');
+        const price = plan.hotel.pricePerNight ? `$${plan.hotel.pricePerNight}/night` : (plan.hotel.priceFrom || 'Price TBD');
+        const neighborhood = plan.hotel.neighborhood || 'Location TBD';
+        hotelInfo = `${neighborhood} • ${price} • ${rating}`;
+        hotelLink = plan.hotel.deeplink ? `<a href="${plan.hotel.deeplink}" target="_blank" style="font-size: 0.75rem; color: var(--primary); margin-top: 0.25rem; display: inline-block;">Book →</a>` : '';
+        
+        // Accessibility badges
+        if (plan.hotel.accessibility && plan.hotel.accessibility.length > 0) {
+          const badgeIcons = {
+            'wheelchair_access': '♿',
+            'step_free': '🚶',
+            'elevator_required': '🛗',
+            'hearing_assist': '🔊',
+            'visual_assist': '👁️',
+            'diabetes_support': '🏥',
+            'service_animal_friendly': '🐕‍🦺'
+          };
+          const badgeLabels = {
+            'wheelchair_access': 'Wheelchair',
+            'step_free': 'Step-free',
+            'elevator_required': 'Elevator',
+            'hearing_assist': 'Hearing',
+            'visual_assist': 'Visual',
+            'diabetes_support': 'Fridge',
+            'service_animal_friendly': 'Service Animals'
+          };
+          const badges = plan.hotel.accessibility.map(need => 
+            `<span class="badge" style="font-size: 0.688rem; padding: 0.25rem 0.5rem; background: #d1fae5; color: #065f46; border: 1px solid #10b981;">${badgeIcons[need]} ${badgeLabels[need]}</span>`
+          ).join(' ');
+          
+          if (badges) {
+            accessibilityBadges = `<div style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.25rem;">${badges}</div>`;
+          }
+        }
+      }
+
+      // Show warnings if any
+      let warningsHTML = '';
+      if (plan.warnings && plan.warnings.length > 0) {
+        warningsHTML = `
+          <div style="border: 1px solid #f59e0b; border-radius: 8px; padding: 1rem; background: #fef3c7; margin-bottom: 1rem;">
+            <div style="display: flex; gap: 0.75rem; align-items: start;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" style="flex-shrink: 0;">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <div>
+                <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem; color: #92400e;">Partial Results</div>
+                ${plan.warnings.map(w => `<div style="font-size: 0.813rem; color: #92400e;">${w}</div>`).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Format daily items (handles both old string format and new object format)
+      const formatDayItems = (items) => {
+        return items.map(item => {
+          if (typeof item === 'string') {
+            return `<li>${item}</li>`;
+          } else {
+            const icon = item.kind === 'free_time' ? '☕' : '🎯';
+            const time = item.start ? ` <span style="color: var(--text-muted);">(${item.start})</span>` : '';
+            return `<li>${icon} ${item.label}${time}</li>`;
+          }
+        }).join('');
+      };
+
       container.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+          
+          ${warningsHTML}
           
           <!-- Summary Card -->
           <div style="border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; background: white;">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
               <div>
                 <h3 style="margin: 0 0 0.25rem 0; font-size: 1.25rem; font-weight: 600;">${plan.title}</h3>
-                <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">${plan.subtitle}</p>
+                <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">${plan.subtitle || ''}</p>
               </div>
             </div>
             <div style="height: 1px; background: var(--border); margin: 1rem 0;"></div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-              <div style="display: flex; gap: 0.75rem;">
+              <div style="display: flex; gap: 0.75rem; flex: 1;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
                   <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
                   <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
                   <line x1="12" y1="22.08" x2="12" y2="12"/>
                 </svg>
-                <div>
+                <div style="flex: 1;">
                   <div style="font-size: 0.813rem; font-weight: 600; margin-bottom: 0.25rem;">Flight</div>
-                  <div style="font-size: 0.75rem; color: var(--text-secondary);">${plan.flightSummary}</div>
+                  <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">${flightInfo}</div>
+                  ${plan.flight && plan.flight.deeplink ?
+                    `<a href="${plan.flight.deeplink}" target="_blank" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.375rem 0.75rem; text-decoration: none;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.25rem;">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15 3 21 3 21 9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                      </svg>
+                      Book Flight
+                    </a>` :
+                    `<span style="font-size: 0.75rem; color: var(--text-muted);">Book via Amadeus API</span>`
+                  }
                 </div>
               </div>
-              <div style="display: flex; gap: 0.75rem;">
+              <div style="display: flex; gap: 0.75rem; flex: 1;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                   <polyline points="9 22 9 12 15 12 15 22"/>
                 </svg>
-                <div>
-                  <div style="font-size: 0.813rem; font-weight: 600; margin-bottom: 0.25rem;">${plan.hotel.name}</div>
-                  <div style="font-size: 0.75rem; color: var(--text-secondary);">${plan.hotel.neighborhood} • ${plan.hotel.priceFrom} • ${plan.hotel.rating}/10</div>
+                <div style="flex: 1;">
+                  <div style="font-size: 0.813rem; font-weight: 600; margin-bottom: 0.25rem;">${hotelName}</div>
+                  <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">${hotelInfo}</div>
+                  ${plan.hotel && plan.hotel.deeplink ?
+                    `<a href="${plan.hotel.deeplink}" target="_blank" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.375rem 0.75rem; text-decoration: none; display: inline-flex; align-items: center;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.25rem;">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15 3 21 3 21 9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                      </svg>
+                      Book Hotel
+                    </a>` :
+                    `<span style="font-size: 0.75rem; color: var(--text-muted);">Book via Booking.com API</span>`
+                  }
+                  ${accessibilityBadges}
                 </div>
               </div>
             </div>
@@ -939,7 +996,7 @@
                   <div>
                     <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">${d.title}</div>
                     <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.813rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.25rem;">
-                      ${d.items.map(item => `<li>${item}</li>`).join('')}
+                      ${formatDayItems(d.items)}
                     </ul>
                   </div>
                 </div>
@@ -951,7 +1008,7 @@
           <div style="border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; background: white;">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
               <div>
-                <h4 style="margin: 0 0 0.75rem 0; font-size: 0.938rem; font-weight: 600;">Travel Tips</h4>
+                <h4 style="margin: 0 0 0.75rem 0; font-size: 0.938rem; font-weight: 600;">♿ Accessibility Tips</h4>
                 <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.813rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.25rem;">
                   ${plan.tips.map(tip => `<li>${tip}</li>`).join('')}
                 </ul>

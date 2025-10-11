@@ -6,6 +6,7 @@ import ConversationManager from './conversationManager.js';
 import ChecklistGenerator from './checklistGenerator.js';
 import dotenv from 'dotenv';
 import FlightSearch from './flightModule.js';
+import tripRoutes from './routes/tripRoutes.js';
 
 
 dotenv.config();
@@ -39,6 +40,9 @@ let checklistGenerator;
 
 // In-memory session storage
 const sessions = new Map();
+
+// Mount trip planning routes
+app.use('/api/trips', tripRoutes);
 
 // Routes
 app.post('/api/recommend', async (req, res) => {
@@ -320,6 +324,12 @@ async function startServer() {
       console.log(`   GET  /api/airports/search - Search airports`);
       console.log(`   POST /api/checklist/generate - Generate travel checklist`);
       console.log(`   GET  /api/health - Health check`);
+      console.log(`\n🎯 Trip Planner Endpoints:`);
+      console.log(`   POST /api/trips/compose - Generate personalized trip`);
+      console.log(`   POST /api/trips/flights - Search flights only`);
+      console.log(`   POST /api/trips/hotels - Search hotels only`);
+      console.log(`   POST /api/trips/experiences - Search activities only`);
+      console.log(`   GET  /api/trips/health - Trip API health check`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

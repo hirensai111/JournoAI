@@ -6,10 +6,10 @@ dotenv.config();
 class FlightSearch {
   constructor() {
     // Check if Amadeus API keys are available
-    if (process.env.AMADEUS_API_KEY && process.env.AMADEUS_API_SECRET) {
+    if (process.env.AMADEUS_CLIENT_ID && process.env.AMADEUS_CLIENT_SECRET) {
       this.amadeus = new Amadeus({
-        clientId: process.env.AMADEUS_API_KEY,
-        clientSecret: process.env.AMADEUS_API_SECRET
+        clientId: process.env.AMADEUS_CLIENT_ID,
+        clientSecret: process.env.AMADEUS_CLIENT_SECRET
       });
       this.demoMode = false;
       console.log('✅ Amadeus API keys found - using live API');

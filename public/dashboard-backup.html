@@ -284,9 +284,9 @@
         </div>
 
         <div style="padding: 1rem; border-top: 1px solid var(--border);">
-          <textarea id="chat-input" class="form-input" rows="3" placeholder="e.g., Book me a budget trip for 2 people from Austin to Rome" style="margin-bottom: 0.75rem; resize: none;" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); handleChatSubmit();}"></textarea>
+          <textarea id="chat-input" class="form-input" rows="3" placeholder="e.g., We're 2 people from Boston going to Paris June 12-18, love museums and food, mid-range budget" style="margin-bottom: 0.75rem; resize: none;"></textarea>
           <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-            <button class="btn btn-primary" style="flex: 1;" onclick="handleChatSubmit()">
+            <button class="btn btn-primary" style="flex: 1;" onclick="sendChatMessage()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="22" y1="2" x2="11" y2="13"/>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -327,6 +327,58 @@
 
     </div>
 
+    <!-- Preferences Panel (Collapsible) -->
+    <div style="border-top: 1px solid var(--border); background: var(--bg-secondary);">
+      <div style="max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem;">
+        <div class="card">
+          <div style="padding: 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h3 style="margin: 0 0 0.25rem 0; font-size: 1.125rem;">Preferences</h3>
+              <p style="margin: 0; font-size: 0.813rem; color: var(--text-secondary);">Edit and regenerate to update the plan</p>
+            </div>
+            <button class="btn btn-ghost" onclick="regeneratePlan()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+              </svg>
+              Regenerate
+            </button>
+          </div>
+          <div style="padding: 1.25rem;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label">Destination</label>
+                <input type="text" class="form-input" id="pref-destination" onchange="updatePreference('destination', this.value)"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Origin</label>
+                <input type="text" class="form-input" id="pref-origin" onchange="updatePreference('origin', this.value)"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Travelers</label>
+                <input type="number" class="form-input" id="pref-travelers" min="1" value="2" onchange="updatePreference('travelers', parseInt(this.value))"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Start Date</label>
+                <input type="date" class="form-input" id="pref-start-date" onchange="updatePreference('startDate', this.value)"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">End Date</label>
+                <input type="date" class="form-input" id="pref-end-date" onchange="updatePreference('endDate', this.value)"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Budget</label>
+                <div style="display: flex; gap: 0.5rem;">
+                  <button class="btn btn-ghost" style="flex: 1; font-size: 0.75rem;" id="budget-budget" onclick="selectBudget('budget')">Budget</button>
+                  <button class="btn btn-ghost" style="flex: 1; font-size: 0.75rem;" id="budget-mid" onclick="selectBudget('mid')">Mid</button>
+                  <button class="btn btn-ghost" style="flex: 1; font-size: 0.75rem;" id="budget-premium" onclick="selectBudget('premium')">Premium</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Firebase SDK -->
@@ -337,7 +389,6 @@
   <!-- Auth Configuration -->
   <script src="/js/firebase-config.js"></script>
   <script src="/js/auth-service.js"></script>
-  <script src="/js/trip-planner-flow.js"></script>
 
   <script>
     // Global trip data

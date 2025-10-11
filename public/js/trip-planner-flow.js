@@ -631,11 +631,16 @@ async function generateMockItinerary(destination, startDate, endDate) {
     const end = new Date(endDate || planningState.preferences?.endDate);
     const tripDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
 
+    console.log(`Generating itinerary for ${destination}: ${tripDays} days (${startDate} to ${endDate})`);
+
     // Fetch experiences for the destination
-    const experiences = await fetchExperiencesForDestination(destination);
+    let experiences = await fetchExperiencesForDestination(destination);
+
+    console.log(`Fetched ${experiences?.length || 0} experiences for ${destination}`);
 
     if (!experiences || experiences.length === 0) {
       // Fallback to generic itinerary if no experiences found
+      console.warn(`No experiences found for ${destination}, using fallback with ${tripDays} days`);
       return generateFallbackItinerary(destination, tripDays);
     }
 

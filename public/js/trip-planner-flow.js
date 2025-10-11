@@ -30,41 +30,98 @@ async function handleChatSubmit() {
   addChatMessage(text, 'user');
   input.value = '';
 
-  // If we already have preferences and user is providing additional info (like dates)
-  if (planningState.preferences) {
+  // Handle follow-up responses based on current step
+  if (planningState.step === 'awaiting_travelers') {
+    const numMatch = text.match(/(\d+)/);
+    if (numMatch) {
+      planningState.preferences.travelers = parseInt(numMatch[1]);
+      planningState.preferences.travelersProvided = true;
+
+      // Now ask for dates
+      planningState.step = 'awaiting_dates';
+      addChatMessage(`Great! Planning for ${numMatch[1]} traveler${numMatch[1] > 1 ? 's' : ''}.\n\nWhen would you like to travel? (e.g., "November 15th" or "15th Nov")`, 'assistant');
+      return;
+    } else {
+      addChatMessage('Please specify the number of travelers (e.g., "2 people" or just "2")', 'assistant');
+      return;
+    }
+  }
+
+  if (planningState.step === 'awaiting_dates') {
     const dateInfo = parseDateFromMessage(text);
     if (dateInfo.startDate) {
       planningState.preferences.startDate = dateInfo.startDate;
       planningState.preferences.endDate = dateInfo.endDate;
 
-      addChatMessage(`Got it! Updated your trip dates to ${dateInfo.startDate}. Refreshing flight options...`, 'assistant');
-      await fetchAndDisplayFlights(planningState.preferences);
+      // Now ask for budget
+      planningState.step = 'awaiting_budget';
+      addChatMessage(`Perfect! Dates set to ${dateInfo.startDate} - ${dateInfo.endDate}.\n\nWhat's your budget? (budget/mid/premium)`, 'assistant');
+      return;
+    } else {
+      addChatMessage('Please provide a travel date (e.g., "November 15th", "15th Nov", or "Nov 15")', 'assistant');
       return;
     }
   }
 
-  // Parse the message
+  if (planningState.step === 'awaiting_budget') {
+    const lower = text.toLowerCase();
+    if (/budget|cheap|affordable|economy/i.test(lower)) {
+      planningState.preferences.budget = 'budget';
+      planningState.preferences.budgetProvided = true;
+    } else if (/premium|luxury|business|first/i.test(lower)) {
+      planningState.preferences.budget = 'premium';
+      planningState.preferences.budgetProvided = true;
+    } else if (/mid|medium|moderate/i.test(lower)) {
+      planningState.preferences.budget = 'mid';
+      planningState.preferences.budgetProvided = true;
+    } else {
+      addChatMessage('Please choose: budget, mid, or premium', 'assistant');
+      return;
+    }
+
+    // All info collected - now fetch flights
+    const prefs = planningState.preferences;
+    addChatMessage(`Perfect! Planning a ${prefs.budget} trip for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} from ${prefs.origin} to ${prefs.destination}.\n\nDates: ${prefs.startDate} to ${prefs.endDate}\n\nSearching for flights...`, 'assistant');
+    planningState.step = 'searching';
+    await fetchAndDisplayFlights(prefs);
+    return;
+  }
+
+  // Parse the message for initial trip request
   const prefs = parseTripMessage(text);
 
   if (!prefs.origin || !prefs.destination) {
-    addChatMessage('I need more details! Please tell me where you\'re traveling FROM and TO. For example: "Book me a budget trip for 2 people from Austin to Rome"', 'assistant');
+    addChatMessage('I need more details! Please tell me where you\'re traveling FROM and TO. For example: "Book me a trip from New York to Paris"', 'assistant');
     return;
   }
 
   // Store partial preferences
   planningState.preferences = prefs;
 
-  // Check if we need to ask for more details
+  // Check if travelers provided
+  if (!prefs.travelersProvided) {
+    planningState.step = 'awaiting_travelers';
+    addChatMessage(`Great! Planning a trip from ${prefs.origin} to ${prefs.destination}.\n\nHow many people are traveling?`, 'assistant');
+    return;
+  }
+
+  // Check if dates provided
   if (!prefs.startDate) {
     planningState.step = 'awaiting_dates';
     addChatMessage(`Great! Planning a trip from ${prefs.origin} to ${prefs.destination} for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''}.\n\nWhen would you like to travel? (e.g., "November 15th" or "15th Nov")`, 'assistant');
     return;
   }
 
-  // Confirm and show flight options
-  addChatMessage(`Perfect! Planning a ${prefs.budget} trip for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} from ${prefs.origin} to ${prefs.destination}.\n\nDates: ${prefs.startDate} to ${prefs.endDate}\n\nSearching for real flights via Amadeus API...`, 'assistant');
+  // Check if budget provided
+  if (!prefs.budgetProvided) {
+    planningState.step = 'awaiting_budget';
+    addChatMessage(`Great! Planning a trip from ${prefs.origin} to ${prefs.destination} for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''}.\n\nDates: ${prefs.startDate} to ${prefs.endDate}\n\nWhat's your budget? (budget/mid/premium)`, 'assistant');
+    return;
+  }
 
-  // Fetch flights
+  // All info provided - fetch flights
+  addChatMessage(`Perfect! Planning a ${prefs.budget} trip for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} from ${prefs.origin} to ${prefs.destination}.\n\nDates: ${prefs.startDate} to ${prefs.endDate}\n\nSearching for flights...`, 'assistant');
+  planningState.step = 'searching';
   await fetchAndDisplayFlights(prefs);
 }
 
@@ -93,7 +150,23 @@ function parseDateFromMessage(text) {
     dec: '12', december: '12'
   };
 
-  // Try to match: "11th nov" or "nov 11" or "november 11th"
+  // Try to match date ranges: "June 12-18" or "June 12 to 18"
+  const rangePattern = /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:st|nd|rd|th)?\s*(?:-|to)\s*(\d{1,2})(?:st|nd|rd|th)?(?:\s+(\d{4}))?/i;
+  const rangeMatch = text.toLowerCase().match(rangePattern);
+
+  if (rangeMatch) {
+    const monthName = rangeMatch[1].toLowerCase();
+    const month = months[monthName];
+    const startDay = rangeMatch[2].padStart(2, '0');
+    const endDay = rangeMatch[3].padStart(2, '0');
+    const year = rangeMatch[4] || new Date().getFullYear();
+
+    result.startDate = `${year}-${month}-${startDay}`;
+    result.endDate = `${year}-${month}-${endDay}`;
+    return result;
+  }
+
+  // Try to match single date: "11th nov" or "nov 11" or "november 11th"
   const datePattern = /(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)(?:\s+(\d{4}))?/i;
   const match = text.toLowerCase().match(datePattern);
 
@@ -122,35 +195,51 @@ function parseTripMessage(text) {
   const prefs = {
     origin: null,
     destination: null,
-    travelers: 2,
-    budget: 'mid',
+    travelers: null,
+    travelersProvided: false,
+    budget: null,
+    budgetProvided: false,
     startDate: null,
     endDate: null
   };
 
-  // Extract origin (from X)
-  const fromMatch = lower.match(/from\s+([a-z\s]+?)(?:\s+to|\s+for|\s+in|$)/i);
+  // Extract origin and destination - handle multiple formats
+  // Format 1: "from Boston to Paris"
+  let fromMatch = lower.match(/from\s+([a-z\s]+?)\s+(?:to|going to)\s+([a-z\s]+?)(?:\s|,|$)/i);
   if (fromMatch) {
     prefs.origin = fromMatch[1].trim();
-  }
+    prefs.destination = fromMatch[2].trim();
+  } else {
+    // Format 2: "from X" alone
+    fromMatch = lower.match(/from\s+([a-z\s]+?)(?:\s+for|\s+in|,|$)/i);
+    if (fromMatch) {
+      prefs.origin = fromMatch[1].trim();
+    }
 
-  // Extract destination (to X)
-  const toMatch = lower.match(/to\s+([a-z\s]+?)(?:\s+for|\s+in|\s+on|$)/i);
-  if (toMatch) {
-    prefs.destination = toMatch[1].trim();
+    // Format 3: "to X" or "going to X"
+    const toMatch = lower.match(/(?:to|going to)\s+([a-z\s]+?)(?:\s+for|\s+in|\s+on|,|$)/i);
+    if (toMatch) {
+      prefs.destination = toMatch[1].trim();
+    }
   }
 
   // Extract travelers
   const travelersMatch = lower.match(/(\d+)\s*(?:people|person|traveler|pax)/);
   if (travelersMatch) {
     prefs.travelers = parseInt(travelersMatch[1]);
+    prefs.travelersProvided = true;
   }
 
-  // Extract budget
-  if (/budget|cheap|affordable|economy/i.test(lower)) {
-    prefs.budget = 'budget';
-  } else if (/premium|luxury|business|first\s*class/i.test(lower)) {
+  // Extract budget (check mid-range first to avoid matching 'budget' substring)
+  if (/mid[\s-]?range|mid|medium|moderate|middle/i.test(lower)) {
+    prefs.budget = 'mid';
+    prefs.budgetProvided = true;
+  } else if (/premium|luxury|business|first\s*class|high[\s-]?end/i.test(lower)) {
     prefs.budget = 'premium';
+    prefs.budgetProvided = true;
+  } else if (/\bbudget\b|cheap|affordable|economy|low[\s-]?cost/i.test(lower)) {
+    prefs.budget = 'budget';
+    prefs.budgetProvided = true;
   }
 
   // Try to parse dates using the new function
@@ -215,11 +304,16 @@ async function fetchAndDisplayFlights(prefs) {
 function cityToAirportCode(cityName) {
   const airports = {
     'austin': 'AUS',
+    'boston': 'BOS',
     'rome': 'FCO',
     'paris': 'CDG',
     'london': 'LHR',
     'new york': 'JFK',
     'los angeles': 'LAX',
+    'chicago': 'ORD',
+    'san francisco': 'SFO',
+    'miami': 'MIA',
+    'seattle': 'SEA',
     'tokyo': 'HND',
     'dubai': 'DXB',
     'singapore': 'SIN',
@@ -452,14 +546,19 @@ async function generateAndDisplayItinerary() {
   const flight = planningState.selectedFlight;
   const hotel = planningState.selectedHotel;
 
-  // Generate mock itinerary (replace with real API call)
-  const itinerary = generateMockItinerary(prefs.destination);
+  // Generate itinerary with real experiences from data folder
+  const itinerary = await generateMockItinerary(prefs.destination, prefs.startDate, prefs.endDate);
+
+  // Calculate trip duration
+  const start = new Date(prefs.startDate);
+  const end = new Date(prefs.endDate);
+  const tripDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
 
   const itineraryHTML = `
     <div style="padding: 1.5rem;">
       <div style="text-align: center; margin-bottom: 2rem;">
         <h2 style="margin: 0 0 0.5rem 0; font-size: 1.5rem; font-weight: 700;">Your ${prefs.destination} Adventure</h2>
-        <p style="margin: 0; color: var(--text-secondary);">${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} • 7 days</p>
+        <p style="margin: 0; color: var(--text-secondary);">${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} • ${tripDays} day${tripDays > 1 ? 's' : ''}</p>
       </div>
 
       <!-- Selected Flight & Hotel Summary -->
@@ -523,38 +622,224 @@ async function generateAndDisplayItinerary() {
 }
 
 /**
- * Generate mock itinerary
+ * Generate itinerary with real experiences from the data folder
  */
-function generateMockItinerary(destination) {
-  return [
-    {
-      title: 'Arrival & Welcome',
-      highlight: `Welcome to ${destination}`,
-      activities: [
-        { icon: '✈️', name: 'Airport Arrival', time: '10:00 AM', description: 'Land and clear customs' },
-        { icon: '🏨', name: 'Hotel Check-in', time: '12:00 PM', description: 'Settle into your accessible room' },
-        { icon: '🍽️', name: 'Welcome Dinner', time: '7:00 PM', description: 'Local cuisine at nearby restaurant' }
-      ]
-    },
-    {
-      title: 'Cultural Exploration',
-      highlight: 'Discover the city\'s rich history',
-      activities: [
-        { icon: '🏛️', name: 'Museum Visit', time: '9:30 AM', description: 'Guided accessible tour' },
-        { icon: '☕', name: 'Café Break', time: '12:00 PM', description: 'Rest and refreshments' },
-        { icon: '🎭', name: 'Art Gallery', time: '3:00 PM', description: 'Contemporary art exhibition' }
-      ]
-    },
-    {
-      title: 'Local Experiences',
-      highlight: 'Authentic local adventures',
-      activities: [
-        { icon: '🛍️', name: 'Market Tour', time: '10:00 AM', description: 'Local crafts and souvenirs' },
-        { icon: '🍕', name: 'Cooking Class', time: '2:00 PM', description: 'Learn traditional recipes' },
-        { icon: '🌆', name: 'Sunset Views', time: '6:00 PM', description: 'Accessible viewpoint' }
-      ]
+async function generateMockItinerary(destination, startDate, endDate) {
+  try {
+    // Calculate number of days from date range
+    const start = new Date(startDate || planningState.preferences?.startDate);
+    const end = new Date(endDate || planningState.preferences?.endDate);
+    const tripDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+
+    // Fetch experiences for the destination
+    const experiences = await fetchExperiencesForDestination(destination);
+
+    if (!experiences || experiences.length === 0) {
+      // Fallback to generic itinerary if no experiences found
+      return generateFallbackItinerary(destination, tripDays);
     }
+
+    // Map activity type icons
+    const typeIcons = {
+      'market': '🛍️',
+      'tour': '🚶',
+      'restaurant': '🍽️',
+      'trattoria': '🍝',
+      'osteria': '🍷',
+      'gelateria': '🍦',
+      'cafe': '☕',
+      'cultural_site': '🏛️',
+      'museum': '🎨',
+      'church': '⛪',
+      'park': '🌳',
+      'cultural_center': '🎭',
+      'cinema': '🎬',
+      'piazza': '🏰',
+      'historic_site': '🏺'
+    };
+
+    const timeSlots = ['9:00 AM', '12:00 PM', '3:00 PM', '7:00 PM'];
+
+    // Calculate activities per day (3 activities per day)
+    const activitiesPerDay = 3;
+    const totalActivities = tripDays * activitiesPerDay;
+
+    // Select diverse experiences for the full trip
+    const selectedExperiences = selectDiverseExperiences(experiences, totalActivities);
+
+    // Group into days
+    const days = [];
+    for (let dayIdx = 0; dayIdx < tripDays; dayIdx++) {
+      const dayExperiences = selectedExperiences.slice(dayIdx * activitiesPerDay, (dayIdx + 1) * activitiesPerDay);
+
+      days.push({
+        title: getDayTitle(dayIdx, tripDays),
+        highlight: dayExperiences[0]?.name || `Explore ${destination}`,
+        activities: dayExperiences.map((exp, idx) => ({
+          icon: typeIcons[exp.type] || '🎯',
+          name: exp.name,
+          time: timeSlots[idx],
+          description: exp.description.substring(0, 100) + '...',
+          type: exp.type,
+          accessibility: exp.accessibility_notes
+        }))
+      });
+    }
+
+    return days;
+  } catch (error) {
+    console.error('Error generating itinerary:', error);
+    return generateFallbackItinerary(destination, 3);
+  }
+}
+
+/**
+ * Fetch experiences from the backend for a given destination
+ */
+async function fetchExperiencesForDestination(destination) {
+  try {
+    // Normalize destination name
+    const normalizedDest = destination.toLowerCase().trim();
+
+    // Map to file names
+    const cityMap = {
+      'rome': { country: 'italy', city: 'rome', file: 'italy.json' },
+      'paris': { country: 'france', city: 'paris', file: 'france.json' },
+      'milan': { country: 'italy', city: 'milan', file: 'italy.json' },
+      'florence': { country: 'italy', city: 'florence', file: 'italy.json' },
+      'venice': { country: 'italy', city: 'venice', file: 'italy.json' },
+      'naples': { country: 'italy', city: 'naples', file: 'italy.json' },
+      'lyon': { country: 'france', city: 'lyon', file: 'france.json' },
+      'marseille': { country: 'france', city: 'marseille', file: 'france.json' },
+      'nice': { country: 'france', city: 'nice', file: 'france.json' }
+    };
+
+    const mapping = cityMap[normalizedDest];
+    if (!mapping) {
+      console.warn(`No experience data for ${destination}`);
+      return [];
+    }
+
+    // Fetch the experiences JSON file
+    const region = mapping.country === 'italy' || mapping.country === 'france' ? 'europe' : 'north-america';
+    const response = await fetch(`/data/experiences/${region}/${mapping.file}`);
+
+    if (!response.ok) {
+      console.error(`Failed to fetch experiences: ${response.status}`);
+      return [];
+    }
+
+    const allExperiences = await response.json();
+
+    // Filter experiences for the specific city
+    const cityExperiences = allExperiences.filter(exp =>
+      exp.city?.toLowerCase() === mapping.city
+    );
+
+    return cityExperiences;
+  } catch (error) {
+    console.error('Error fetching experiences:', error);
+    return [];
+  }
+}
+
+/**
+ * Select diverse experiences (different types) for better itinerary
+ */
+function selectDiverseExperiences(experiences, count) {
+  if (experiences.length <= count) {
+    return experiences;
+  }
+
+  const selected = [];
+  const usedTypes = new Set();
+
+  // First pass: Pick one of each type
+  for (const exp of experiences) {
+    if (!usedTypes.has(exp.type)) {
+      selected.push(exp);
+      usedTypes.add(exp.type);
+      if (selected.length >= count) break;
+    }
+  }
+
+  // Second pass: Fill remaining slots with any experiences
+  if (selected.length < count) {
+    for (const exp of experiences) {
+      if (!selected.includes(exp)) {
+        selected.push(exp);
+        if (selected.length >= count) break;
+      }
+    }
+  }
+
+  return selected;
+}
+
+/**
+ * Get day title based on index and total days
+ */
+function getDayTitle(dayIdx, totalDays) {
+  // For trips of any length, create appropriate titles
+  if (dayIdx === 0) {
+    return 'Arrival & Discovery';
+  } else if (dayIdx === totalDays - 1) {
+    return 'Final Day & Departure';
+  } else if (dayIdx === 1) {
+    return 'Cultural Immersion';
+  } else if (dayIdx === 2) {
+    return 'Local Experiences';
+  } else if (dayIdx === 3) {
+    return 'Hidden Gems';
+  } else if (dayIdx === 4) {
+    return 'Adventures Continue';
+  } else {
+    return `Day ${dayIdx + 1} Exploration`;
+  }
+}
+
+/**
+ * Fallback generic itinerary when no experiences available
+ */
+function generateFallbackItinerary(destination, tripDays = 3) {
+  const genericActivities = [
+    [
+      { icon: '✈️', name: 'Airport Arrival', time: '10:00 AM', description: 'Land and clear customs' },
+      { icon: '🏨', name: 'Hotel Check-in', time: '12:00 PM', description: 'Settle into your accessible room' },
+      { icon: '🍽️', name: 'Welcome Dinner', time: '7:00 PM', description: 'Local cuisine at nearby restaurant' }
+    ],
+    [
+      { icon: '🏛️', name: 'Museum Visit', time: '9:30 AM', description: 'Guided accessible tour' },
+      { icon: '☕', name: 'Café Break', time: '12:00 PM', description: 'Rest and refreshments' },
+      { icon: '🎭', name: 'Art Gallery', time: '3:00 PM', description: 'Contemporary art exhibition' }
+    ],
+    [
+      { icon: '🛍️', name: 'Market Tour', time: '10:00 AM', description: 'Local crafts and souvenirs' },
+      { icon: '🍕', name: 'Cooking Class', time: '2:00 PM', description: 'Learn traditional recipes' },
+      { icon: '🌆', name: 'Sunset Views', time: '6:00 PM', description: 'Accessible viewpoint' }
+    ],
+    [
+      { icon: '🎨', name: 'Art Workshop', time: '10:00 AM', description: 'Create local art' },
+      { icon: '🍷', name: 'Wine Tasting', time: '2:00 PM', description: 'Sample local wines' },
+      { icon: '🎵', name: 'Live Music', time: '7:00 PM', description: 'Experience local music scene' }
+    ],
+    [
+      { icon: '🚶', name: 'Walking Tour', time: '9:00 AM', description: 'Explore historic neighborhoods' },
+      { icon: '🍜', name: 'Food Tour', time: '1:00 PM', description: 'Taste local specialties' },
+      { icon: '🌃', name: 'Night Views', time: '8:00 PM', description: 'City lights from scenic viewpoint' }
+    ]
   ];
+
+  const days = [];
+  for (let i = 0; i < tripDays; i++) {
+    days.push({
+      title: getDayTitle(i, tripDays),
+      highlight: `Explore ${destination}`,
+      activities: genericActivities[i % genericActivities.length]
+    });
+  }
+
+  return days;
 }
 
 /**

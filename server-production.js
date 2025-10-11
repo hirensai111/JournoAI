@@ -28,6 +28,9 @@ app.use(express.json());
 // Serve static files from public directory
 app.use(express.static('public'));
 
+// Serve data files (experiences JSON)
+app.use('/data', express.static('data'));
+
 // Request logging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);

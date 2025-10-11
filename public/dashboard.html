@@ -830,7 +830,10 @@
 
       let html = '<p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem;">Select activities you\'d like to include (you can select multiple)</p>';
 
-      experiences.forEach(exp => {
+      experiences.forEach(item => {
+        // Extract experience from the API response format {experience, score}
+        const exp = item.experience || item;
+
         html += `
           <div class="experience-card" onclick="toggleExperience('${exp.id}')">
             <div style="display: flex; gap: 1rem;">
@@ -919,65 +922,158 @@
     function displayTripSummary(data) {
       const container = document.getElementById('itinerary-generation-container');
 
+      // Build detailed itinerary HTML
+      let itineraryHtml = '';
+      if (data.itinerary?.days) {
+        data.itinerary.days.forEach(day => {
+          // Activity type icons
+          const activityIcons = {
+            'arrival': '✈️',
+            'accommodation': '🏨',
+            'meal': '🍽️',
+            'rest': '💤',
+            'experience': '🎯',
+            'optional': '⭐'
+          };
+
+          itineraryHtml += `
+            <div class="day-card" style="border: 2px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; background: white;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                <div>
+                  <div style="display: inline-block; background: var(--primary); color: white; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 999px; margin-bottom: 0.5rem;">Day ${day.day_number}</div>
+                  <h4 style="margin: 0; margin-bottom: 0.25rem;">${day.title}</h4>
+                  <p style="font-size: 0.875rem; color: var(--text-secondary);">${new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+                </div>
+                <button class="btn btn-ghost btn-icon" onclick="editDay(${day.day_number}, '${data.trip_id}')" title="Edit this day">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+              </div>
+
+              ${day.fatigue_level ? `
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: var(--radius-md);">
+                  <div style="flex: 1;">
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Fatigue Level</p>
+                    <p style="font-size: 0.875rem; font-weight: 500;">${day.fatigue_level}</p>
+                  </div>
+                  <div style="flex: 1;">
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Medical Safety</p>
+                    <p style="font-size: 0.875rem; font-weight: 500;">${day.medical_safety_display || '⭐⭐⭐⭐⭐'}</p>
+                  </div>
+                  <div style="flex: 1;">
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Steps</p>
+                    <p style="font-size: 0.875rem; font-weight: 500;">${day.daily_steps_estimate || 0}</p>
+                  </div>
+                </div>
+              ` : ''}
+
+              <div class="activities-list" style="display: grid; gap: 0.75rem;">
+                ${day.activities.map((activity, idx) => `
+                  <div class="activity-item" data-activity-index="${idx}" style="display: flex; gap: 1rem; padding: 0.75rem; background: ${activity.importance === 'CRITICAL' ? '#fef3c7' : 'var(--bg-secondary)'}; border-radius: var(--radius-md); border-left: 3px solid ${activity.importance === 'CRITICAL' ? '#f59e0b' : 'var(--primary)'};">
+                    <div style="min-width: 60px;">
+                      <p style="font-size: 0.875rem; font-weight: 600; color: var(--text-primary);">${activity.time}</p>
+                    </div>
+                    <div style="flex: 1;">
+                      <div style="display: flex; align-items: start; gap: 0.5rem; margin-bottom: 0.25rem;">
+                        <span style="font-size: 1.25rem;">${activityIcons[activity.type] || '•'}</span>
+                        <div style="flex: 1;">
+                          <p style="font-weight: 600; margin-bottom: 0.25rem;">${activity.title}</p>
+                          <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">${activity.description}</p>
+                          ${activity.duration_hours ? `<p style="font-size: 0.75rem; color: var(--text-muted);">⏱️ ${activity.duration_hours} hours</p>` : ''}
+                          ${activity.medical_notes ? `<p style="font-size: 0.75rem; color: var(--danger); margin-top: 0.5rem; font-weight: 500;">⚠️ ${activity.medical_notes}</p>` : ''}
+                          ${activity.accessibility?.length > 0 ? `<p style="font-size: 0.75rem; color: var(--success); margin-top: 0.5rem;">♿ ${activity.accessibility.join(', ')}</p>` : ''}
+                        </div>
+                        <button class="btn btn-ghost btn-icon" onclick="editActivity(${day.day_number}, ${idx}, '${data.trip_id}')" title="Edit activity">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+
+              ${day.medical_notes?.length > 0 ? `
+                <div style="margin-top: 1rem; padding: 0.75rem; background: #fef3c7; border-radius: var(--radius-md); border-left: 3px solid #f59e0b;">
+                  <p style="font-size: 0.75rem; font-weight: 600; color: #92400e; margin-bottom: 0.5rem;">📋 Medical Notes</p>
+                  ${day.medical_notes.map(note => `<p style="font-size: 0.75rem; color: #92400e; margin-bottom: 0.25rem;">• ${note}</p>`).join('')}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        });
+      }
+
       container.innerHTML = `
         <div class="alert alert-success" style="margin-bottom: 1.5rem;">
           ✅ Your trip has been created successfully!
         </div>
 
-        <h3 style="margin-bottom: 1rem;">${tripData.destination} - ${tripData.duration} Days</h3>
-
-        ${data.flights?.outbound?.[0] ? `
-          <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg); margin-bottom: 1rem;">
-            <p style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;">✈️ Flight</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <div>
+            <h3 style="margin: 0; margin-bottom: 0.5rem;">${tripData.destination} - ${tripData.duration} Days</h3>
             <p style="font-size: 0.875rem; color: var(--text-secondary);">
-              ${data.flights.outbound[0].airline || 'Selected Flight'} • ${data.flights.outbound[0].price?.total || '498.84'} ${data.flights.outbound[0].price?.currency || 'EUR'}
+              ${data.summary?.itinerary_summary?.activity_days || 0} activity days •
+              ${data.summary?.itinerary_summary?.rest_days || 0} rest days •
+              ${data.itinerary?.days?.length || 0} days total
             </p>
           </div>
-        ` : ''}
-
-        ${data.hotels?.[0] ? `
-          <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg); margin-bottom: 1rem;">
-            <p style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;">🏨 Hotel</p>
-            <p style="font-size: 0.875rem; color: var(--text-secondary);">
-              ${data.hotels[0].name} • ${data.hotels[0].rating || 4}⭐
-            </p>
-          </div>
-        ` : ''}
-
-        <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg); margin-bottom: 1rem;">
-          <p style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;">📅 Itinerary</p>
-          <p style="font-size: 0.875rem; color: var(--text-secondary);">
-            ${data.itinerary?.days?.length || tripData.duration} days planned •
-            ${data.summary?.itinerary_summary?.activity_days || 0} activity days •
-            ${data.summary?.itinerary_summary?.rest_days || 0} rest days
-          </p>
+          ${data.summary?.estimated_total_cost ? `
+            <div style="text-align: right; padding: 0.75rem 1rem; background: var(--primary-light); border-radius: var(--radius-lg);">
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Total Cost</p>
+              <p style="font-size: 1.25rem; font-weight: 600; color: var(--primary); margin: 0;">
+                ${data.summary.estimated_total_cost.total} ${data.summary.estimated_total_cost.currency}
+              </p>
+            </div>
+          ` : ''}
         </div>
 
-        ${data.checklist ? `
-          <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg); margin-bottom: 1rem;">
-            <p style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;">✅ Pre-Trip Checklist</p>
-            <p style="font-size: 0.875rem; color: var(--text-secondary);">
-              ${data.checklist.categories?.length || 4} categories •
-              ${data.summary?.checklist_summary?.total_items || 23} items •
-              ${data.summary?.checklist_summary?.critical_items || 14} critical
-            </p>
+        ${data.flights?.outbound?.[0] || data.hotels?.[0] ? `
+          <div style="display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; margin-bottom: 1.5rem;">
+            ${data.flights?.outbound?.[0] ? `
+              <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg);">
+                <p style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem;">✈️ FLIGHT</p>
+                <p style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem;">${data.flights.outbound[0].airline || 'Selected Flight'}</p>
+                <p style="font-size: 0.875rem; color: var(--primary); font-weight: 600;">${data.flights.outbound[0].price?.total || '498.84'} ${data.flights.outbound[0].price?.currency || 'EUR'}</p>
+              </div>
+            ` : ''}
+            ${data.hotels?.[0] ? `
+              <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg);">
+                <p style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem;">🏨 HOTEL</p>
+                <p style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem;">${data.hotels[0].name}</p>
+                <p style="font-size: 0.875rem; color: var(--primary); font-weight: 600;">${data.hotels[0].rating || 4}⭐</p>
+              </div>
+            ` : ''}
           </div>
         ` : ''}
 
-        ${data.summary?.estimated_total_cost ? `
-          <div style="padding: 1rem; background: var(--primary-light); border-radius: var(--radius-lg); margin-bottom: 1.5rem;">
-            <p style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;">💰 Estimated Total Cost</p>
-            <p style="font-size: 1.5rem; font-weight: 600; color: var(--primary);">
-              ${data.summary.estimated_total_cost.total} ${data.summary.estimated_total_cost.currency}
-            </p>
+        <div style="margin-bottom: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h4 style="margin: 0;">Daily Itinerary</h4>
+            <button class="btn btn-ghost" onclick="downloadItinerary('${data.trip_id}')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Download
+            </button>
           </div>
-        ` : ''}
+          ${itineraryHtml || '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No itinerary details available.</p>'}
+        </div>
 
-        <div style="display: flex; gap: 0.75rem;">
+        <div style="display: flex; gap: 0.75rem; position: sticky; bottom: 0; background: white; padding: 1rem 0; border-top: 1px solid var(--border); margin-top: 1.5rem;">
           <button class="btn btn-secondary" style="flex: 1;" onclick="closeTripWizard()">Close</button>
-          <button class="btn btn-primary" style="flex: 1;" onclick="viewTripDetails('${data.trip_id}')">View Trip Details</button>
+          <button class="btn btn-primary" style="flex: 1;" onclick="viewTripDetails('${data.trip_id}')">Save & View Trip</button>
         </div>
       `;
+
+      // Store trip data for editing
+      window.currentTripData = data;
     }
 
     async function loadUserTrips() {
@@ -1031,13 +1127,95 @@
     }
 
     function showProfile() {
-      if (userProfile && userProfile.full_name) {
-        // User has a profile, show profile view (will create dedicated profile page later)
-        alert(`Profile View (Coming Soon!)\n\nName: ${userProfile.full_name}\nAge: ${userProfile.age}\nLocation: ${userProfile.location}\nConditions: ${userProfile.conditions?.join(', ') || 'None'}\nTravel Pace: ${userProfile.travel_pace}\nDietary: ${userProfile.dietary_restrictions || 'None'}`);
-      } else {
-        // No profile, go to onboarding
-        window.location.href = '/onboarding.html';
+      // Go to profile page
+      window.location.href = '/profile.html';
+    }
+
+    // Itinerary Editing Functions
+    function editDay(dayNumber, tripId) {
+      const day = window.currentTripData?.itinerary?.days?.find(d => d.day_number === dayNumber);
+      if (!day) {
+        alert('Day data not found');
+        return;
       }
+
+      const newTitle = prompt('Edit day title:', day.title);
+      if (newTitle && newTitle !== day.title) {
+        day.title = newTitle;
+        displayTripSummary(window.currentTripData);
+        alert('Day updated! (Note: Changes are local only. Click "Save & View Trip" to persist changes)');
+      }
+    }
+
+    function editActivity(dayNumber, activityIndex, tripId) {
+      const day = window.currentTripData?.itinerary?.days?.find(d => d.day_number === dayNumber);
+      if (!day || !day.activities[activityIndex]) {
+        alert('Activity not found');
+        return;
+      }
+
+      const activity = day.activities[activityIndex];
+
+      // Show edit dialog
+      const newTime = prompt('Edit activity time:', activity.time);
+      if (newTime) activity.time = newTime;
+
+      const newTitle = prompt('Edit activity title:', activity.title);
+      if (newTitle) activity.title = newTitle;
+
+      const newDescription = prompt('Edit activity description:', activity.description);
+      if (newDescription) activity.description = newDescription;
+
+      // Refresh display
+      displayTripSummary(window.currentTripData);
+      alert('Activity updated! (Note: Changes are local only. Click "Save & View Trip" to persist changes)');
+    }
+
+    function downloadItinerary(tripId) {
+      if (!window.currentTripData?.itinerary) {
+        alert('No itinerary data available');
+        return;
+      }
+
+      // Generate text version of itinerary
+      let text = `Trip to ${tripData.destination}\\n`;
+      text += `Duration: ${tripData.duration} days\\n`;
+      text += `Start Date: ${tripData.startDate}\\n\\n`;
+      text += `===================\\n\\n`;
+
+      window.currentTripData.itinerary.days.forEach(day => {
+        text += `Day ${day.day_number}: ${day.title}\\n`;
+        text += `Date: ${day.date}\\n`;
+        text += `Fatigue Level: ${day.fatigue_level || 'N/A'}\\n`;
+        text += `\\nActivities:\\n`;
+
+        day.activities.forEach(activity => {
+          text += `  ${activity.time} - ${activity.title}\\n`;
+          text += `    ${activity.description}\\n`;
+          if (activity.duration_hours) {
+            text += `    Duration: ${activity.duration_hours} hours\\n`;
+          }
+          text += `\\n`;
+        });
+
+        if (day.medical_notes?.length > 0) {
+          text += `\\nMedical Notes:\\n`;
+          day.medical_notes.forEach(note => {
+            text += `  • ${note}\\n`;
+          });
+        }
+
+        text += `\\n===================\\n\\n`;
+      });
+
+      // Create download
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${tripData.destination.replace(', ', '-')}-itinerary.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
   </script>
 </body>

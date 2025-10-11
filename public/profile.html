@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - Journey AI</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/" class="navbar-brand">
+        <div class="navbar-logo">JA</div>
+        <span>Journey AI</span>
+      </a>
+
+      <ul class="navbar-nav">
+        <li><a href="/dashboard.html" class="navbar-link">Dashboard</a></li>
+        <li><a href="#my-trips" class="navbar-link">My Trips</a></li>
+        <li><a href="/profile.html" class="navbar-link" style="color: var(--primary);">Profile</a></li>
+      </ul>
+
+      <div class="navbar-actions">
+        <div id="user-menu" style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="text-align: right; display: none;" id="user-info">
+            <p style="font-size: 0.875rem; font-weight: 500;" id="user-name">Loading...</p>
+            <p style="font-size: 0.75rem; color: var(--text-muted);" id="user-email"></p>
+          </div>
+          <button id="signout-btn" class="btn btn-ghost" style="display: none;">Sign out</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div style="min-height: calc(100vh - 80px); background: var(--bg-secondary); padding: 2rem 0;">
+    <div class="container" style="max-width: 900px;">
+
+      <!-- Profile Header -->
+      <div class="card" style="margin-bottom: 2rem; position: relative; overflow: visible;">
+        <!-- Cover gradient -->
+        <div style="height: 120px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border-radius: var(--radius-lg) var(--radius-lg) 0 0; margin: -1.5rem -1.5rem 0 -1.5rem;"></div>
+
+        <!-- Profile Info -->
+        <div style="position: relative; padding: 0 1.5rem;">
+          <!-- Avatar -->
+          <div style="position: absolute; top: -60px; width: 120px; height: 120px; border-radius: 50%; background: white; border: 4px solid white; display: grid; place-items: center; font-size: 3rem; font-weight: 600; color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.1);" id="profile-avatar">
+            SM
+          </div>
+
+          <div style="padding: 70px 0 1rem 140px; min-height: 80px;">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div>
+                <h1 style="margin: 0 0 0.5rem 0;" id="profile-full-name">Loading...</h1>
+                <p style="color: var(--text-secondary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <span id="profile-location">Loading...</span>
+                </p>
+              </div>
+              <button class="btn btn-primary" onclick="window.location.href='/onboarding.html'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Edit Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div class="card" style="text-align: center;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">🌍</div>
+          <p style="font-size: 1.5rem; font-weight: 600; margin: 0; color: var(--primary);" id="stat-trips">0</p>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">Trips Planned</p>
+        </div>
+        <div class="card" style="text-align: center;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">📍</div>
+          <p style="font-size: 1.5rem; font-weight: 600; margin: 0; color: var(--primary);" id="stat-countries">0</p>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">Countries Visited</p>
+        </div>
+        <div class="card" style="text-align: center;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">✨</div>
+          <p style="font-size: 1.5rem; font-weight: 600; margin: 0; color: var(--primary);" id="stat-experiences">0</p>
+          <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">Experiences</p>
+        </div>
+      </div>
+
+      <!-- Two Column Layout -->
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem;">
+
+        <!-- Left Column - Personal Info -->
+        <div>
+          <!-- About -->
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="8" r="5"/>
+                <path d="M20 21a8 8 0 1 0-16 0"/>
+              </svg>
+              About
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <div>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.25rem 0; text-transform: uppercase; letter-spacing: 0.5px;">Age</p>
+                <p style="margin: 0; font-weight: 500;" id="profile-age">-</p>
+              </div>
+              <div>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.25rem 0; text-transform: uppercase; letter-spacing: 0.5px;">Email</p>
+                <p style="margin: 0; font-weight: 500; word-break: break-word;" id="profile-email">-</p>
+              </div>
+              <div>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.25rem 0; text-transform: uppercase; letter-spacing: 0.5px;">Travel Pace</p>
+                <p style="margin: 0; font-weight: 500; text-transform: capitalize;" id="profile-pace">-</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Health Conditions -->
+          <div class="card">
+            <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.8 7.6a5 5 0 0 0-8.8-2.9 5 5 0 0 0-8.8 2.9c0 5.2 8.8 9.8 8.8 9.8s8.8-4.6 8.8-9.8Z"/>
+              </svg>
+              Health & Accessibility
+            </h3>
+            <div id="health-conditions-list">
+              <!-- Will be populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column - Preferences & Dietary -->
+        <div>
+          <!-- Travel Preferences -->
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.8 7.6a5 5 0 0 0-8.8-2.9 5 5 0 0 0-8.8 2.9c0 5.2 8.8 9.8 8.8 9.8s8.8-4.6 8.8-9.8Z"/>
+              </svg>
+              Travel Interests
+            </h3>
+            <div id="interests-list" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+              <!-- Will be populated -->
+            </div>
+          </div>
+
+          <!-- Dietary Restrictions -->
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+              </svg>
+              Dietary Preferences
+            </h3>
+            <p id="dietary-info" style="margin: 0; color: var(--text-secondary);">None specified</p>
+          </div>
+
+          <!-- Account Info -->
+          <div class="card">
+            <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              Account
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <div>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.25rem 0; text-transform: uppercase; letter-spacing: 0.5px;">Member Since</p>
+                <p style="margin: 0; font-weight: 500;" id="profile-created">-</p>
+              </div>
+              <div>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.25rem 0; text-transform: uppercase; letter-spacing: 0.5px;">User ID</p>
+                <p style="margin: 0; font-family: monospace; font-size: 0.75rem; color: var(--text-secondary);" id="profile-user-id">-</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+  <!-- Auth Configuration -->
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth-service.js"></script>
+
+  <script>
+    let currentUser = null;
+    let userProfile = null;
+
+    // Icon mapping for health conditions
+    const conditionIcons = {
+      'wheelchair_user': '♿',
+      'type_1_diabetes': '💉',
+      'type_2_diabetes': '🩸',
+      'food_allergies': '🥜',
+      'hearing_impairment': '👂',
+      'visual_impairment': '👁️'
+    };
+
+    const conditionNames = {
+      'wheelchair_user': 'Wheelchair User',
+      'type_1_diabetes': 'Type 1 Diabetes',
+      'type_2_diabetes': 'Type 2 Diabetes',
+      'food_allergies': 'Food Allergies',
+      'hearing_impairment': 'Hearing Impairment',
+      'visual_impairment': 'Visual Impairment'
+    };
+
+    const interestIcons = {
+      'food_culinary': '🍴',
+      'history_culture': '🏛️',
+      'nature_outdoors': '🌳',
+      'art_museums': '🎨',
+      'shopping': '🛍️',
+      'nightlife': '🌃'
+    };
+
+    const interestNames = {
+      'food_culinary': 'Food & Culinary',
+      'history_culture': 'History & Culture',
+      'nature_outdoors': 'Nature & Outdoors',
+      'art_museums': 'Art & Museums',
+      'shopping': 'Shopping',
+      'nightlife': 'Nightlife'
+    };
+
+    // Auth Protection
+    window.firebaseAuth.onAuthStateChanged((user) => {
+      if (!user) {
+        window.location.href = '/signin.html';
+      } else {
+        currentUser = user;
+        document.getElementById('user-name').textContent = user.displayName || 'User';
+        document.getElementById('user-email').textContent = user.email;
+        document.getElementById('user-info').style.display = 'block';
+        document.getElementById('signout-btn').style.display = 'block';
+
+        // Load profile
+        loadUserProfile();
+      }
+    });
+
+    // Sign out
+    document.getElementById('signout-btn').addEventListener('click', async () => {
+      await window.authService.signOut();
+    });
+
+    // Load user profile
+    async function loadUserProfile() {
+      if (!currentUser) return;
+
+      try {
+        const response = await fetch(`/api/user/profile/${currentUser.uid}`);
+        const data = await response.json();
+
+        if (data && !data.error) {
+          userProfile = data;
+          displayProfile(data);
+        } else {
+          // No profile found, redirect to onboarding
+          window.location.href = '/onboarding.html';
+        }
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+        showError('Failed to load profile');
+      }
+    }
+
+    function displayProfile(profile) {
+      // Header
+      if (profile.full_name) {
+        document.getElementById('profile-full-name').textContent = profile.full_name;
+        document.getElementById('user-name').textContent = profile.full_name;
+
+        // Avatar initials
+        const initials = profile.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        document.getElementById('profile-avatar').textContent = initials;
+      }
+
+      document.getElementById('profile-location').textContent = profile.location || 'Not specified';
+      document.getElementById('profile-age').textContent = profile.age || '-';
+      document.getElementById('profile-email').textContent = profile.email || currentUser.email;
+      document.getElementById('profile-pace').textContent = profile.travel_pace || 'moderate';
+      document.getElementById('profile-user-id').textContent = profile.user_id || currentUser.uid;
+
+      // Created date
+      if (profile.created_at) {
+        const date = new Date(profile.created_at);
+        document.getElementById('profile-created').textContent = date.toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric'
+        });
+      }
+
+      // Health Conditions
+      const conditionsContainer = document.getElementById('health-conditions-list');
+      if (profile.conditions && profile.conditions.length > 0) {
+        conditionsContainer.innerHTML = profile.conditions.map(condition => {
+          const icon = conditionIcons[condition] || '•';
+          const name = conditionNames[condition] || condition;
+          return `
+            <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: var(--radius-lg); margin-bottom: 0.5rem;">
+              <span style="font-size: 1.5rem;">${icon}</span>
+              <span style="font-weight: 500;">${name}</span>
+            </div>
+          `;
+        }).join('');
+      } else {
+        conditionsContainer.innerHTML = '<p style="color: var(--text-secondary); margin: 0;">No health conditions specified</p>';
+      }
+
+      // Interests
+      const interestsContainer = document.getElementById('interests-list');
+      if (profile.interests && profile.interests.length > 0) {
+        interestsContainer.innerHTML = profile.interests.map(interest => {
+          const icon = interestIcons[interest] || '✨';
+          const name = interestNames[interest] || interest.replace(/_/g, ' ');
+          return `
+            <span style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-xl); font-size: 0.875rem; font-weight: 500;">
+              ${icon} ${name}
+            </span>
+          `;
+        }).join('');
+      } else {
+        interestsContainer.innerHTML = '<p style="color: var(--text-secondary); margin: 0;">No interests specified</p>';
+      }
+
+      // Dietary
+      if (profile.dietary_restrictions) {
+        document.getElementById('dietary-info').textContent = profile.dietary_restrictions;
+      }
+
+      // Load stats
+      loadUserStats();
+    }
+
+    async function loadUserStats() {
+      if (!currentUser) return;
+
+      try {
+        const response = await fetch(`/api/user/${currentUser.uid}/trips`);
+        const data = await response.json();
+
+        if (data.trips) {
+          document.getElementById('stat-trips').textContent = data.trips.length;
+
+          // Count unique countries
+          const countries = new Set(data.trips.map(trip => trip.destination?.split(',')[1]?.trim()).filter(Boolean));
+          document.getElementById('stat-countries').textContent = countries.size;
+
+          // Count experiences (placeholder)
+          document.getElementById('stat-experiences').textContent = data.trips.length * 3; // Estimate
+        }
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+      }
+    }
+
+    function showError(message) {
+      alert(message);
+    }
+  </script>
+</body>
+</html>

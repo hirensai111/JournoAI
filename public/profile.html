@@ -35,31 +35,42 @@
 
   <!-- Main Content -->
   <div style="min-height: calc(100vh - 80px); background: var(--bg-secondary); padding: 2rem 0;">
-    <div class="container" style="max-width: 900px;">
+    <div class="container" style="max-width: 1000px;">
 
       <!-- Profile Header -->
       <div class="card" style="margin-bottom: 2rem; position: relative; overflow: visible;">
-        <!-- Cover gradient -->
-        <div style="height: 120px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border-radius: var(--radius-lg) var(--radius-lg) 0 0; margin: -1.5rem -1.5rem 0 -1.5rem;"></div>
+        <!-- Cover -->
+        <div style="height: 120px; background: var(--primary); border-radius: var(--radius-lg) var(--radius-lg) 0 0; margin: -1.5rem -1.5rem 0 -1.5rem;"></div>
 
         <!-- Profile Info -->
-        <div style="position: relative; padding: 0 1.5rem;">
+        <div style="position: relative; padding: 0 2rem;">
           <!-- Avatar -->
-          <div style="position: absolute; top: -60px; width: 120px; height: 120px; border-radius: 50%; background: white; border: 4px solid white; display: grid; place-items: center; font-size: 3rem; font-weight: 600; color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.1);" id="profile-avatar">
+          <div style="position: absolute; top: -60px; width: 120px; height: 120px; border-radius: 50%; background: var(--bg-secondary); border: 4px solid white; display: grid; place-items: center; font-size: 2.5rem; font-weight: 600; color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.1);" id="profile-avatar">
             SM
           </div>
 
-          <div style="padding: 70px 0 1rem 140px; min-height: 80px;">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-              <div>
-                <h1 style="margin: 0 0 0.5rem 0;" id="profile-full-name">Loading...</h1>
-                <p style="color: var(--text-secondary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
-                  </svg>
-                  <span id="profile-location">Loading...</span>
-                </p>
+          <div style="padding: 70px 0 1.5rem 150px; min-height: 80px;">
+            <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+              <div style="flex: 1; min-width: 200px;">
+                <h1 style="margin: 0 0 0.75rem 0; font-size: 1.75rem; font-weight: 600;" id="profile-full-name">Loading...</h1>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <p style="color: var(--text-secondary); margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <span id="profile-location">Loading...</span>
+                  </p>
+                  <p style="color: var(--text-secondary); margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6"/>
+                      <line x1="8" y1="2" x2="8" y2="6"/>
+                      <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    <span>Member since <span id="profile-created-short">-</span></span>
+                  </p>
+                </div>
               </div>
               <button class="btn btn-primary" onclick="window.location.href='/onboarding.html'">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -74,62 +85,58 @@
       </div>
 
       <!-- Quick Stats -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-        <div class="card" style="text-align: center;">
-          <div style="font-size: 2rem; margin-bottom: 0.5rem;">🌍</div>
-          <p style="font-size: 1.5rem; font-weight: 600; margin: 0; color: var(--primary);" id="stat-trips">0</p>
-          <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">Trips Planned</p>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem;">
+        <div class="card" style="padding: 2rem;">
+          <p style="font-size: 0.813rem; color: var(--text-muted); margin: 0 0 0.75rem 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Trips Planned</p>
+          <p style="font-size: 2.5rem; font-weight: 700; margin: 0; color: var(--text);" id="stat-trips">0</p>
         </div>
-        <div class="card" style="text-align: center;">
-          <div style="font-size: 2rem; margin-bottom: 0.5rem;">📍</div>
-          <p style="font-size: 1.5rem; font-weight: 600; margin: 0; color: var(--primary);" id="stat-countries">0</p>
-          <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">Countries Visited</p>
+        <div class="card" style="padding: 2rem;">
+          <p style="font-size: 0.813rem; color: var(--text-muted); margin: 0 0 0.75rem 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Countries</p>
+          <p style="font-size: 2.5rem; font-weight: 700; margin: 0; color: var(--text);" id="stat-countries">0</p>
         </div>
-        <div class="card" style="text-align: center;">
-          <div style="font-size: 2rem; margin-bottom: 0.5rem;">✨</div>
-          <p style="font-size: 1.5rem; font-weight: 600; margin: 0; color: var(--primary);" id="stat-experiences">0</p>
-          <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.25rem;">Experiences</p>
+        <div class="card" style="padding: 2rem;">
+          <p style="font-size: 0.813rem; color: var(--text-muted); margin: 0 0 0.75rem 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Experiences</p>
+          <p style="font-size: 2.5rem; font-weight: 700; margin: 0; color: var(--text);" id="stat-experiences">0</p>
         </div>
       </div>
 
       <!-- Two Column Layout -->
-      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem;">
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+        <style>
+          @media (max-width: 768px) {
+            [style*="grid-template-columns: repeat(3, 1fr)"] {
+              grid-template-columns: 1fr !important;
+            }
+            [style*="grid-template-columns: 1fr 2fr"] {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        </style>
 
         <!-- Left Column - Personal Info -->
         <div>
           <!-- About -->
-          <div class="card" style="margin-bottom: 1.5rem;">
-            <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="8" r="5"/>
-                <path d="M20 21a8 8 0 1 0-16 0"/>
-              </svg>
-              About
-            </h3>
-            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <div class="card" style="margin-bottom: 2rem;">
+            <h3 style="margin: 0 0 1.75rem 0; padding-bottom: 1rem; border-bottom: 1px solid var(--border); font-size: 1.125rem; font-weight: 600; color: var(--text);">Personal Information</h3>
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
               <div>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.25rem 0; text-transform: uppercase; letter-spacing: 0.5px;">Age</p>
-                <p style="margin: 0; font-weight: 500;" id="profile-age">-</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.5rem 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Age</p>
+                <p style="margin: 0; font-weight: 500; font-size: 1rem; color: var(--text);" id="profile-age">-</p>
               </div>
               <div>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.25rem 0; text-transform: uppercase; letter-spacing: 0.5px;">Email</p>
-                <p style="margin: 0; font-weight: 500; word-break: break-word;" id="profile-email">-</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.5rem 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Email</p>
+                <p style="margin: 0; font-weight: 500; word-break: break-word; font-size: 0.875rem; color: var(--text);" id="profile-email">-</p>
               </div>
               <div>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.25rem 0; text-transform: uppercase; letter-spacing: 0.5px;">Travel Pace</p>
-                <p style="margin: 0; font-weight: 500; text-transform: capitalize;" id="profile-pace">-</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.5rem 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Travel Pace</p>
+                <p style="margin: 0; font-weight: 500; text-transform: capitalize; font-size: 1rem; color: var(--text);" id="profile-pace">-</p>
               </div>
             </div>
           </div>
 
           <!-- Health Conditions -->
           <div class="card">
-            <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20.8 7.6a5 5 0 0 0-8.8-2.9 5 5 0 0 0-8.8 2.9c0 5.2 8.8 9.8 8.8 9.8s8.8-4.6 8.8-9.8Z"/>
-              </svg>
-              Health & Accessibility
-            </h3>
+            <h3 style="margin: 0 0 1.75rem 0; padding-bottom: 1rem; border-bottom: 1px solid var(--border); font-size: 1.125rem; font-weight: 600; color: var(--text);">Health & Accessibility</h3>
             <div id="health-conditions-list">
               <!-- Will be populated -->
             </div>
@@ -139,46 +146,30 @@
         <!-- Right Column - Preferences & Dietary -->
         <div>
           <!-- Travel Preferences -->
-          <div class="card" style="margin-bottom: 1.5rem;">
-            <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20.8 7.6a5 5 0 0 0-8.8-2.9 5 5 0 0 0-8.8 2.9c0 5.2 8.8 9.8 8.8 9.8s8.8-4.6 8.8-9.8Z"/>
-              </svg>
-              Travel Interests
-            </h3>
-            <div id="interests-list" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          <div class="card" style="margin-bottom: 2rem;">
+            <h3 style="margin: 0 0 1.75rem 0; padding-bottom: 1rem; border-bottom: 1px solid var(--border); font-size: 1.125rem; font-weight: 600; color: var(--text);">Travel Interests</h3>
+            <div id="interests-list" style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
               <!-- Will be populated -->
             </div>
           </div>
 
           <!-- Dietary Restrictions -->
-          <div class="card" style="margin-bottom: 1.5rem;">
-            <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-              </svg>
-              Dietary Preferences
-            </h3>
-            <p id="dietary-info" style="margin: 0; color: var(--text-secondary);">None specified</p>
+          <div class="card" style="margin-bottom: 2rem;">
+            <h3 style="margin: 0 0 1.75rem 0; padding-bottom: 1rem; border-bottom: 1px solid var(--border); font-size: 1.125rem; font-weight: 600; color: var(--text);">Dietary Preferences</h3>
+            <p id="dietary-info" style="margin: 0; color: var(--text-secondary); font-size: 0.938rem;">None specified</p>
           </div>
 
           <!-- Account Info -->
           <div class="card">
-            <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-              </svg>
-              Account
-            </h3>
-            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <h3 style="margin: 0 0 1.75rem 0; padding-bottom: 1rem; border-bottom: 1px solid var(--border); font-size: 1.125rem; font-weight: 600; color: var(--text);">Account Information</h3>
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
               <div>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.25rem 0; text-transform: uppercase; letter-spacing: 0.5px;">Member Since</p>
-                <p style="margin: 0; font-weight: 500;" id="profile-created">-</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.5rem 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Member Since</p>
+                <p style="margin: 0; font-weight: 500; font-size: 1rem; color: var(--text);" id="profile-created">-</p>
               </div>
               <div>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.25rem 0; text-transform: uppercase; letter-spacing: 0.5px;">User ID</p>
-                <p style="margin: 0; font-family: monospace; font-size: 0.75rem; color: var(--text-secondary);" id="profile-user-id">-</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.5rem 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">User ID</p>
+                <p style="margin: 0; font-family: monospace; font-size: 0.813rem; color: var(--text-secondary); word-break: break-all;" id="profile-user-id">-</p>
               </div>
             </div>
           </div>
@@ -201,16 +192,7 @@
     let currentUser = null;
     let userProfile = null;
 
-    // Icon mapping for health conditions
-    const conditionIcons = {
-      'wheelchair_user': '♿',
-      'type_1_diabetes': '💉',
-      'type_2_diabetes': '🩸',
-      'food_allergies': '🥜',
-      'hearing_impairment': '👂',
-      'visual_impairment': '👁️'
-    };
-
+    // Condition names mapping
     const conditionNames = {
       'wheelchair_user': 'Wheelchair User',
       'type_1_diabetes': 'Type 1 Diabetes',
@@ -218,15 +200,6 @@
       'food_allergies': 'Food Allergies',
       'hearing_impairment': 'Hearing Impairment',
       'visual_impairment': 'Visual Impairment'
-    };
-
-    const interestIcons = {
-      'food_culinary': '🍴',
-      'history_culture': '🏛️',
-      'nature_outdoors': '🌳',
-      'art_museums': '🎨',
-      'shopping': '🛍️',
-      'nightlife': '🌃'
     };
 
     const interestNames = {
@@ -307,37 +280,43 @@
         });
       }
 
+      // Created date short version
+      if (profile.created_at) {
+        const date = new Date(profile.created_at);
+        document.getElementById('profile-created-short').textContent = date.toLocaleDateString('en-US', {
+          month: 'short',
+          year: 'numeric'
+        });
+      }
+
       // Health Conditions
       const conditionsContainer = document.getElementById('health-conditions-list');
       if (profile.conditions && profile.conditions.length > 0) {
         conditionsContainer.innerHTML = profile.conditions.map(condition => {
-          const icon = conditionIcons[condition] || '•';
-          const name = conditionNames[condition] || condition;
+          const name = conditionNames[condition] || condition.replace(/_/g, ' ');
           return `
-            <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: var(--radius-lg); margin-bottom: 0.5rem;">
-              <span style="font-size: 1.5rem;">${icon}</span>
-              <span style="font-weight: 500;">${name}</span>
+            <div style="padding: 0.875rem 0; border-bottom: 1px solid var(--border);">
+              <span style="font-weight: 500; font-size: 0.938rem; color: var(--text);">${name}</span>
             </div>
           `;
         }).join('');
       } else {
-        conditionsContainer.innerHTML = '<p style="color: var(--text-secondary); margin: 0;">No health conditions specified</p>';
+        conditionsContainer.innerHTML = '<p style="color: var(--text-secondary); margin: 0; font-size: 0.938rem;">No health conditions specified</p>';
       }
 
       // Interests
       const interestsContainer = document.getElementById('interests-list');
       if (profile.interests && profile.interests.length > 0) {
         interestsContainer.innerHTML = profile.interests.map(interest => {
-          const icon = interestIcons[interest] || '✨';
           const name = interestNames[interest] || interest.replace(/_/g, ' ');
           return `
-            <span style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-xl); font-size: 0.875rem; font-weight: 500;">
-              ${icon} ${name}
+            <span style="display: inline-block; padding: 0.625rem 1.125rem; background: var(--bg-secondary); color: var(--text); border-radius: var(--radius-md); font-size: 0.875rem; font-weight: 500; border: 1px solid var(--border);">
+              ${name}
             </span>
           `;
         }).join('');
       } else {
-        interestsContainer.innerHTML = '<p style="color: var(--text-secondary); margin: 0;">No interests specified</p>';
+        interestsContainer.innerHTML = '<p style="color: var(--text-secondary); margin: 0; font-size: 0.938rem;">No interests specified</p>';
       }
 
       // Dietary

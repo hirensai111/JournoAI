@@ -21,12 +21,12 @@
         <li><a href="#features" class="navbar-link">Features</a></li>
         <li><a href="#how-it-works" class="navbar-link">How it works</a></li>
         <li><a href="#trust" class="navbar-link">Trust & Privacy</a></li>
-        <li><a href="#sarah-story" class="navbar-link">Sarah's Story</a></li>
       </ul>
 
       <div class="navbar-actions">
-        <a href="/signin.html" class="btn btn-ghost">Sign in</a>
-        <a href="/signup.html" class="btn btn-primary">Start free</a>
+        <a href="/signin.html" class="btn btn-ghost" id="nav-signin">Sign in</a>
+        <a href="/dashboard.html" class="btn btn-ghost" id="nav-dashboard" style="display: none;">Dashboard</a>
+        <a href="/signup.html" class="btn btn-primary" id="nav-signup">Start free</a>
       </div>
     </div>
   </nav>
@@ -251,11 +251,12 @@
     <div class="container">
       <h2 style="color: white; font-size: 2rem; margin-bottom: 1rem;">Ready to travel with confidence?</h2>
       <p style="color: rgba(255, 255, 255, 0.9); font-size: 1.125rem; margin-bottom: 2rem; max-width: 36rem; margin-left: auto; margin-right: auto;">
-        Join travelers like Sarah who are exploring the world with personalized health support.
+        Join travelers who are exploring the world with personalized health support.
       </p>
       <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-        <a href="/signup.html" class="btn btn-lg" style="background: white; color: var(--primary);">Start planning free</a>
-        <a href="/signin.html" class="btn btn-lg" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.3); color: white;">Sign in</a>
+        <a href="/signup.html" class="btn btn-lg" style="background: white; color: var(--primary);" id="cta-signup">Start planning free</a>
+        <a href="/signin.html" class="btn btn-lg" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.3); color: white;" id="cta-signin">Sign in</a>
+        <a href="/dashboard.html" class="btn btn-lg" style="background: white; color: var(--primary); display: none;" id="cta-dashboard">Go to Dashboard</a>
       </div>
     </div>
   </section>
@@ -272,7 +273,6 @@
           <a href="#features" style="color: var(--text-secondary);">Features</a>
           <a href="#how-it-works" style="color: var(--text-secondary);">How it works</a>
           <a href="#trust" style="color: var(--text-secondary);">Privacy</a>
-          <a href="#sarah-story" style="color: var(--text-secondary);">Sarah's Story</a>
           <a href="/terms.html" style="color: var(--text-secondary);">Terms</a>
         </div>
       </div>
@@ -298,14 +298,26 @@
       });
     });
 
-    // If user is already signed in, show different CTA
+    // If user is already signed in, show dashboard links instead of sign in
     window.firebaseAuth.onAuthStateChanged((user) => {
       if (user) {
-        // Update CTAs to go to dashboard
-        document.querySelectorAll('a[href="/signup.html"]').forEach(link => {
-          link.href = '/dashboard.html';
-          link.textContent = 'Go to Dashboard';
-        });
+        // Hide sign in buttons
+        const navSignin = document.getElementById('nav-signin');
+        const ctaSignin = document.getElementById('cta-signin');
+        const navSignup = document.getElementById('nav-signup');
+        const ctaSignup = document.getElementById('cta-signup');
+        
+        if (navSignin) navSignin.style.display = 'none';
+        if (ctaSignin) ctaSignin.style.display = 'none';
+        if (navSignup) navSignup.style.display = 'none';
+        if (ctaSignup) ctaSignup.style.display = 'none';
+        
+        // Show dashboard buttons
+        const navDashboard = document.getElementById('nav-dashboard');
+        const ctaDashboard = document.getElementById('cta-dashboard');
+        
+        if (navDashboard) navDashboard.style.display = 'inline-block';
+        if (ctaDashboard) ctaDashboard.style.display = 'inline-block';
       }
     });
   </script>

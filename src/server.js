@@ -3,6 +3,7 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import ExperienceRecommender from './recommender.js';
 import ConversationManager from './conversationManager.js';
+import ChecklistGenerator from './checklistGenerator.js';
 import dotenv from 'dotenv';
 import FlightSearch from './flightModule.js';
 
@@ -34,6 +35,7 @@ app.use('/api/', limiter);
 let recommender;
 let conversationManager;
 let flightSearch;
+let checklistGenerator;
 
 // In-memory session storage
 const sessions = new Map();
@@ -204,8 +206,8 @@ app.get('/api/airports/search', async (req, res) => {
     const { q } = req.query;
 
     if (!q || q.length < 2) {
-      return res.status(400).json({ 
-        error: 'Query must be at least 2 characters' 
+      return res.status(400).json({
+        error: 'Query must be at least 2 characters'
       });
     }
 
@@ -214,8 +216,60 @@ app.get('/api/airports/search', async (req, res) => {
 
   } catch (error) {
     console.error('Airport search error:', error);
-    res.status(500).json({ 
-      error: 'Failed to search airports' 
+    res.status(500).json({
+      error: 'Failed to search airports'
+    });
+  }
+});
+
+// Checklist generation endpoint
+app.post('/api/checklist/generate', async (req, res) => {
+  try {
+    const {
+      conditions = [],
+      destination = '',
+      tripDuration = 7,
+      travelDate = null,
+      soloTravel = false
+    } = req.body;
+
+    if (!conditions || conditions.length === 0) {
+      return res.status(400).json({
+        error: 'At least one health condition is required'
+      });
+    }
+
+    console.log(`📋 Generating checklist for ${conditions.join(', ')} → ${destination}`);
+
+    const checklist = await checklistGenerator.generateChecklist({
+      conditions,
+      destination,
+      tripDuration,
+      travelDate,
+      soloTravel
+    });
+
+    res.json({
+      checklist,
+      generated_for: {
+        conditions,
+        destination,
+        trip_duration: tripDuration,
+        travel_date: travelDate
+      },
+      summary: {
+        total_categories: checklist.categories.length,
+        total_items: checklist.categories.reduce((sum, cat) => sum + cat.items.length, 0),
+        critical_items: checklist.critical_count,
+        high_priority_items: checklist.high_priority_count
+      }
+    });
+
+  } catch (error) {
+    console.error('Checklist generation error:', error);
+    res.status(500).json({
+      error: 'Failed to generate checklist',
+      message: error.message
     });
   }
 });
@@ -243,12 +297,17 @@ async function startServer() {
     
     console.log('🤖 Initializing Conversation Manager...');
     conversationManager = new ConversationManager(recommender);
-    
+
     // Initialize flight search
     console.log('✈️  Initializing Flight Search...');
     flightSearch = new FlightSearch();
     console.log('✅ Flight search ready\n');
-    
+
+    // Initialize checklist generator
+    console.log('📋 Initializing Checklist Generator...');
+    checklistGenerator = new ChecklistGenerator();
+    console.log('✅ Checklist generator ready\n');
+
     app.listen(PORT, () => {
       console.log(`🌐 Server listening on http://localhost:${PORT}`);
       console.log(`📊 Available endpoints:`);
@@ -259,6 +318,7 @@ async function startServer() {
       console.log(`   GET  /api/stats - Get database statistics`);
       console.log(`   POST /api/flights/search - Search flights`);
       console.log(`   GET  /api/airports/search - Search airports`);
+      console.log(`   POST /api/checklist/generate - Generate travel checklist`);
       console.log(`   GET  /api/health - Health check`);
     });
   } catch (error) {

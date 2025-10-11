@@ -1,8 +1,13 @@
 # Journey AI - Global Travel Recommendation System
 
+> **"Journey AI gave me back my independence. I'm finally going to Rome!"**
+> — Sarah Mitchell, wheelchair user & Type 1 diabetic, Austin, TX
+
 ## 🌍 What We Built
 
 An AI-powered travel planning system that helps travelers discover authentic, inclusive experiences across **18 countries and 325+ curated locations**.
+
+**Journey AI makes the impossible possible** for travelers with disabilities, dietary restrictions, and mobility needs.
 
 ### Key Features
 - ✅ **Global Coverage:** 18 countries across 5 continents
@@ -10,6 +15,9 @@ An AI-powered travel planning system that helps travelers discover authentic, in
 - ✅ **Semantic Search:** AI-powered recommendations based on meaning, not just keywords
 - ✅ **Conversational Interface:** Natural language trip planning via LangChain + GPT-4
 - ✅ **Multi-Country Support:** Plan trips across multiple destinations seamlessly
+- ✨ **NEW: Custom Health Checklists:** Personalized travel prep lists for travelers with disabilities/health conditions
+- ✨ **NEW: Morning Wellness Check-In:** Daily health tracking with automatic itinerary adjustment
+- ✨ **NEW: Day-by-Day Activity Checklists:** Real-time progress tracking with medical checkpoints and packing lists
 
 ### Database Stats
 - **325+ experiences** across 18 countries
@@ -58,10 +66,8 @@ node test-maria-global.js
 
 ## 📡 API Endpoints
 
-### POST /api/recommend
-Get personalized recommendations
-
-**Request:**
+### Core Recommendations
+**POST /api/recommend** - Get personalized recommendations
 ```json
 {
   "query": "authentic local food experiences",
@@ -76,10 +82,7 @@ Get personalized recommendations
 }
 ```
 
-### POST /api/chat
-Conversational trip planning
-
-**Request:**
+**POST /api/chat** - Conversational trip planning
 ```json
 {
   "message": "I need help planning a trip to Paris",
@@ -87,14 +90,34 @@ Conversational trip planning
 }
 ```
 
-### GET /api/stats
-Database statistics
+**GET /api/stats** - Database statistics
+**GET /api/experiences** - Filter experiences by country/city/type
+**GET /api/experiences/:id** - Get single experience details
 
-### GET /api/experiences
-Filter experiences by country/city/type
+### Wellness & Health Management
+**POST /api/wellness/checkin** - Morning wellness check-in
+```json
+{
+  "session_id": "user-123",
+  "trip_day": 2,
+  "sleep_score": 2,
+  "energy_score": 2,
+  "pain_level": 1,
+  "conditions": ["wheelchair_user", "type_1_diabetes"],
+  "current_itinerary": { /* day object */ }
+}
+```
 
-### GET /api/experiences/:id
-Get single experience details
+**GET /api/wellness/trend/:session_id** - Get wellness trend analysis
+**POST /api/checklist/generate** - Generate pre-trip health checklist
+**POST /api/checklist/daily** - Generate daily activity checklist
+**PATCH /api/checklist/daily/:session/:day/item/:id** - Update checklist item
+**GET /api/checklist/daily/:session/:day** - Get daily checklist
+
+### Trip Planning
+**POST /api/itinerary/generate** - Generate complete trip itinerary
+**POST /api/flights/search** - Search flights with accessibility
+**GET /api/airports/search** - Airport autocomplete
 
 ## 🏗️ Architecture
 
@@ -122,16 +145,90 @@ Get single experience details
 
 ## 🎯 For Demo/Judging
 
-**Maria's Journey:**
-1. Tokyo: Wheelchair-accessible cultural experiences + kosher dining
-2. Paris: Art galleries + authentic French cuisine
-3. Rio: Carnival experiences + Afro-Brazilian culture
+### 👩‍🦽 **Meet Sarah Mitchell: Our Hackathon Story**
 
-**Demonstrates:**
-- Global scale (18 countries)
-- Inclusion depth (accessibility + cultural diversity)
-- Semantic search intelligence
-- Conversational UX
+**Who:** 40-year-old freelance designer from Austin, TX
+**Challenges:** Wheelchair user + Type 1 Diabetic (insulin-dependent)
+**Dream:** Visit Rome independently for the first time
+**Barriers:**
+- Medical anxiety: "What if I have a diabetic emergency abroad?"
+- Accessibility concerns: "Are ancient Roman sites wheelchair accessible?"
+- Solo travel fear: "What if something goes wrong and I'm alone?"
+- Fatigue management: "How do I pace myself without overdoing it?"
+- Insulin management: "How do I keep insulin cold in Rome's heat?"
+
+### 💪 **How Journey AI Helps Sarah:**
+
+**Before Journey AI:**
+- ❌ Too scared to travel internationally alone
+- ❌ Hours of research, still uncertain about accessibility
+- ❌ Gave up on Rome dream multiple times
+
+**With Journey AI:**
+- ✅ Found 100% wheelchair-accessible Rome itinerary in 10 minutes
+- ✅ All restaurants verified for diabetic-friendly options
+- ✅ Activity levels paced for her energy (low-moderate only)
+- ✅ Medical facilities mapped near every venue
+- ✅ Schedule avoids peak heat for insulin safety
+- ✅ Emergency contacts and medical phrases ready
+- ✅ **Sarah is booking her Rome trip!**
+
+### 🧪 **Try Sarah's Demos:**
+```bash
+# See how Journey AI plans Sarah's Rome trip
+node test-sarah-rome-trip.js
+
+# Generate Sarah's personalized travel checklist
+node test-sarah-checklist.js
+
+# Test wellness check-in and daily activity checklist (Day 2 in Rome)
+node test-sarah-wellness.js
+
+# Or test the Paris flight booking (2 people, Nov 11)
+node test-all-capabilities.js
+```
+
+### 📋 **New Features for Travelers with Health Conditions**
+
+Journey AI includes **real-time health monitoring and adaptive trip management**:
+
+#### **Feature 1: Pre-Trip Health Checklist**
+Personalized travel prep lists (23 items, 14 critical)
+- 2-week timeline organization
+- Medical supplies, documentation, emergency prep
+- Destination-specific recommendations
+- [Documentation →](CHECKLIST_FEATURE.md)
+
+#### **Feature 4: Morning Wellness Check-In** ☀️
+Daily health tracking with automatic itinerary adjustment
+- 2-minute check-in (sleep, energy, pain)
+- Wellness score (0-100) with personalized recommendations
+- Auto-adjusts activities when you're tired or in pain
+- **Sarah's Day 2**: Wellness 33/100 → itinerary reduced 50%
+
+#### **Feature 5: Day-by-Day Activity Checklist** 📅
+Real-time progress tracking with medical checkpoints
+- 17 daily tasks organized by time (morning/activity/evening)
+- Medical tracking: insulin doses, glucose checks, meals
+- Smart packing lists with 🚨 critical items flagged
+- Progress bar: 5/17 complete (29%)
+- **Never miss**: insulin, glucose, or critical medications
+
+**Complete Documentation:**
+- [Wellness Features Guide](WELLNESS_FEATURES.md) - Full API and UI specs
+- [Implementation Summary](FEATURES_4_5_COMPLETE.md) - Technical details and test results
+
+**Sarah's story shows:**
+- ✨ Inclusion-first design that changes lives
+- ✨ AI that understands complex, intersecting needs
+- ✨ Technology that enables independence and dignity
+- ✨ Making impossible dreams possible
+
+---
+
+### 📚 **Full Story:**
+- [SARAH_STORY.md](SARAH_STORY.md) - Complete journey and impact
+- [test-sarah-rome-trip.js](test-sarah-rome-trip.js) - Interactive demo
 
 ## 🚀 Deployment Guide
 

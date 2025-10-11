@@ -1,0 +1,30 @@
+# Journey AI - Node.js Dependencies
+# This is for documentation purposes. Install using: npm install
+# All dependencies are defined in package.json
+
+# Core Dependencies:
+express@5.1.0                    # Web server framework
+cors@2.8.5                       # Cross-Origin Resource Sharing middleware
+dotenv@17.2.3                    # Environment variable loader
+express-rate-limit@8.1.0         # API rate limiting
+
+# AI & Machine Learning:
+openai@6.3.0                     # OpenAI API client (GPT-4, Embeddings)
+@langchain/core@0.3.78          # LangChain core framework
+@langchain/openai@0.6.14        # LangChain OpenAI integration
+
+# External APIs:
+amadeus@11.0.0                   # Amadeus flight search API client
+axios@1.12.2                     # HTTP client for API requests
+
+# Installation Instructions:
+# 1. Make sure Node.js 18+ is installed
+# 2. Run: npm install
+# 3. Configure .env file with your API keys
+# 4. Start server: node server-production.js
+
+# Environment Variables Required:
+# - OPENAI_API_KEY (required)
+# - PORT (optional, default: 3001)
+# - AMADEUS_API_KEY (optional, uses demo mode without it)
+# - AMADEUS_API_SECRET (optional, uses demo mode without it)

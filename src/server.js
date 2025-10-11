@@ -4,6 +4,8 @@ import rateLimit from 'express-rate-limit';
 import ExperienceRecommender from './recommender.js';
 import ConversationManager from './conversationManager.js';
 import dotenv from 'dotenv';
+import FlightSearch from './flightModule.js';
+
 
 dotenv.config();
 
@@ -31,6 +33,7 @@ app.use('/api/', limiter);
 // Initialize recommender and conversation manager
 let recommender;
 let conversationManager;
+let flightSearch;
 
 // In-memory session storage
 const sessions = new Map();
@@ -161,6 +164,62 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Flight search endpoint
+app.post('/api/flights/search', async (req, res) => {
+  try {
+    const { origin, destination, departureDate, returnDate, accessibility } = req.body;
+
+    if (!origin || !destination || !departureDate) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: origin, destination, departureDate' 
+      });
+    }
+
+    const flights = await flightSearch.searchFlights({
+      origin,
+      destination,
+      departureDate,
+      returnDate,
+      accessibility: accessibility || []
+    });
+
+    res.json({
+      flights,
+      search: { origin, destination, departureDate, returnDate },
+      total: flights.length
+    });
+
+  } catch (error) {
+    console.error('Flight search error:', error);
+    res.status(500).json({ 
+      error: 'Failed to search flights',
+      message: error.message 
+    });
+  }
+});
+
+// Airport autocomplete endpoint
+app.get('/api/airports/search', async (req, res) => {
+  try {
+    const { q } = req.query;
+
+    if (!q || q.length < 2) {
+      return res.status(400).json({ 
+        error: 'Query must be at least 2 characters' 
+      });
+    }
+
+    const airports = await flightSearch.searchAirports(q);
+    res.json({ airports });
+
+  } catch (error) {
+    console.error('Airport search error:', error);
+    res.status(500).json({ 
+      error: 'Failed to search airports' 
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
@@ -185,6 +244,11 @@ async function startServer() {
     console.log('🤖 Initializing Conversation Manager...');
     conversationManager = new ConversationManager(recommender);
     
+    // Initialize flight search
+    console.log('✈️  Initializing Flight Search...');
+    flightSearch = new FlightSearch();
+    console.log('✅ Flight search ready\n');
+    
     app.listen(PORT, () => {
       console.log(`🌐 Server listening on http://localhost:${PORT}`);
       console.log(`📊 Available endpoints:`);
@@ -193,6 +257,8 @@ async function startServer() {
       console.log(`   GET  /api/experiences - List experiences`);
       console.log(`   GET  /api/experiences/:id - Get single experience`);
       console.log(`   GET  /api/stats - Get database statistics`);
+      console.log(`   POST /api/flights/search - Search flights`);
+      console.log(`   GET  /api/airports/search - Search airports`);
       console.log(`   GET  /api/health - Health check`);
     });
   } catch (error) {

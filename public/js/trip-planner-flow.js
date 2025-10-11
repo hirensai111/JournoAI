@@ -664,6 +664,21 @@ async function generateMockItinerary(destination, startDate, endDate) {
     const activitiesPerDay = 3;
     const totalActivities = tripDays * activitiesPerDay;
 
+    // If we don't have enough experiences, generate more using AI
+    if (experiences.length < totalActivities) {
+      console.log(`Only ${experiences.length} experiences available, need ${totalActivities}. Generating more with AI...`);
+      addChatMessage(`Found ${experiences.length} curated experiences. Generating ${totalActivities - experiences.length} more personalized recommendations...`, 'assistant');
+
+      const prefs = planningState.preferences;
+      const additionalExperiences = await generateAIExperiences(
+        destination,
+        totalActivities - experiences.length,
+        prefs
+      );
+
+      experiences = [...experiences, ...additionalExperiences];
+    }
+
     // Select diverse experiences for the full trip
     const selectedExperiences = selectDiverseExperiences(experiences, totalActivities);
 
@@ -691,6 +706,106 @@ async function generateMockItinerary(destination, startDate, endDate) {
     console.error('Error generating itinerary:', error);
     return generateFallbackItinerary(destination, 3);
   }
+}
+
+/**
+ * Generate additional experiences using AI when database doesn't have enough
+ */
+async function generateAIExperiences(destination, count, preferences) {
+  try {
+    // Call backend API to generate experiences using AI
+    const response = await fetch('/api/itinerary/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        destination: destination,
+        days: Math.ceil(count / 3), // Convert activity count to days
+        preferences: {
+          interests: ['museums', 'food'], // From user message "love museums and food"
+          budget: preferences.budget || 'mid',
+          accessibility_needs: []
+        },
+        travelers: preferences.travelers || 2
+      })
+    });
+
+    if (!response.ok) {
+      console.error('AI experience generation failed:', response.status);
+      return generateGenericExperiences(destination, count);
+    }
+
+    const data = await response.json();
+
+    // Transform API response to experience format
+    const aiExperiences = [];
+    if (data.itinerary && data.itinerary.days) {
+      for (const day of data.itinerary.days) {
+        for (const activity of day.activities) {
+          aiExperiences.push({
+            name: activity.title || activity.name,
+            description: activity.description,
+            type: inferTypeFromActivity(activity),
+            city: destination,
+            accessibility_notes: activity.accessibility_info || 'Please check with venue'
+          });
+        }
+      }
+    }
+
+    return aiExperiences.slice(0, count);
+  } catch (error) {
+    console.error('Error generating AI experiences:', error);
+    return generateGenericExperiences(destination, count);
+  }
+}
+
+/**
+ * Infer experience type from activity details
+ */
+function inferTypeFromActivity(activity) {
+  const title = (activity.title || activity.name || '').toLowerCase();
+
+  if (title.includes('museum') || title.includes('gallery')) return 'museum';
+  if (title.includes('market')) return 'market';
+  if (title.includes('restaurant') || title.includes('dining')) return 'restaurant';
+  if (title.includes('cafe') || title.includes('coffee')) return 'cafe';
+  if (title.includes('tour') || title.includes('walk')) return 'tour';
+  if (title.includes('park') || title.includes('garden')) return 'park';
+  if (title.includes('church') || title.includes('cathedral')) return 'church';
+
+  return 'cultural_site';
+}
+
+/**
+ * Generate generic experiences when AI fails
+ */
+function generateGenericExperiences(destination, count) {
+  const genericTypes = [
+    { name: `${destination} City Museum`, type: 'museum', description: 'Explore the city\'s rich history and culture through fascinating exhibits' },
+    { name: `Local Food Market`, type: 'market', description: 'Browse fresh local produce and artisanal goods at the neighborhood market' },
+    { name: `Traditional Restaurant`, type: 'restaurant', description: 'Enjoy authentic local cuisine at a family-owned restaurant' },
+    { name: `Historic Walking Tour`, type: 'tour', description: 'Discover the city\'s historic landmarks with a knowledgeable local guide' },
+    { name: `Art Gallery Visit`, type: 'cultural_site', description: 'Admire contemporary and classical art at the city\'s premier gallery' },
+    { name: `City Park`, type: 'park', description: 'Relax in beautiful green spaces and gardens in the heart of the city' },
+    { name: `Local Cafe`, type: 'cafe', description: 'Experience local coffee culture at a charming neighborhood cafe' },
+    { name: `Cathedral Visit`, type: 'church', description: 'Marvel at stunning architecture at the city\'s historic cathedral' },
+    { name: `Culinary Tour`, type: 'tour', description: 'Sample local specialties and learn about the city\'s food culture' },
+    { name: `Contemporary Art Museum`, type: 'museum', description: 'Discover modern and contemporary art from local and international artists' },
+    { name: `Botanical Garden`, type: 'park', description: 'Stroll through beautifully landscaped gardens featuring diverse plant collections' },
+    { name: `Street Food Experience`, type: 'restaurant', description: 'Taste authentic street food and local snacks from popular vendors' }
+  ];
+
+  const experiences = [];
+  for (let i = 0; i < count; i++) {
+    const template = genericTypes[i % genericTypes.length];
+    experiences.push({
+      ...template,
+      city: destination,
+      accessibility_notes: 'Wheelchair accessible, please confirm with venue'
+    });
+  }
+
+  return experiences;
 }
 
 /**

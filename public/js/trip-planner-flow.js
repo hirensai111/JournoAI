@@ -30,6 +30,19 @@ async function handleChatSubmit() {
   addChatMessage(text, 'user');
   input.value = '';
 
+  // If we already have preferences and user is providing additional info (like dates)
+  if (planningState.preferences) {
+    const dateInfo = parseDateFromMessage(text);
+    if (dateInfo.startDate) {
+      planningState.preferences.startDate = dateInfo.startDate;
+      planningState.preferences.endDate = dateInfo.endDate;
+
+      addChatMessage(`Got it! Updated your trip dates to ${dateInfo.startDate}. Refreshing flight options...`, 'assistant');
+      await fetchAndDisplayFlights(planningState.preferences);
+      return;
+    }
+  }
+
   // Parse the message
   const prefs = parseTripMessage(text);
 
@@ -45,6 +58,51 @@ async function handleChatSubmit() {
 
   // Fetch flights
   await fetchAndDisplayFlights(prefs);
+}
+
+/**
+ * Parse date from message (for follow-up date specifications)
+ */
+function parseDateFromMessage(text) {
+  const result = {
+    startDate: null,
+    endDate: null
+  };
+
+  // Handle formats like "11th nov", "Nov 11", "November 11th", "11 November"
+  const months = {
+    jan: '01', january: '01',
+    feb: '02', february: '02',
+    mar: '03', march: '03',
+    apr: '04', april: '04',
+    may: '05',
+    jun: '06', june: '06',
+    jul: '07', july: '07',
+    aug: '08', august: '08',
+    sep: '09', september: '09',
+    oct: '10', october: '10',
+    nov: '11', november: '11',
+    dec: '12', december: '12'
+  };
+
+  // Try to match: "11th nov" or "nov 11" or "november 11th"
+  const datePattern = /(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)(?:\s+(\d{4}))?/i;
+  const match = text.toLowerCase().match(datePattern);
+
+  if (match) {
+    const day = match[1].padStart(2, '0');
+    const monthName = match[2].toLowerCase();
+    const month = months[monthName];
+    const year = match[3] || new Date().getFullYear();
+
+    result.startDate = `${year}-${month}-${day}`;
+    // Default to 7 days later for end date
+    const endDate = new Date(result.startDate);
+    endDate.setDate(endDate.getDate() + 7);
+    result.endDate = endDate.toISOString().split('T')[0];
+  }
+
+  return result;
 }
 
 /**
@@ -87,11 +145,11 @@ function parseTripMessage(text) {
     prefs.budget = 'premium';
   }
 
-  // Extract dates if provided (format: Oct 31 to Nov 6 or 2025-10-31 to 2025-11-06)
-  const dateMatch = text.match(/(\w+\s+\d+|\d{4}-\d{2}-\d{2})\s+to\s+(\w+\s+\d+|\d{4}-\d{2}-\d{2})/i);
-  if (dateMatch) {
-    prefs.startDate = dateMatch[1];
-    prefs.endDate = dateMatch[2];
+  // Try to parse dates using the new function
+  const dateInfo = parseDateFromMessage(text);
+  if (dateInfo.startDate) {
+    prefs.startDate = dateInfo.startDate;
+    prefs.endDate = dateInfo.endDate;
   }
 
   return prefs;
@@ -151,9 +209,23 @@ function generateFlightOptions(baseFlight, prefs) {
   const carriers = ['American Airlines', 'United Airlines', 'Delta', 'Southwest'];
   const cabins = prefs.budget === 'premium' ? ['BUSINESS', 'FIRST'] : ['ECONOMY', 'PREMIUM_ECONOMY'];
 
+  // Base duration: Austin to Rome is roughly 11-14 hours
+  const baseDuration = 660; // 11 hours in minutes
+
   for (let i = 0; i < 5; i++) {
     const price = baseFlight.priceTotal + (Math.random() * 400 - 200);
     const stops = i % 3 === 0 ? 0 : i % 3 === 1 ? 1 : 2;
+
+    // Calculate realistic duration based on stops
+    // Direct: 11-12 hours
+    // 1 stop: 13-15 hours (add 2-3 hours layover)
+    // 2 stops: 16-18 hours (add 4-6 hours total layover)
+    let duration = baseDuration + (Math.random() * 60); // Add 0-60 min variance
+    if (stops === 1) {
+      duration += 120 + (Math.random() * 60); // Add 2-3 hours
+    } else if (stops === 2) {
+      duration += 300 + (Math.random() * 60); // Add 5-6 hours
+    }
 
     flights.push({
       id: `flight-${i}`,
@@ -164,7 +236,7 @@ function generateFlightOptions(baseFlight, prefs) {
       currency: 'USD',
       departureAirport: baseFlight.segments[0]?.from || 'AUS',
       arrivalAirport: baseFlight.segments[baseFlight.segments.length - 1]?.to || 'FCO',
-      duration: baseFlight.segments.reduce((sum, seg) => sum + (seg.durationMinutes || 120), 0) + stops * 60
+      duration: Math.round(duration)
     });
   }
 

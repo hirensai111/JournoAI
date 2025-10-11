@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome - Journey AI</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card" style="max-width: 40rem;">
+      <div class="auth-header">
+        <div class="auth-logo">JA</div>
+        <h1 class="auth-title">Welcome to Journey AI!</h1>
+        <p class="auth-description">Let's personalize your travel experience</p>
+      </div>
+
+      <!-- Progress Steps -->
+      <div style="display: flex; justify-content: space-between; margin-bottom: 2rem; position: relative;">
+        <div style="position: absolute; top: 1rem; left: 0; right: 0; height: 2px; background: var(--border); z-index: 0;"></div>
+        <div id="progress-bar" style="position: absolute; top: 1rem; left: 0; height: 2px; background: var(--primary); z-index: 0; width: 0%; transition: width 0.3s;"></div>
+
+        <div class="step-indicator active" id="step-1-indicator">
+          <div class="step-number">1</div>
+          <div class="step-label">Profile</div>
+        </div>
+        <div class="step-indicator" id="step-2-indicator">
+          <div class="step-number">2</div>
+          <div class="step-label">Health</div>
+        </div>
+        <div class="step-indicator" id="step-3-indicator">
+          <div class="step-number">3</div>
+          <div class="step-label">Preferences</div>
+        </div>
+      </div>
+
+      <!-- Step 1: Basic Profile -->
+      <div id="step-1" class="onboarding-step">
+        <h3 style="margin-bottom: 1.5rem;">Tell us about yourself</h3>
+
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" id="full-name" class="form-input" placeholder="Sarah Mitchell" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Age</label>
+          <input type="number" id="age" class="form-input" min="1" max="120" placeholder="40" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Location (City, Country)</label>
+          <input type="text" id="location" class="form-input" placeholder="Austin, Texas" />
+        </div>
+
+        <button class="btn btn-primary btn-lg" style="width: 100%;" onclick="goToStep(2)">
+          Continue
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Step 2: Health Information -->
+      <div id="step-2" class="onboarding-step hidden">
+        <h3 style="margin-bottom: 1rem;">Health & Accessibility</h3>
+        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+          This helps us create safe, personalized itineraries. All information is private and encrypted.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Health Conditions (select all that apply)</label>
+          <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.75rem;">
+            <label class="checkbox-card">
+              <input type="checkbox" value="wheelchair_user" />
+              <div class="checkbox-content">
+                <span class="checkbox-icon">♿</span>
+                <div>
+                  <div class="checkbox-title">Wheelchair User</div>
+                  <div class="checkbox-description">Requires wheelchair-accessible venues and routes</div>
+                </div>
+              </div>
+            </label>
+
+            <label class="checkbox-card">
+              <input type="checkbox" value="type_1_diabetes" />
+              <div class="checkbox-content">
+                <span class="checkbox-icon">💉</span>
+                <div>
+                  <div class="checkbox-title">Type 1 Diabetes</div>
+                  <div class="checkbox-description">Insulin-dependent, requires medical management</div>
+                </div>
+              </div>
+            </label>
+
+            <label class="checkbox-card">
+              <input type="checkbox" value="type_2_diabetes" />
+              <div class="checkbox-content">
+                <span class="checkbox-icon">🩸</span>
+                <div>
+                  <div class="checkbox-title">Type 2 Diabetes</div>
+                  <div class="checkbox-description">Requires dietary management and monitoring</div>
+                </div>
+              </div>
+            </label>
+
+            <label class="checkbox-card">
+              <input type="checkbox" value="food_allergies" />
+              <div class="checkbox-content">
+                <span class="checkbox-icon">🥜</span>
+                <div>
+                  <div class="checkbox-title">Food Allergies</div>
+                  <div class="checkbox-description">Shellfish, nuts, gluten, dairy, etc.</div>
+                </div>
+              </div>
+            </label>
+
+            <label class="checkbox-card">
+              <input type="checkbox" value="hearing_impairment" />
+              <div class="checkbox-content">
+                <span class="checkbox-icon">👂</span>
+                <div>
+                  <div class="checkbox-title">Hearing Impairment</div>
+                  <div class="checkbox-description">Deaf or hard of hearing</div>
+                </div>
+              </div>
+            </label>
+
+            <label class="checkbox-card">
+              <input type="checkbox" value="visual_impairment" />
+              <div class="checkbox-content">
+                <span class="checkbox-icon">👁️</span>
+                <div>
+                  <div class="checkbox-title">Visual Impairment</div>
+                  <div class="checkbox-description">Blind or low vision</div>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+          <button class="btn btn-secondary btn-lg" style="flex: 1;" onclick="goToStep(1)">Back</button>
+          <button class="btn btn-primary btn-lg" style="flex: 1;" onclick="goToStep(3)">Continue</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Preferences -->
+      <div id="step-3" class="onboarding-step hidden">
+        <h3 style="margin-bottom: 1rem;">Travel Preferences</h3>
+        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+          Help us recommend the best experiences for you.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Preferred Travel Pace</label>
+          <select id="travel-pace" class="form-input">
+            <option value="slow">Slow & Relaxed (more rest)</option>
+            <option value="moderate" selected>Moderate</option>
+            <option value="active">Active & Fast-paced</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Interests (select all that apply)</label>
+          <div style="display: flex; flex-wrap: gap; gap: 0.5rem; margin-top: 0.75rem;">
+            <label class="interest-tag">
+              <input type="checkbox" value="food_culinary" />
+              <span>🍴 Food & Culinary</span>
+            </label>
+            <label class="interest-tag">
+              <input type="checkbox" value="history_culture" />
+              <span>🏛️ History & Culture</span>
+            </label>
+            <label class="interest-tag">
+              <input type="checkbox" value="nature_outdoors" />
+              <span>🌳 Nature & Outdoors</span>
+            </label>
+            <label class="interest-tag">
+              <input type="checkbox" value="art_museums" />
+              <span>🎨 Art & Museums</span>
+            </label>
+            <label class="interest-tag">
+              <input type="checkbox" value="shopping" />
+              <span>🛍️ Shopping</span>
+            </label>
+            <label class="interest-tag">
+              <input type="checkbox" value="nightlife" />
+              <span>🌃 Nightlife</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Dietary Restrictions</label>
+          <input type="text" id="dietary" class="form-input" placeholder="e.g., Vegetarian, Kosher, Halal, No shellfish" />
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+          <button class="btn btn-secondary btn-lg" style="flex: 1;" onclick="goToStep(2)">Back</button>
+          <button class="btn btn-primary btn-lg" style="flex: 1;" onclick="completeOnboarding()">
+            <span id="complete-text">Complete Setup</span>
+            <span id="complete-spinner" class="spinner hidden"></span>
+          </button>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+        <p style="font-size: 0.875rem; color: var(--text-secondary);">
+          🔒 Your health information is encrypted and never shared
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+  <!-- Auth Configuration -->
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth-service.js"></script>
+
+  <style>
+    .onboarding-step {
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .step-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-number {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: var(--bg-primary);
+      border: 2px solid var(--border);
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+      font-size: 0.875rem;
+      transition: var(--transition);
+    }
+
+    .step-indicator.active .step-number {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .step-indicator.completed .step-number {
+      background: var(--success);
+      color: white;
+      border-color: var(--success);
+    }
+
+    .step-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .step-indicator.active .step-label {
+      color: var(--primary);
+    }
+
+    .checkbox-card {
+      display: flex;
+      padding: 1rem;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .checkbox-card:hover {
+      border-color: var(--primary-light);
+      background: var(--bg-secondary);
+    }
+
+    .checkbox-card input {
+      margin-right: 1rem;
+      width: 1.25rem;
+      height: 1.25rem;
+      cursor: pointer;
+    }
+
+    .checkbox-card input:checked ~ .checkbox-content {
+      color: var(--primary);
+    }
+
+    .checkbox-card:has(input:checked) {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .checkbox-content {
+      display: flex;
+      gap: 0.75rem;
+      flex: 1;
+    }
+
+    .checkbox-icon {
+      font-size: 1.5rem;
+    }
+
+    .checkbox-title {
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .checkbox-description {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+
+    .interest-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 0.875rem;
+    }
+
+    .interest-tag input {
+      display: none;
+    }
+
+    .interest-tag:hover {
+      background: var(--bg-secondary);
+      border-color: var(--primary-light);
+    }
+
+    .interest-tag:has(input:checked) {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+  </style>
+
+  <script>
+    let currentStep = 1;
+
+    // Auth Protection
+    window.firebaseAuth.onAuthStateChanged((user) => {
+      if (!user) {
+        window.location.href = '/signin.html';
+      } else {
+        // Pre-fill name and email if available
+        if (user.displayName) {
+          document.getElementById('full-name').value = user.displayName;
+        }
+      }
+    });
+
+    function goToStep(stepNumber) {
+      // Hide all steps
+      document.querySelectorAll('.onboarding-step').forEach(step => {
+        step.classList.add('hidden');
+      });
+
+      // Show target step
+      document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+
+      // Update indicators
+      for (let i = 1; i <= 3; i++) {
+        const indicator = document.getElementById(`step-${i}-indicator`);
+        indicator.classList.remove('active', 'completed');
+
+        if (i < stepNumber) {
+          indicator.classList.add('completed');
+        } else if (i === stepNumber) {
+          indicator.classList.add('active');
+        }
+      }
+
+      // Update progress bar
+      const progress = ((stepNumber - 1) / 2) * 100;
+      document.getElementById('progress-bar').style.width = progress + '%';
+
+      currentStep = stepNumber;
+
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function completeOnboarding() {
+      const completeBtn = document.querySelector('#step-3 .btn-primary');
+      const completeText = document.getElementById('complete-text');
+      const completeSpinner = document.getElementById('complete-spinner');
+
+      // Get form data
+      const profile = {
+        full_name: document.getElementById('full-name').value,
+        age: document.getElementById('age').value,
+        location: document.getElementById('location').value,
+        conditions: Array.from(document.querySelectorAll('#step-2 input:checked')).map(cb => cb.value),
+        travel_pace: document.getElementById('travel-pace').value,
+        interests: Array.from(document.querySelectorAll('#step-3 input[value*="_"]:checked')).map(cb => cb.value),
+        dietary_restrictions: document.getElementById('dietary').value
+      };
+
+      // Validate
+      if (!profile.full_name) {
+        alert('Please enter your name');
+        goToStep(1);
+        return;
+      }
+
+      // Show loading
+      completeBtn.disabled = true;
+      completeText.classList.add('hidden');
+      completeSpinner.classList.remove('hidden');
+
+      try {
+        // Save to database via API
+        const user = window.firebaseAuth.currentUser;
+        if (user) {
+          profile.user_id = user.uid;
+          profile.email = user.email;
+          profile.created_at = new Date().toISOString();
+
+          // Save to localStorage for offline access
+          localStorage.setItem('user_profile', JSON.stringify(profile));
+
+          // Save to database
+          const response = await fetch('/api/user/profile', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              user_id: user.uid,
+              profile_data: profile
+            })
+          });
+
+          const result = await response.json();
+
+          if (response.ok && result.success) {
+            console.log('Profile saved to database:', result);
+          } else {
+            console.warn('Profile saved locally but database save failed:', result.error);
+          }
+
+          // Redirect to dashboard
+          window.location.href = '/dashboard.html';
+        }
+      } catch (error) {
+        console.error('Error saving profile:', error);
+        alert('Failed to save profile. Please try again.');
+
+        completeBtn.disabled = false;
+        completeText.classList.remove('hidden');
+        completeSpinner.classList.add('hidden');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -3,7 +3,15 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import ExperienceRecommender from './src/recommender.js';
 import ConversationManager from './src/conversationManager.js';
+import ChecklistGenerator from './src/checklistGenerator.js';
 import FlightSearch from './src/flightModule.js';
+import WellnessManager from './src/wellnessManager.js';
+import DailyChecklistManager from './src/dailyChecklistManager.js';
+import ItineraryGenerator from './src/itineraryGenerator.js';
+import HotelSearch from './src/hotelModule.js';
+import BookingComHotelSearch from './src/bookingComHotelSearch.js';
+import TripPlannerService from './src/tripPlannerService.js';
+import { UserService, TripService } from './src/firebaseAdmin.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -14,6 +22,9 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from public directory
+app.use(express.static('public'));
 
 // Request logging
 app.use((req, res, next) => {
@@ -33,6 +44,13 @@ app.use('/api/', limiter);
 let recommender;
 let conversationManager;
 let flightSearch;
+let checklistGenerator;
+let itineraryGenerator;
+let wellnessManager;
+let dailyChecklistManager;
+let hotelSearch;
+let bookingComHotelSearch;
+let tripPlannerService;
 
 // In-memory session storage for chatbot
 const sessions = new Map();
@@ -195,8 +213,8 @@ app.get('/api/airports/search', async (req, res) => {
     const { q } = req.query;
 
     if (!q || q.length < 2) {
-      return res.status(400).json({ 
-        error: 'Query must be at least 2 characters' 
+      return res.status(400).json({
+        error: 'Query must be at least 2 characters'
       });
     }
 
@@ -205,9 +223,521 @@ app.get('/api/airports/search', async (req, res) => {
 
   } catch (error) {
     console.error('Airport search error:', error);
-    res.status(500).json({ 
-      error: 'Failed to search airports' 
+    res.status(500).json({
+      error: 'Failed to search airports'
     });
+  }
+});
+
+// Checklist generation endpoint
+app.post('/api/checklist/generate', async (req, res) => {
+  try {
+    const {
+      conditions = [],
+      destination = '',
+      tripDuration = 7,
+      travelDate = null,
+      soloTravel = false
+    } = req.body;
+
+    if (!conditions || conditions.length === 0) {
+      return res.status(400).json({
+        error: 'At least one health condition is required'
+      });
+    }
+
+    console.log(`📋 Generating checklist for ${conditions.join(', ')} → ${destination}`);
+
+    const checklist = await checklistGenerator.generateChecklist({
+      conditions,
+      destination,
+      tripDuration,
+      travelDate,
+      soloTravel
+    });
+
+    res.json({
+      checklist,
+      generated_for: {
+        conditions,
+        destination,
+        trip_duration: tripDuration,
+        travel_date: travelDate
+      },
+      summary: {
+        total_categories: checklist.categories.length,
+        total_items: checklist.categories.reduce((sum, cat) => sum + cat.items.length, 0),
+        critical_items: checklist.critical_count,
+        high_priority_items: checklist.high_priority_count
+      }
+    });
+
+  } catch (error) {
+    console.error('Checklist generation error:', error);
+    res.status(500).json({
+      error: 'Failed to generate checklist',
+      message: error.message
+    });
+  }
+});
+
+// Wellness check-in endpoint
+app.post('/api/wellness/checkin', async (req, res) => {
+  try {
+    const {
+      session_id = 'default',
+      trip_day,
+      date = new Date().toISOString().split('T')[0],
+      sleep_score,
+      energy_score,
+      pain_level,
+      additional_notes = '',
+      conditions = [],
+      current_itinerary = null
+    } = req.body;
+
+    // Validate required fields
+    if (sleep_score === undefined || energy_score === undefined || pain_level === undefined) {
+      return res.status(400).json({
+        error: 'sleep_score, energy_score, and pain_level are required'
+      });
+    }
+
+    // Validate ranges
+    if (sleep_score < 1 || sleep_score > 5 || energy_score < 1 || energy_score > 5) {
+      return res.status(400).json({
+        error: 'sleep_score and energy_score must be between 1 and 5'
+      });
+    }
+
+    if (pain_level < 0 || pain_level > 2) {
+      return res.status(400).json({
+        error: 'pain_level must be 0 (none), 1 (minor), or 2 (concerning)'
+      });
+    }
+
+    console.log(`☀️ Processing wellness check-in for Day ${trip_day} (Session: ${session_id})`);
+
+    const result = await wellnessManager.processCheckIn({
+      session_id,
+      trip_day,
+      date,
+      sleep_score,
+      energy_score,
+      pain_level,
+      additional_notes,
+      conditions,
+      current_itinerary
+    });
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('Wellness check-in error:', error);
+    res.status(500).json({
+      error: 'Failed to process wellness check-in',
+      message: error.message
+    });
+  }
+});
+
+// Get wellness trend
+app.get('/api/wellness/trend/:session_id', (req, res) => {
+  try {
+    const { session_id } = req.params;
+    const { days = 3 } = req.query;
+
+    const trend = wellnessManager.getWellnessTrend(session_id, parseInt(days));
+
+    if (!trend) {
+      return res.status(404).json({
+        error: 'No wellness data found for this session'
+      });
+    }
+
+    res.json({ session_id, trend });
+
+  } catch (error) {
+    console.error('Wellness trend error:', error);
+    res.status(500).json({
+      error: 'Failed to get wellness trend'
+    });
+  }
+});
+
+// Generate daily checklist
+app.post('/api/checklist/daily', async (req, res) => {
+  try {
+    const {
+      session_id = 'default',
+      itinerary_day,
+      conditions = [],
+      date = null,
+      wellness_data = null
+    } = req.body;
+
+    if (!itinerary_day) {
+      return res.status(400).json({
+        error: 'itinerary_day is required'
+      });
+    }
+
+    console.log(`📅 Generating daily checklist for Day ${itinerary_day.day_number}`);
+
+    const checklist = dailyChecklistManager.generateDailyChecklist({
+      session_id,
+      itinerary_day,
+      conditions,
+      date,
+      wellness_data
+    });
+
+    res.json(checklist);
+
+  } catch (error) {
+    console.error('Daily checklist generation error:', error);
+    res.status(500).json({
+      error: 'Failed to generate daily checklist',
+      message: error.message
+    });
+  }
+});
+
+// Update checklist item status
+app.patch('/api/checklist/daily/:session_id/:day_number/item/:item_id', (req, res) => {
+  try {
+    const { session_id, day_number, item_id } = req.params;
+    const { completed, data = {} } = req.body;
+
+    if (completed === undefined) {
+      return res.status(400).json({
+        error: 'completed field is required'
+      });
+    }
+
+    const updatedChecklist = dailyChecklistManager.updateItemStatus({
+      session_id,
+      day_number: parseInt(day_number),
+      item_id,
+      completed,
+      data
+    });
+
+    res.json(updatedChecklist);
+
+  } catch (error) {
+    console.error('Checklist update error:', error);
+    res.status(500).json({
+      error: 'Failed to update checklist item',
+      message: error.message
+    });
+  }
+});
+
+// Get daily checklist
+app.get('/api/checklist/daily/:session_id/:day_number', (req, res) => {
+  try {
+    const { session_id, day_number } = req.params;
+
+    const checklist = dailyChecklistManager.getChecklistForDay(
+      session_id,
+      parseInt(day_number)
+    );
+
+    if (!checklist) {
+      return res.status(404).json({
+        error: 'Checklist not found for this day'
+      });
+    }
+
+    res.json(checklist);
+
+  } catch (error) {
+    console.error('Get checklist error:', error);
+    res.status(500).json({
+      error: 'Failed to get checklist'
+    });
+  }
+});
+
+// Generate itinerary endpoint
+app.post('/api/itinerary/generate', async (req, res) => {
+  try {
+    const {
+      destination,
+      trip_duration = 7,
+      start_date,
+      conditions = [],
+      preferences = [],
+      solo_travel = false,
+      filters = {}
+    } = req.body;
+
+    if (!destination) {
+      return res.status(400).json({
+        error: 'destination is required'
+      });
+    }
+
+    console.log(`🗺️ Generating ${trip_duration}-day itinerary for ${destination}`);
+
+    // Search for experiences
+    const searchResults = await recommender.search({
+      query: `authentic local experiences in ${destination}`,
+      filters: { ...filters, country: destination.split(',')[1]?.trim() || destination },
+      limit: trip_duration * 3
+    });
+
+    const experiences = searchResults.map(r => r.experience);
+
+    const itinerary = itineraryGenerator.buildItinerary({
+      experiences,
+      tripDuration: trip_duration,
+      startDate: start_date,
+      conditions,
+      preferences,
+      soloTravel: solo_travel
+    });
+
+    res.json({
+      itinerary,
+      experiences_available: experiences.length,
+      generated_at: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Itinerary generation error:', error);
+    res.status(500).json({
+      error: 'Failed to generate itinerary',
+      message: error.message
+    });
+  }
+});
+
+// User Profile Endpoints
+app.post('/api/user/profile', async (req, res) => {
+  try {
+    const { user_id, profile_data } = req.body;
+
+    if (!user_id || !profile_data) {
+      return res.status(400).json({ error: 'user_id and profile_data are required' });
+    }
+
+    const result = await UserService.createOrUpdateProfile(user_id, profile_data);
+
+    if (result.success) {
+      res.json({ success: true, message: 'Profile saved successfully', profile_id: result.id });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Profile save error:', error);
+    res.status(500).json({ error: 'Failed to save profile' });
+  }
+});
+
+app.get('/api/user/profile/:user_id', async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const result = await UserService.getProfile(user_id);
+
+    if (result.success) {
+      res.json(result.data);
+    } else {
+      res.status(404).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Profile fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+// Hotel Search Endpoint
+app.post('/api/hotels/search', async (req, res) => {
+  try {
+    const { cityCode, checkInDate, checkOutDate, adults = 2, accessibility = [] } = req.body;
+
+    if (!cityCode || !checkInDate || !checkOutDate) {
+      return res.status(400).json({
+        error: 'cityCode, checkInDate, and checkOutDate are required'
+      });
+    }
+
+    console.log(`🏨 Searching hotels in ${cityCode}...`);
+
+    const hotels = await hotelSearch.searchHotels({
+      cityCode,
+      checkInDate,
+      checkOutDate,
+      adults,
+      accessibility
+    });
+
+    res.json({
+      hotels,
+      search: { cityCode, checkInDate, checkOutDate, adults },
+      total: hotels.length
+    });
+
+  } catch (error) {
+    console.error('Hotel search error:', error);
+    res.status(500).json({
+      error: 'Failed to search hotels',
+      message: error.message
+    });
+  }
+});
+
+// Booking.com Hotel Search Endpoint (CodeFest Compliant - No Marriott APIs)
+app.post('/api/bookingcom/hotels/search', async (req, res) => {
+  try {
+    const {
+      destination,
+      coordinates,
+      checkin_date,
+      checkout_date,
+      number_of_rooms = 1,
+      number_of_guests = 2,
+      destination_country_code = 'us',
+      user_country_code = 'us',
+      currency = 'USD',
+      facilities = [],
+      accommodation_types = [],
+      price = null,
+      sort_by = null,
+      sort_direction = null
+    } = req.body;
+
+    // Validate: Must have either destination OR coordinates
+    if (!destination && !coordinates) {
+      return res.status(400).json({
+        error: 'Either destination or coordinates is required'
+      });
+    }
+
+    if (!checkin_date || !checkout_date) {
+      return res.status(400).json({
+        error: 'checkin_date and checkout_date are required (YYYY-MM-DD format)'
+      });
+    }
+
+    console.log(`🏨 Booking.com search: ${destination || 'coordinates'} (${checkin_date} to ${checkout_date})`);
+
+    const hotels = await bookingComHotelSearch.searchHotels({
+      destination,
+      coordinates,
+      checkin_date,
+      checkout_date,
+      number_of_rooms,
+      number_of_guests,
+      destination_country_code,
+      user_country_code,
+      currency,
+      facilities,
+      accommodation_types,
+      price,
+      sort_by,
+      sort_direction
+    });
+
+    // Normalize results to UI format
+    const normalizedHotels = bookingComHotelSearch.normalizeResults(hotels);
+
+    res.json({
+      hotels: normalizedHotels,
+      search: {
+        destination: destination || 'coordinates',
+        checkin_date,
+        checkout_date,
+        number_of_rooms,
+        number_of_guests,
+        currency
+      },
+      total: normalizedHotels.length
+    });
+
+  } catch (error) {
+    console.error('Booking.com hotel search error:', error);
+
+    // User-friendly error messages
+    let userMessage = 'Failed to search hotels';
+    if (error.message.includes('destination')) {
+      userMessage = 'Could not recognize the destination. Please try a major city name.';
+    } else if (error.message.includes('date')) {
+      userMessage = 'Invalid dates. Checkout must be after check-in.';
+    } else if (error.message.includes('facilities')) {
+      userMessage = 'No matches found. Try removing some filters.';
+    }
+
+    res.status(500).json({
+      error: userMessage,
+      message: error.message
+    });
+  }
+});
+
+// Complete Trip Planning Endpoint (Flights + Hotels + Itinerary + Checklist)
+app.post('/api/trip/plan', async (req, res) => {
+  try {
+    const {
+      user_id,
+      destination,
+      start_date,
+      duration = 7,
+      conditions = [],
+      preferences = [],
+      solo_travel = false,
+      origin = 'New York' // Default origin
+    } = req.body;
+
+    if (!user_id || !destination || !start_date) {
+      return res.status(400).json({
+        error: 'user_id, destination, and start_date are required'
+      });
+    }
+
+    console.log(`\n🌟 Planning complete trip for user ${user_id}...`);
+
+    const tripPlan = await tripPlannerService.planCompleteTrip({
+      userId: user_id,
+      destination,
+      startDate: start_date,
+      duration,
+      conditions,
+      preferences,
+      soloTravel: solo_travel,
+      origin
+    });
+
+    if (tripPlan.success) {
+      res.json(tripPlan);
+    } else {
+      res.status(500).json({ error: tripPlan.error });
+    }
+
+  } catch (error) {
+    console.error('Complete trip planning error:', error);
+    res.status(500).json({
+      error: 'Failed to plan trip',
+      message: error.message
+    });
+  }
+});
+
+// Get User's Trips
+app.get('/api/user/:user_id/trips', async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const result = await TripService.getUserTrips(user_id);
+
+    if (result.success) {
+      res.json({ trips: result.trips });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Get trips error:', error);
+    res.status(500).json({ error: 'Failed to fetch trips' });
   }
 });
 
@@ -280,11 +810,46 @@ async function startServer() {
 
     console.log('🤖 Initializing Conversation Manager...');
     conversationManager = new ConversationManager(recommender);
-    
+
     // Initialize flight search
     console.log('✈️  Initializing Flight Search...');
     flightSearch = new FlightSearch();
     console.log('✅ Flight search ready\n');
+
+    // Initialize checklist generator
+    console.log('📋 Initializing Checklist Generator...');
+    checklistGenerator = new ChecklistGenerator();
+    console.log('✅ Checklist generator ready\n');
+
+    // Initialize itinerary generator
+    console.log('🗺️  Initializing Itinerary Generator...');
+    itineraryGenerator = new ItineraryGenerator(recommender);
+    console.log('✅ Itinerary generator ready\n');
+
+    // Initialize wellness manager
+    console.log('☀️  Initializing Wellness Manager...');
+    wellnessManager = new WellnessManager(itineraryGenerator);
+    console.log('✅ Wellness manager ready\n');
+
+    // Initialize daily checklist manager
+    console.log('📅 Initializing Daily Checklist Manager...');
+    dailyChecklistManager = new DailyChecklistManager();
+    console.log('✅ Daily checklist manager ready\n');
+
+    // Initialize hotel search
+    console.log('🏨 Initializing Hotel Search...');
+    hotelSearch = new HotelSearch();
+    console.log('✅ Hotel search ready\n');
+
+    // Initialize Booking.com hotel search
+    console.log('🏨 Initializing Booking.com Hotel Search...');
+    bookingComHotelSearch = new BookingComHotelSearch();
+    console.log('✅ Booking.com hotel search ready\n');
+
+    // Initialize trip planner service
+    console.log('🌟 Initializing Trip Planner Service...');
+    tripPlannerService = new TripPlannerService(recommender);
+    console.log('✅ Trip planner service ready\n');
 
     app.listen(PORT, () => {
       console.log(`🌐 Server listening on http://localhost:${PORT}`);
@@ -296,6 +861,19 @@ async function startServer() {
       console.log(`   GET  /api/stats - Get database statistics`);
       console.log(`   POST /api/flights/search - Search flights`);
       console.log(`   GET  /api/airports/search - Search airports`);
+      console.log(`   POST /api/checklist/generate - Generate travel checklist`);
+      console.log(`   POST /api/wellness/checkin - Morning wellness check-in`);
+      console.log(`   GET  /api/wellness/trend/:session_id - Get wellness trend`);
+      console.log(`   POST /api/checklist/daily - Generate daily checklist`);
+      console.log(`   PATCH /api/checklist/daily/:session_id/:day/:item_id - Update item`);
+      console.log(`   GET  /api/checklist/daily/:session_id/:day - Get daily checklist`);
+      console.log(`   POST /api/itinerary/generate - Generate trip itinerary`);
+      console.log(`   POST /api/user/profile - Save/update user profile`);
+      console.log(`   GET  /api/user/profile/:user_id - Get user profile`);
+      console.log(`   POST /api/hotels/search - Search hotels`);
+      console.log(`   POST /api/bookingcom/hotels/search - Booking.com hotel search`);
+      console.log(`   POST /api/trip/plan - Complete trip planning (flights+hotels+itinerary)`);
+      console.log(`   GET  /api/user/:user_id/trips - Get user's trips`);
       console.log(`   GET  /api/health - Health check`);
     });
   } catch (error) {

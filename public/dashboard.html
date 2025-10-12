@@ -2698,10 +2698,18 @@
         const data = await response.json();
 
         if (data.trips && data.trips.length > 0) {
+          // Show all trips (including finished)
+          console.log('Total trips:', data.trips.length);
+          console.log('Trip statuses:', data.trips.map(t => t.status));
+          
           displayTrips(data.trips);
 
-          // Find the active trip and update tripData for language detection
-          const activeTrip = data.trips.find(t => t.status === 'in_progress' || t.status === 'upcoming');
+          // Find the active trip for wellness data (prioritize in_progress, then upcoming, then any non-finished)
+          const activeTrip = data.trips.find(t => t.status === 'in_progress') || 
+                           data.trips.find(t => t.status === 'upcoming') ||
+                           data.trips.find(t => t.status === 'confirmed') ||
+                           data.trips.find(t => t.status !== 'finished' && t.status !== 'completed');
+          
           if (activeTrip) {
             tripData.destination = activeTrip.destination;
             tripData.origin = activeTrip.origin;
@@ -2719,6 +2727,11 @@
 
     // Helper function to calculate trip status based on dates
     function calculateTripStatus(trip) {
+      // Respect terminal statuses that were manually set in database
+      if (trip.status === 'finished' || trip.status === 'completed') {
+        return trip.status;
+      }
+
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Reset time to midnight for accurate comparison
 
@@ -2757,12 +2770,15 @@
           'upcoming': { bg: 'var(--primary-light)', color: 'var(--primary)', label: 'Upcoming' },
           'in_progress': { bg: '#d1fae5', color: 'var(--success)', label: 'In Progress' },
           'finished': { bg: 'var(--bg-tertiary)', color: 'var(--text-secondary)', label: 'Finished' },
+          'completed': { bg: 'var(--bg-tertiary)', color: 'var(--text-secondary)', label: 'Completed' },
+          'confirmed': { bg: '#dbeafe', color: '#1e40af', label: 'Confirmed' },
+          'planning': { bg: '#fef3c7', color: '#d97706', label: 'Planning' },
           'planned': { bg: '#fef3c7', color: '#d97706', label: 'Planned' }
         };
 
-        // Calculate status based on dates
-        const calculatedStatus = calculateTripStatus(trip);
-        const status = statusColors[calculatedStatus] || statusColors['upcoming'];
+        // Use database status directly (respect manual updates)
+        const displayStatus = trip.status || 'upcoming';
+        const status = statusColors[displayStatus] || statusColors['upcoming'];
 
         // Capitalize city name for consistency
         const cityName = capitalizeCity(trip.destination);

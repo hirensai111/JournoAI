@@ -871,12 +871,20 @@
           return;
         }
 
-        // Filter for active trips
+        // Filter for active trips (not finished/completed)
         const activeTrips = [];
         querySnapshot.forEach((tripDoc) => {
           const data = tripDoc.data();
-          console.log('Trip:', tripDoc.id, 'Status:', data.status);
-          if (['planning', 'confirmed', 'in_progress'].includes(data.status) || data.status === 'planned') {
+          // Normalize status: trim whitespace and convert to lowercase for comparison
+          const rawStatus = data.status;
+          const normalizedStatus = (rawStatus || '').toString().trim().toLowerCase();
+          
+          console.log('Trip:', tripDoc.id, 'Status:', normalizedStatus);
+          
+          // Check if status is active (not finished/completed)
+          const isActive = ['planning', 'confirmed', 'in_progress', 'planned'].includes(normalizedStatus);
+          
+          if (isActive) {
             const tripObj = {
               id: tripDoc.id,
               origin: data.origin || '',
@@ -953,6 +961,12 @@
     async function autoUpdateTripStatus(trip) {
       if (!trip || !trip.id) return;
 
+      // Don't auto-update terminal statuses (manually set by user)
+      if (trip.status === 'finished' || trip.status === 'completed') {
+        console.log(`⏩ Skipping auto-update for terminal status: ${trip.status}`);
+        return;
+      }
+
       const now = new Date();
       // Parse dates in local timezone to avoid timezone shift
       const [startYear, startMonth, startDay] = trip.start_date.split('-').map(Number);
@@ -965,7 +979,7 @@
       // Determine new status based on dates
       if (now > endDate) {
         // Trip has ended
-        newStatus = 'completed';
+        newStatus = 'finished';
       } else if (now >= startDate && now <= endDate) {
         // Trip is happening now
         newStatus = 'in_progress';
@@ -1042,14 +1056,14 @@
         document.getElementById('trip-content').style.display = 'block';
       }, 300);
 
-      // Calculate actual status based on dates
-      const calculatedStatus = calculateTripStatus(trip);
+      // Use the actual status from database (respect manual updates)
+      const displayStatus = trip.status || 'upcoming';
 
       // Hero section
       document.getElementById('trip-destination').textContent = capitalizeCity(trip.destination) || 'Unknown Destination';
       document.getElementById('trip-dates').textContent = formatTripDates(trip.start_date, trip.end_date);
       document.getElementById('trip-duration').textContent = `${trip.duration || 0} days`;
-      document.getElementById('trip-status').textContent = formatStatus(calculatedStatus);
+      document.getElementById('trip-status').textContent = formatStatus(displayStatus);
 
       // Load city image for hero background
       try {
@@ -1111,7 +1125,7 @@
       }
 
       // Countdown
-      updateCountdown(trip.start_date);
+      updateCountdown(trip.start_date, trip.end_date, displayStatus);
 
       // Generate dynamic checklist
       generateDynamicChecklist(trip);
@@ -1133,8 +1147,14 @@
     }
 
     // Update countdown
-    function updateCountdown(startDate) {
-      // Parse date in local timezone to avoid timezone shift
+    function updateCountdown(startDate, endDate, status) {
+      // Check if trip is finished/completed (respect database status)
+      if (status === 'finished' || status === 'completed') {
+        document.getElementById('countdown-badge').textContent = '✅ Trip Finished';
+        return;
+      }
+
+      // Parse dates in local timezone to avoid timezone shift
       const [year, month, day] = startDate.split('-').map(Number);
       const start = new Date(year, month - 1, day);
       const now = new Date();
@@ -1143,7 +1163,14 @@
 
       let countdownText;
       if (days < 0) {
-        countdownText = '🎉 Trip in Progress!';
+        // Check if trip is currently in progress by comparing to end date
+        const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+        const end = new Date(endYear, endMonth - 1, endDay);
+        if (now <= end) {
+          countdownText = '🎉 Trip in Progress!';
+        } else {
+          countdownText = '✅ Trip Finished';
+        }
       } else if (days === 0) {
         countdownText = '✈️ Departure Today!';
       } else if (days === 1) {
@@ -2390,6 +2417,11 @@
 
     // Helper function to calculate trip status based on dates
     function calculateTripStatus(trip) {
+      // Respect terminal statuses that were manually set
+      if (trip.status === 'finished' || trip.status === 'completed') {
+        return trip.status;
+      }
+
       if (!trip.start_date || !trip.end_date) {
         return trip.status || 'upcoming';
       }

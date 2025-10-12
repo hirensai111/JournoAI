@@ -1042,11 +1042,14 @@
         document.getElementById('trip-content').style.display = 'block';
       }, 300);
 
+      // Calculate actual status based on dates
+      const calculatedStatus = calculateTripStatus(trip);
+
       // Hero section
-      document.getElementById('trip-destination').textContent = trip.destination || 'Unknown Destination';
+      document.getElementById('trip-destination').textContent = capitalizeCity(trip.destination) || 'Unknown Destination';
       document.getElementById('trip-dates').textContent = formatTripDates(trip.start_date, trip.end_date);
       document.getElementById('trip-duration').textContent = `${trip.duration || 0} days`;
-      document.getElementById('trip-status').textContent = formatStatus(trip.status);
+      document.getElementById('trip-status').textContent = formatStatus(calculatedStatus);
 
       // Load city image for hero background
       try {
@@ -2385,15 +2388,51 @@
       return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
     }
 
+    // Helper function to calculate trip status based on dates
+    function calculateTripStatus(trip) {
+      if (!trip.start_date || !trip.end_date) {
+        return trip.status || 'upcoming';
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to midnight for accurate comparison
+
+      const startDate = new Date(trip.start_date);
+      startDate.setHours(0, 0, 0, 0);
+
+      const endDate = new Date(trip.end_date);
+      endDate.setHours(0, 0, 0, 0);
+
+      if (today > endDate) {
+        return 'finished';
+      } else if (today >= startDate && today <= endDate) {
+        return 'in_progress';
+      } else if (today < startDate) {
+        return 'upcoming';
+      }
+
+      return trip.status || 'upcoming'; // Fallback to trip.status or 'upcoming'
+    }
+
+    // Helper function to capitalize first letter of each word
+    function capitalizeCity(city) {
+      if (!city) return '';
+      return city.split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    }
+
     // Format status
     function formatStatus(status) {
       const statusMap = {
         'planning': 'Planning',
         'confirmed': 'Confirmed',
         'in_progress': 'In Progress',
-        'completed': 'Completed'
+        'completed': 'Completed',
+        'upcoming': 'Upcoming',
+        'finished': 'Finished'
       };
-      return statusMap[status] || status;
+      return statusMap[status] || status.charAt(0).toUpperCase() + status.slice(1);
     }
 
     // Switch tabs

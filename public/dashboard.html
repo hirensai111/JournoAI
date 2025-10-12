@@ -2717,6 +2717,36 @@
       }
     }
 
+    // Helper function to calculate trip status based on dates
+    function calculateTripStatus(trip) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to midnight for accurate comparison
+
+      const startDate = new Date(trip.start_date);
+      startDate.setHours(0, 0, 0, 0);
+
+      const endDate = new Date(trip.end_date);
+      endDate.setHours(0, 0, 0, 0);
+
+      if (today > endDate) {
+        return 'finished';
+      } else if (today >= startDate && today <= endDate) {
+        return 'in_progress';
+      } else if (today < startDate) {
+        return 'upcoming';
+      }
+
+      return trip.status || 'upcoming'; // Fallback to trip.status or 'upcoming'
+    }
+
+    // Helper function to capitalize first letter of each word
+    function capitalizeCity(city) {
+      if (!city) return '';
+      return city.split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+    }
+
     function displayTrips(trips) {
       const container = document.getElementById('trips-container');
 
@@ -2729,14 +2759,20 @@
           'finished': { bg: 'var(--bg-tertiary)', color: 'var(--text-secondary)', label: 'Finished' },
           'planned': { bg: '#fef3c7', color: '#d97706', label: 'Planned' }
         };
-        
-        const status = statusColors[trip.status] || statusColors['upcoming'];
+
+        // Calculate status based on dates
+        const calculatedStatus = calculateTripStatus(trip);
+        const status = statusColors[calculatedStatus] || statusColors['upcoming'];
+
+        // Capitalize city name for consistency
+        const cityName = capitalizeCity(trip.destination);
+
         const imageUrl = getCityImageUrl(trip.destination);
-        
+
         html += `
           <div class="trip-card" data-trip-id="${trip.id}" onclick="viewTripDetails('${trip.id}')">
             <div class="trip-card-image">
-              <img src="${imageUrl}" alt="${trip.destination}" 
+              <img src="${imageUrl}" alt="${cityName}"
                    onerror="this.src='https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80'">
               <div class="trip-card-overlay">
                 <div class="trip-status-badge" style="background: ${status.bg}; color: ${status.color};">
@@ -2745,7 +2781,7 @@
               </div>
             </div>
             <div class="trip-card-content">
-              <h3 class="trip-card-title">${trip.destination}</h3>
+              <h3 class="trip-card-title">${cityName}</h3>
               <div class="trip-card-meta">
                 <div class="trip-meta-item">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

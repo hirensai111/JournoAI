@@ -59,7 +59,18 @@ cmd = 'npm start'
 
 ## 🔧 **Railway Environment Variables**
 
-Railway automatically provides the `PORT` environment variable. You don't need to set it manually.
+### ⚠️ CRITICAL: DO NOT SET PORT MANUALLY
+
+**Railway automatically provides the `PORT` environment variable.**
+
+❌ **DO NOT** add `PORT=3001` or any PORT variable in Railway dashboard
+✅ Railway provides PORT automatically (usually 8080 or 3000)
+✅ Your app uses `process.env.PORT || 3001` (fallback for local dev only)
+
+**If you previously set PORT=3001:**
+1. Go to Railway Dashboard → Your Service → Variables tab
+2. **DELETE the PORT variable**
+3. Railway will auto-redeploy with correct PORT
 
 ### **Optional Variables (for enhanced features):**
 ```bash

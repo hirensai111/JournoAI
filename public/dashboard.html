@@ -3044,7 +3044,7 @@
             
             <!-- Action Buttons -->
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-              <button class="btn btn-primary" onclick="window.location.href='/mytrips.html?trip=${tripData.id}'">
+              <button class="btn btn-primary" onclick="viewFullTripPage('${tripData.id}')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M9 6 3 9v9l6-3 6 3 6-3V6l-6 3-6-3z" />
                   <path d="M9 6v9m6-6v9" />
@@ -3087,6 +3087,29 @@
     function editTrip(tripId) {
       alert(`Edit trip functionality coming soon! Trip ID: ${tripId}`);
       // You can implement trip editing here
+    }
+
+    async function viewFullTripPage(tripId) {
+      try {
+        // Fetch the full trip data
+        const response = await fetch(`/api/user/${currentUser.uid}/trips/${tripId}`);
+        const tripData = await response.json();
+
+        if (!tripData) {
+          alert('Failed to load trip data');
+          return;
+        }
+
+        // Store trip data in localStorage for mytrips.html to access
+        localStorage.setItem('currentTripView', JSON.stringify(tripData));
+        localStorage.setItem('currentTripId', tripId);
+
+        // Redirect to mytrips page
+        window.location.href = `/mytrips.html?trip=${tripId}`;
+      } catch (error) {
+        console.error('Error loading full trip:', error);
+        alert('Failed to load trip. Please try again.');
+      }
     }
 
     // Wellness Summary Functions

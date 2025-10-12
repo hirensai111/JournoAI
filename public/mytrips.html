@@ -332,7 +332,15 @@
 
     @media (max-width: 768px) {
       .trip-hero {
-        padding: 2rem 0;
+        padding: 2rem 1.5rem;
+      }
+
+      .trip-hero h1 {
+        font-size: 2rem;
+      }
+
+      .trip-hero > div:first-child {
+        margin-bottom: 1rem;
       }
 
       .timeline-container {
@@ -340,7 +348,129 @@
       }
 
       .day-card {
+        padding: 1.25rem;
+        margin-bottom: 1.25rem;
+      }
+
+      .activity-item {
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.875rem;
+      }
+
+      .activity-time {
+        min-width: auto;
+      }
+
+      .tab-container {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+      }
+
+      .tab {
+        padding: 0.625rem 1rem;
+        font-size: 0.875rem;
+        white-space: nowrap;
+      }
+
+      .trip-card {
+        height: 240px;
+      }
+
+      .trip-card h3 {
+        font-size: 1.25rem;
+      }
+
+      .trip-card-meta {
+        font-size: 0.813rem;
+        flex-wrap: wrap;
+      }
+
+      .section-phase {
+        padding: 1.25rem;
+      }
+
+      .phase-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+      }
+
+      .checklist-item {
+        padding: 0.75rem;
+        font-size: 0.9375rem;
+      }
+
+      .checklist-checkbox {
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .trip-hero {
+        padding: 1.5rem 1rem;
+      }
+
+      .trip-hero h1 {
+        font-size: 1.75rem;
+      }
+
+      .countdown-badge {
+        font-size: 0.8125rem;
+        padding: 0.375rem 0.75rem;
+      }
+
+      .day-card {
         padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .day-card h3 {
+        font-size: 1.125rem;
+      }
+
+      .trip-card {
+        height: 220px;
+      }
+
+      .trip-card h3 {
+        font-size: 1.125rem;
+      }
+
+      .trip-card-content {
+        padding: 1rem;
+      }
+
+      .trip-status-badge {
+        top: 0.75rem;
+        right: 0.75rem;
+        font-size: 0.688rem;
+        padding: 0.25rem 0.5rem;
+      }
+
+      .section-phase {
+        padding: 1rem;
+      }
+
+      .phase-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+
+      .priority-badge {
+        font-size: 0.688rem;
+      }
+
+      .checklist-item {
+        padding: 0.625rem;
+        font-size: 0.875rem;
+      }
+
+      .tab {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8125rem;
       }
     }
   </style>
@@ -392,8 +522,23 @@
 
   <!-- Loading State -->
   <div id="loading-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 80px); background: var(--bg-secondary);">
-    <div style="width: 48px; height: 48px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
-    <p style="margin-top: 1rem; color: var(--text-secondary);">Loading your trip...</p>
+    <svg width="60" height="60" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation: spin 1s linear infinite;">
+      <circle cx="20" cy="20" r="18" stroke="#8B1538" stroke-width="2.5" fill="white"/>
+      <path d="M20 3V7M20 33V37M3 20H7M33 20H37" stroke="#8B1538" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="20" cy="20" r="14" stroke="#E5E7EB" stroke-width="1"/>
+      <g transform="rotate(45 20 20)">
+        <path d="M20 6L21 20L20 34L19 20L20 6Z" fill="url(#loader-gradient-mytrips)" stroke="#8B1538" stroke-width="1.2"/>
+      </g>
+      <circle cx="20" cy="20" r="3.5" fill="#8B1538"/>
+      <circle cx="20" cy="20" r="2" fill="white"/>
+      <defs>
+        <linearGradient id="loader-gradient-mytrips" x1="20" y1="6" x2="20" y2="34">
+          <stop offset="0%" stop-color="#E87722"/>
+          <stop offset="100%" stop-color="#8B1538"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <p style="margin-top: 1.5rem; color: var(--text-secondary); font-weight: 500;">Loading your trips...</p>
   </div>
 
   <!-- No Trip State -->
@@ -650,10 +795,68 @@
     // Load current/upcoming trip
     async function loadCurrentTrip(userId) {
       try {
-        console.log('Loading trips for user:', userId);
+        // Check for specific trip ID in URL parameters or localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const tripIdParam = urlParams.get('trip');
+        const storedTripData = localStorage.getItem('currentTripView');
+        const storedTripId = localStorage.getItem('currentTripId');
+
+        console.log('URL trip param:', tripIdParam);
+        console.log('Stored trip ID:', storedTripId);
+
+        // If specific trip ID provided, load that trip
+        if (tripIdParam || storedTripId) {
+          const targetTripId = tripIdParam || storedTripId;
+          console.log('Loading specific trip:', targetTripId);
+
+          let tripData;
+
+          // Try to use stored trip data if available and matches
+          if (storedTripData && storedTripId === targetTripId) {
+            try {
+              tripData = JSON.parse(storedTripData);
+              tripData.id = targetTripId; // Ensure ID is set
+              console.log('Using stored trip data from localStorage');
+            } catch (e) {
+              console.error('Error parsing stored trip data:', e);
+              tripData = null;
+            }
+          }
+
+          // If no stored data or parsing failed, fetch from API
+          if (!tripData) {
+            console.log('Fetching trip from API...');
+            const token = await window.currentUser.getIdToken();
+            const response = await fetch(`/api/user/${userId}/trips/${targetTripId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+              tripData = await response.json();
+              tripData.id = targetTripId; // Ensure ID is set
+            } else {
+              console.error('Failed to fetch trip:', response.status);
+              // Fall back to loading active trip
+              tripData = null;
+            }
+          }
+
+          if (tripData) {
+            window.currentTrip = tripData;
+            await loadChecklistState(tripData.id);
+            await displayTrip(tripData);
+
+            // Clear stored data after use
+            localStorage.removeItem('currentTripView');
+            localStorage.removeItem('currentTripId');
+            return;
+          }
+        }
+
+        // Fall back to loading the current active trip
+        console.log('Loading active trips for user:', userId);
         const tripsRef = collection(db, 'trips');
 
-        // Try to get all trips first (no status filter) for debugging
         const q = query(
           tripsRef,
           where('user_id', '==', userId)
@@ -674,7 +877,6 @@
           const data = tripDoc.data();
           console.log('Trip:', tripDoc.id, 'Status:', data.status);
           if (['planning', 'confirmed', 'in_progress'].includes(data.status) || data.status === 'planned') {
-            // Explicitly create trip object to avoid spread operator issues
             const tripObj = {
               id: tripDoc.id,
               origin: data.origin || '',
@@ -685,16 +887,11 @@
               conditions: data.conditions || [],
               preferences: data.preferences || [],
               solo_travel: data.solo_travel || false,
-
-              // Old format (for backward compatibility)
               flights: data.flights || null,
               hotels: data.hotels || [],
-
-              // New format (selected flight/hotel and itinerary)
               selected_flight: data.selected_flight || null,
               selected_hotel: data.selected_hotel || null,
               itinerary: data.itinerary || null,
-
               status: data.status || 'planning',
               user_id: data.user_id || '',
               created_at: data.created_at || null
@@ -839,8 +1036,11 @@
 
     // Display trip
     async function displayTrip(trip) {
-      document.getElementById('loading-state').style.display = 'none';
-      document.getElementById('trip-content').style.display = 'block';
+      // Show content after quick glimpse (300ms minimum)
+      setTimeout(() => {
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('trip-content').style.display = 'block';
+      }, 300);
 
       // Hero section
       document.getElementById('trip-destination').textContent = trip.destination || 'Unknown Destination';
@@ -922,8 +1122,11 @@
 
     // Show no trip state
     function showNoTripState() {
-      document.getElementById('loading-state').style.display = 'none';
-      document.getElementById('no-trip-state').style.display = 'block';
+      // Show content after quick glimpse (300ms minimum)
+      setTimeout(() => {
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('no-trip-state').style.display = 'block';
+      }, 300);
     }
 
     // Update countdown
@@ -2504,5 +2707,41 @@
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
     }
   </style>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-nav">
+    <div class="mobile-nav-container">
+      <a href="/dashboard.html" class="mobile-nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="/mytrips.html" class="mobile-nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 6 3 9v9l6-3 6 3 6-3V6l-6 3-6-3z"/>
+          <path d="M9 6v9m6-6v9"/>
+        </svg>
+        <span>My Trips</span>
+      </a>
+      <a href="/wellness.html" class="mobile-nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        <span>Wellness</span>
+      </a>
+      <a href="/profile.html" class="mobile-nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>Profile</span>
+      </a>
+    </div>
+  </nav>
+
 </body>
 </html>

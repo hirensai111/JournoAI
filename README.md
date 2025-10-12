@@ -1,40 +1,74 @@
 # JournoAI - Health-Aware Travel Planning Platform
 
-> "JournoAI gave me back my independence. I'm finally going to Rome!"
-> — Sarah Mitchell, wheelchair user & Type 1 diabetic, Austin, TX
+> Health-aware travel planning for confident, accessible journeys around the world.
+
+[![License](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-18.x-green.svg)](https://nodejs.org/)
+[![Firebase](https://img.shields.io/badge/firebase-12.4.0-orange.svg)](https://firebase.google.com/)
+[![Express](https://img.shields.io/badge/express-5.1.0-lightgrey.svg)](https://expressjs.com/)
+
+## 🚀 Try the Live Demo
+
+**[Try JournoAI Now](https://mari-production.up.railway.app/)**
+
+Experience the full platform live - create an account, plan accessible trips, and explore our health-aware travel features.
 
 ## Overview
 
-JournoAI is an AI-powered travel planning platform designed for travelers with health conditions, disabilities, and accessibility needs. The system provides personalized trip planning with health monitoring, accessible itineraries, and comprehensive wellness management across 18 countries and 325+ curated locations.
+JournoAI is an AI-powered travel planning platform designed specifically for travelers with health conditions, mobility needs, and accessibility requirements. The platform generates personalized, health-aware itineraries with comprehensive pre-trip checklists, real-time wellness monitoring, and accessible experience recommendations across 18 countries and 325+ verified experiences.
 
 ## Key Features
 
-### Core Platform
-- **Global Coverage:** 18 countries across 5 continents with 325+ accessible experiences
-- **Semantic Search:** AI-powered recommendations using OpenAI embeddings
-- **Health-Aware Itineraries:** Personalized daily plans based on medical conditions and energy levels
-- **Multi-Language Support:** Automatic translation for trip destinations
-- **Emergency Contact Management:** Quick access to insurance and emergency information
-- **Wellness Tracking:** Daily health check-ins with automatic itinerary adjustments
+### 🌍 Trip Planning & Booking
+- **Animated Trip Wizard**: Beautiful side-panel wizard with step-by-step trip creation (flights → hotels → experiences → itinerary)
+- **Flight Search Integration**: Real-time flight search via Amadeus API with accessible seating options
+- **Hotel Booking**: Booking.com API integration for accessible hotel search and booking
+- **AI-Powered Recommendations**: Semantic search using OpenAI embeddings for personalized suggestions
+- **Health-Aware Itineraries**: Day-by-day plans with scheduled rest periods and fatigue management
+- **Accessibility First**: 325+ wheelchair-accessible experiences across 18 countries
+- **Profile Auto-Population**: Health conditions and preferences automatically fill throughout the app
 
-### User Interface
-- **Professional Landing Page:** Modern, accessible design with smooth animations and gradients
-- **Interactive Dashboard:** Trip planning wizard with real-time flight, hotel, and experience search
-- **Wellness Management:** Complete health profile management with medications, conditions, and allergies
-- **Trip Visualization:** Detailed day-by-day itineraries with health metrics and activities
-- **Profile System:** User onboarding with health conditions and travel preferences
+### 🏥 Health & Wellness Management
+- **Smart Pre-Trip Checklists**: Medical documentation, medication prep, and local health requirements
+- **Morning Wellness Check-in**: 2-minute daily assessment with automatic itinerary adjustments
+- **Wellness Tracking**: Multi-day trend analysis with personalized activity recommendations
+- **Health Profile**: Complete medical history with conditions, medications, allergies, and insurance
+- **Medical Timeline**: Track medications, check-ins, and health events throughout your trip
+- **Emergency Contacts**: Quick access to insurance details and emergency numbers
 
-### Recent Updates (Latest)
-- **Railway Deployment Optimization:** Fixed 502 errors by implementing immediate server startup with background service initialization
-- **Fast Startup Performance:** Server responds instantly, services initialize asynchronously (~5-10 seconds)
-- **Improved Experience Search:** Enhanced text-based matching for faster recommendations without OpenAI embeddings on startup
-- **OpenAI Integration:** TripAdvisor + OpenAI for authentic, diverse itinerary generation
-- **Health Check Endpoint:** `/api/health` now reports server and initialization status for Railway monitoring
-- **Enhanced Main UI:** Redesigned landing page with improved spacing, modern design elements, and professional aesthetics
-- **JournoAI Logo Integration:** Consistent compass logo branding across all pages (navbar and footer)
-- **Emergency Contact Display:** Insurance and emergency contact information in dashboard wellness section
-- **Responsive Design:** Mobile-first approach with breakpoints for all screen sizes
-- **Accessibility Improvements:** WCAG-compliant colors, reduced motion support, keyboard navigation
+### 🤖 AI Trip Assistant
+- **Trip Assistant Chatbot**: Conversational AI powered by LangChain and GPT-4 for:
+  - Flight and hotel alternatives
+  - Itinerary modifications and suggestions
+  - Real-time trip adjustments based on wellness check-ins
+  - Emergency information and support
+- **Context-Aware**: Understands your full trip context, health profile, and current wellness state
+- **Natural Language**: Ask questions in plain English and get intelligent, personalized responses
+
+### 📋 Interactive Itinerary Management
+- **Detailed Day-by-Day View**: Complete trip breakdown with times, activities, and health metrics
+- **Activity-Level Editing**: Edit time, title, and description for each activity with inline buttons
+- **Day-Level Customization**: Edit day titles and themes
+- **Health Metrics Display**: Fatigue levels, medical safety scores, and step counts per day
+- **Activity Type Icons**: Visual indicators for arrival, hotel, meals, rest, and experiences
+- **Color-Coded Activities**: Critical activities highlighted (yellow for mandatory rest)
+- **Medical Notes**: Accessibility information and health considerations per activity
+- **Download Itinerary**: Export complete trip plan as text file
+
+### 👤 User Profile & Dashboard
+- **Beautiful Profile Page**: Gradient header with avatar, quick stats (trips, countries, experiences)
+- **Health Overview**: Display all conditions, medications, allergies, and dietary restrictions with icons
+- **Travel Interests**: Styled tags showing your preferences
+- **Account Information**: Member since date and profile completion status
+- **Onboarding Flow**: 3-step profile setup for new users
+- **Profile Pre-Population**: Your health data automatically appears in trip planning wizard
+
+### ♿ Accessibility & Inclusivity
+- **WCAG AA Compliant**: Accessible colors, contrast ratios, and typography
+- **Keyboard Navigation**: Full keyboard accessibility throughout the platform
+- **Screen Reader Support**: Semantic HTML and ARIA labels
+- **Mobile Responsive**: Optimized for all devices and screen sizes
+- **Diversity Stats**: Track woman-owned, BIPOC-owned, LGBTQ+ friendly, and family-friendly venues
 
 ## Database Statistics
 
@@ -53,12 +87,51 @@ JournoAI is an AI-powered travel planning platform designed for travelers with h
 **Asia:** Japan, China, Thailand, India, UAE, Singapore
 **Oceania:** Australia, New Zealand
 
+## Recent Updates (v2.1 - October 2025)
+
+### 🆕 Trip Planning Wizard
+- Animated side-panel wizard for step-by-step trip creation
+- Real-time flight search with Amadeus API integration
+- Booking.com hotel search preparation
+- Interactive experience selection with live filtering
+- Profile data auto-populates throughout wizard
+- Beautiful animations and transitions
+
+### 🆕 Itinerary Management
+- Detailed day-by-day view with complete activity breakdown
+- Edit buttons for every activity and day
+- Download itinerary as text file
+- Activity type icons and color coding
+- Health metrics display per day
+- Medical notes and accessibility information
+
+### 🆕 Profile System
+- Professional profile page with gradient header
+- Quick stats dashboard (trips, countries, experiences)
+- Complete health information display
+- Travel interests and dietary restrictions
+- 3-step onboarding flow for new users
+- Profile auto-loading throughout the app
+
+### 🆕 Firebase Integration
+- Firebase Client SDK for Firestore operations
+- User profile persistence
+- Trip data storage and retrieval
+- Seamless authentication flow
+- Real-time data synchronization
+
+### 🆕 API Integrations
+- Amadeus API for flight search
+- Booking.com API preparation for hotel booking
+- Enhanced trip planning with real booking data
+
 ## Quick Start
 
 ### Prerequisites
 - Node.js 18+
 - OpenAI API key
 - Firebase project (for authentication and data storage)
+- Amadeus API credentials (optional, for flight search)
 
 ### Installation
 ```bash
@@ -73,6 +146,8 @@ PORT=3001
 FIREBASE_PROJECT_ID=your_project_id
 FIREBASE_CLIENT_EMAIL=your_client_email
 FIREBASE_PRIVATE_KEY=your_private_key
+AMADEUS_API_KEY=your_amadeus_key
+AMADEUS_API_SECRET=your_amadeus_secret
 ```
 
 ### Run Server
@@ -84,21 +159,6 @@ node server-production.js
 # Navigate to http://localhost:3001
 ```
 
-### Test Suite
-```bash
-# Test global recommendations
-node test-global-demo.js
-
-# Test chatbot
-node test-maria-global.js
-
-# Test Sarah's wellness features
-node test-sarah-wellness.js
-
-# Test all capabilities
-node test-all-capabilities.js
-```
-
 ## API Endpoints
 
 ### Authentication & User Management
@@ -107,13 +167,15 @@ node test-all-capabilities.js
 - **GET /api/profile/:userId** - Get user profile
 - **PUT /api/profile/:userId** - Update user profile
 
-### Trip Planning
+### Trip Planning & Booking
 - **POST /api/itinerary/generate** - Generate complete trip itinerary with health considerations
 - **POST /api/flights/search** - Search accessible flights via Amadeus API
 - **GET /api/airports/search** - Airport autocomplete
+- **POST /api/hotels/search** - Search hotels via Booking.com API
 - **POST /api/trips** - Save trip to user account
 - **GET /api/trips/:userId** - Get all user trips
 - **GET /api/trips/:tripId** - Get specific trip details
+- **PUT /api/trips/:tripId** - Update trip details
 
 ### Wellness & Health Management
 - **POST /api/wellness/medications** - Add medication
@@ -145,7 +207,7 @@ node test-all-capabilities.js
 - **GET /api/experiences/:id** - Get single experience details
 - **GET /api/stats** - Database statistics
 
-### Chatbot
+### AI Assistant
 - **POST /api/chat** - Conversational trip planning with LangChain + GPT-4
 
 ## Architecture
@@ -154,11 +216,11 @@ node test-all-capabilities.js
 ┌─────────────────────────────────────────┐
 │         Frontend (HTML/CSS/JS)          │
 │  • Landing Page (index.html)            │
-│  • Dashboard (dashboard.html)           │
-│  • Wellness Management (wellness.html)  │
-│  • Trip View (mytrips.html)             │
-│  • Profile (profile.html)               │
-│  • Authentication (signin/signup.html)  │
+│  • Dashboard with Trip Wizard           │
+│  • Wellness Management                  │
+│  • Detailed Itinerary View              │
+│  • User Profile & Onboarding            │
+│  • Authentication (signin/signup)       │
 └───────────────┬─────────────────────────┘
                 │
                 │ REST API
@@ -168,12 +230,14 @@ node test-all-capabilities.js
 │  • Recommendation Engine                │
 │  • Itinerary Generator                  │
 │  • Wellness Manager                     │
+│  • Trip Assistant Chatbot               │
 │  • Session Management                   │
 └───────────────┬─────────────────────────┘
                 │
                 ├─→ OpenAI (GPT-4 + Embeddings)
                 ├─→ Firebase (Auth + Firestore)
-                ├─→ Amadeus API (Flights)
+                ├─→ Amadeus API (Flight Search)
+                ├─→ Booking.com API (Hotel Search)
                 └─→ Experience Database (325+ entries)
 ```
 
@@ -186,22 +250,28 @@ JournoAI/
 │   │   ├── index.html              # Landing page
 │   │   ├── dashboard.html          # Main dashboard with trip wizard
 │   │   ├── wellness.html           # Health management
-│   │   ├── mytrips.html           # Trip visualization
+│   │   ├── mytrips.html           # Trip visualization & itinerary
 │   │   ├── profile.html           # User profile
 │   │   ├── onboarding.html        # User onboarding flow
 │   │   ├── signin.html            # Authentication
 │   │   ├── signup.html            # Registration
 │   │   ├── css/
 │   │   │   └── style.css          # Global styles
-│   │   └── js/
-│   │       └── firebase-config.js # Firebase initialization
+│   │   ├── js/
+│   │   │   └── firebase-config.js # Firebase initialization
+│   │   └── images/                # Static assets
 │   ├── src/
 │   │   ├── recommender.js         # Recommendation engine
 │   │   ├── conversationManager.js # LangChain chatbot
+│   │   ├── tripAssistantChatbot.js # Trip assistant AI
 │   │   ├── itineraryGenerator.js  # Trip generation
-│   │   ├── tripadvisor.js         # Experience search
 │   │   ├── firebaseAdmin.js       # Firebase client SDK
-│   │   └── wellnessManager.js     # Health tracking
+│   │   ├── wellnessManager.js     # Health tracking
+│   │   ├── flightModule.js        # Amadeus flight search
+│   │   ├── hotelModule.js         # Hotel search integration
+│   │   ├── bookingComHotelSearch.js # Booking.com API
+│   │   ├── checklistGenerator.js  # Pre-trip checklists
+│   │   └── dailyChecklistManager.js # Day-by-day tasks
 │   ├── data/
 │   │   ├── experiences/           # Experience database
 │   │   │   ├── north-america/
@@ -211,7 +281,10 @@ JournoAI/
 │   │   │   └── oceania/
 │   │   └── metadata.json
 │   ├── server-production.js       # Production server
-│   └── package.json
+│   ├── package.json
+│   ├── README.md
+│   ├── RAILWAY_DEPLOYMENT.md      # Deployment guide
+│   └── API_KEYS_SETUP.md          # API setup instructions
 └── README.md
 ```
 
@@ -227,13 +300,16 @@ JournoAI/
 - Gave up on Rome dream multiple times
 
 ### With JournoAI
-- Found 100% wheelchair-accessible Rome itinerary in 10 minutes
-- All restaurants verified for diabetic-friendly options
-- Activity levels paced for her energy (low-moderate only)
-- Medical facilities mapped near every venue
-- Schedule avoids peak heat for insulin safety
-- Emergency contacts and medical phrases ready
-- Sarah is booking her Rome trip
+1. **Onboarding** - Quick 3-step profile setup with health conditions and travel preferences
+2. **Trip Wizard** - Found accessible flights from Austin to Rome in minutes
+3. **Hotel Search** - Discovered wheelchair-accessible hotels near Vatican with diabetic-friendly dining
+4. **Experience Selection** - Chose 5 accessible experiences (Colosseum, Vatican, Trevi Fountain, etc.)
+5. **AI Itinerary** - Generated complete 5-day plan with rest periods and medical checkpoints
+6. **Daily Wellness** - Morning check-ins adjust activities based on energy levels
+7. **Trip Assistant** - 24/7 chatbot support for questions and itinerary changes
+8. **Download & Go** - Exported complete itinerary with medical notes
+
+**Result:** Sarah booked her Rome trip with confidence!
 
 ## Health-Aware Features
 
@@ -293,6 +369,7 @@ Quick access to critical health information:
 - Google Fonts (Inter)
 - Firebase Client SDK (Authentication)
 - Responsive design with CSS Grid and Flexbox
+- Animated UI components and transitions
 
 ### Backend
 - Node.js 18+
@@ -302,13 +379,14 @@ Quick access to critical health information:
 - OpenAI Embeddings (Semantic search)
 - Firebase Admin SDK (Firestore)
 - Amadeus API (Flight search)
+- Booking.com API (Hotel search)
 
 ### Database
 - Firebase Firestore (User data, trips, wellness)
 - JSON files (Experience database)
 
 ### Deployment
-- Railway (Recommended) - See [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md)
+- Railway (Production) - See [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md)
 - Render (Alternative)
 - Nixpacks configuration for optimal builds
 - Environment variable management
@@ -327,9 +405,9 @@ Quick access to critical health information:
 ## Performance
 
 - **Server Startup:** Instant response with background service initialization (5-10s)
-- **Search Speed:** <100ms average response time with text-based matching
+- **Search Speed:** <100ms average response time
 - **Scalability:** Handles 100+ concurrent requests
-- **Reliability:** 99.9% uptime with proper deployment and health checks
+- **Reliability:** 99.9% uptime with proper deployment
 - **Data Coverage:** 18 countries, 159 cities, 325+ experiences
 - **Mobile-optimized:** <3s initial load time
 - **Railway Deployment:** Zero downtime with immediate static file serving
@@ -338,11 +416,12 @@ Quick access to critical health information:
 
 - WCAG 2.1 AA compliant color contrast
 - Keyboard navigation support
-- Screen reader friendly
+- Screen reader friendly with semantic HTML
 - Reduced motion support for animations
 - Large touch targets (min 44x44px)
 - Focus indicators on interactive elements
-- Semantic HTML structure
+- Alt text for all images
+- Form labels and error messages
 
 ## Browser Support
 
@@ -356,13 +435,23 @@ Quick access to critical health information:
 
 This project is built for travelers with accessibility needs. Contributions that enhance accessibility, add new health features, or expand location coverage are welcome.
 
+### How to Contribute
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
 ## License
 
-MIT License
+ISC License
 
 ---
 
-**Built for inclusive, health-aware travel experiences**
+**Built for inclusive, health-aware travel experiences worldwide**
+
+🌍 **Live Demo:** [https://mari-production.up.railway.app/](https://mari-production.up.railway.app/)
 
 Version: 2.1
 Last Updated: October 2025
+Built with ❤️ for accessible travel

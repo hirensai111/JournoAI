@@ -16,21 +16,31 @@ import { UserService, TripService } from './src/firebaseAdmin.js';
 import tripRoutes, { setRecommenderFactory } from './src/routes/tripRoutes.js';
 import wellnessRoutes from './src/routes/wellnessRoutes.js';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
 const app = express();
+// Railway provides PORT via environment variable - MUST use it
 const PORT = process.env.PORT || 3001;
+
+// Log the port being used for debugging
+console.log(`📌 Starting server with PORT=${PORT} (from ${process.env.PORT ? 'Railway env' : 'default'})`);
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from public directory
-app.use(express.static('public'));
+// Serve static files from public directory (use absolute path for production)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve data files (experiences JSON)
-app.use('/data', express.static('data'));
+app.use('/data', express.static(path.join(__dirname, 'data')));
 
 // Request logging
 app.use((req, res, next) => {
@@ -52,9 +62,9 @@ app.use('/api/trips', tripRoutes);
 // Register wellness routes
 app.use('/api/wellness', wellnessRoutes);
 
-// Serve main page
+// Serve main page (use absolute path for production)
 app.get('/', (req, res) => {
-  res.sendFile('index.html', { root: 'public' });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Initialize recommender and conversation manager

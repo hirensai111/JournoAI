@@ -197,7 +197,9 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    initialized: isInitialized,
+    initialization_error: initializationError ? initializationError.message : null
   });
 });
 
@@ -988,15 +990,26 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-async function startServer() {
+// Track initialization status
+let isInitialized = false;
+let initializationError = null;
+
+// Start server IMMEDIATELY (Railway needs this for health checks)
+const HOST = '0.0.0.0';
+const server = app.listen(PORT, HOST, () => {
+  console.log(`🌐 Server listening on http://${HOST}:${PORT}`);
+  console.log(`⏳ Initializing services in background...`);
+});
+
+// Initialize services asynchronously AFTER server starts
+async function initializeServices() {
   try {
     console.log('🚀 Initializing Experience Recommender...');
     recommender = new ExperienceRecommender();
-    
+
     // Enable demo mode to avoid API quota issues
     console.log('🎭 ENABLING DEMO MODE (No OpenAI API calls)');
-    
+
     // Override createEmbeddings to use mock data
     recommender.createEmbeddings = async function() {
       console.log('🎭 DEMO MODE: Creating mock embeddings');
@@ -1119,39 +1132,39 @@ async function startServer() {
     tripAssistantChatbot = new TripAssistantChatbot(recommender);
     console.log('✅ Trip assistant chatbot ready\n');
 
-    const HOST = '0.0.0.0';
-    
-    app.listen(PORT, HOST, () => {
-      console.log(`🌐 Server listening on http://${HOST}:${PORT}`);
-      console.log(`📊 Available endpoints:`);
-      console.log(`   POST /api/recommend - Get recommendations`);
-      console.log(`   POST /api/chat - Chat with Journey AI`);
-      console.log(`   GET  /api/experiences - List experiences`);
-      console.log(`   GET  /api/experiences/:id - Get single experience`);
-      console.log(`   GET  /api/stats - Get database statistics`);
-      console.log(`   POST /api/flights/search - Search flights`);
-      console.log(`   GET  /api/airports/search - Search airports`);
-      console.log(`   POST /api/checklist/generate - Generate travel checklist`);
-      console.log(`   POST /api/wellness/checkin - Morning wellness check-in`);
-      console.log(`   GET  /api/wellness/trend/:session_id - Get wellness trend`);
-      console.log(`   POST /api/checklist/daily - Generate daily checklist`);
-      console.log(`   PATCH /api/checklist/daily/:session_id/:day/:item_id - Update item`);
-      console.log(`   GET  /api/checklist/daily/:session_id/:day - Get daily checklist`);
-      console.log(`   POST /api/itinerary/generate - Generate trip itinerary`);
-      console.log(`   POST /api/user/profile - Save/update user profile`);
-      console.log(`   GET  /api/user/profile/:user_id - Get user profile`);
-      console.log(`   POST /api/hotels/search - Search hotels`);
-      console.log(`   POST /api/bookingcom/hotels/search - Booking.com hotel search`);
-      console.log(`   POST /api/trip/plan - Complete trip planning (flights+hotels+itinerary)`);
-      console.log(`   GET  /api/user/:user_id/trips - Get user's trips`);
-      console.log(`   POST /api/health-reminders/complete - Save health reminder completion`);
-      console.log(`   GET  /api/health-reminders/:trip_id - Get health reminder states`);
-      console.log(`   GET  /api/health - Health check`);
-    });
+    isInitialized = true;
+    console.log('✅ ALL SERVICES INITIALIZED - Server ready for requests!');
+    console.log(`📊 Available endpoints:`);
+    console.log(`   POST /api/recommend - Get recommendations`);
+    console.log(`   POST /api/chat - Chat with Journey AI`);
+    console.log(`   GET  /api/experiences - List experiences`);
+    console.log(`   GET  /api/experiences/:id - Get single experience`);
+    console.log(`   GET  /api/stats - Get database statistics`);
+    console.log(`   POST /api/flights/search - Search flights`);
+    console.log(`   GET  /api/airports/search - Search airports`);
+    console.log(`   POST /api/checklist/generate - Generate travel checklist`);
+    console.log(`   POST /api/wellness/checkin - Morning wellness check-in`);
+    console.log(`   GET  /api/wellness/trend/:session_id - Get wellness trend`);
+    console.log(`   POST /api/checklist/daily - Generate daily checklist`);
+    console.log(`   PATCH /api/checklist/daily/:session_id/:day/:item_id - Update item`);
+    console.log(`   GET  /api/checklist/daily/:session_id/:day - Get daily checklist`);
+    console.log(`   POST /api/itinerary/generate - Generate trip itinerary`);
+    console.log(`   POST /api/user/profile - Save/update user profile`);
+    console.log(`   GET  /api/user/profile/:user_id - Get user profile`);
+    console.log(`   POST /api/hotels/search - Search hotels`);
+    console.log(`   POST /api/bookingcom/hotels/search - Booking.com hotel search`);
+    console.log(`   POST /api/trip/plan - Complete trip planning (flights+hotels+itinerary)`);
+    console.log(`   GET  /api/user/:user_id/trips - Get user's trips`);
+    console.log(`   POST /api/health-reminders/complete - Save health reminder completion`);
+    console.log(`   GET  /api/health-reminders/:trip_id - Get health reminder states`);
+    console.log(`   GET  /api/health - Health check`);
+
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
+    console.error('❌ Failed to initialize services:', error);
+    initializationError = error;
+    // Don't exit - let health check endpoint still work
   }
 }
 
-startServer();
+// Start initialization in background
+initializeServices();

@@ -353,6 +353,9 @@ function generateFlightOptions(baseFlight, prefs) {
   // Base duration varies by route
   const baseDuration = 660; // 11 hours as default
 
+  // Generate departure times (morning, afternoon, evening, red-eye)
+  const departureHours = [8, 11, 16, 22]; // 8am, 11am, 4pm, 10pm
+
   for (let i = 0; i < 5; i++) {
     const price = baseFlight.priceTotal + (Math.random() * 400 - 200);
     const stops = i % 3 === 0 ? 0 : i % 3 === 1 ? 1 : 2;
@@ -368,6 +371,17 @@ function generateFlightOptions(baseFlight, prefs) {
       duration += 300 + (Math.random() * 60); // Add 5-6 hours
     }
 
+    // Generate departure and arrival times
+    const departureHour = departureHours[i % departureHours.length];
+    const departureMinute = Math.floor(Math.random() * 60);
+    const departureTime = `${departureHour.toString().padStart(2, '0')}:${departureMinute.toString().padStart(2, '0')}`;
+
+    // Calculate arrival time (departure + duration + timezone difference)
+    const arrivalTotalMinutes = (departureHour * 60 + departureMinute + duration + 360) % (24 * 60); // +6 hours timezone
+    const arrivalHour = Math.floor(arrivalTotalMinutes / 60);
+    const arrivalMinute = arrivalTotalMinutes % 60;
+    const arrivalTime = `${arrivalHour.toString().padStart(2, '0')}:${arrivalMinute.toString().padStart(2, '0')}`;
+
     flights.push({
       id: `flight-${i}`,
       carrier: carriers[i % carriers.length],
@@ -377,7 +391,9 @@ function generateFlightOptions(baseFlight, prefs) {
       currency: 'USD',
       departureAirport,
       arrivalAirport,
-      duration: Math.round(duration)
+      duration: Math.round(duration),
+      departureTime,
+      arrivalTime
     });
   }
 
@@ -395,17 +411,19 @@ function displayFlightSelection(flights) {
       <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
         <div>
           <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">${flight.carrier}</div>
-          <div style="font-size: 0.875rem; color: var(--text-secondary);">${flight.departureAirport} → ${flight.arrivalAirport}</div>
+          <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+            ${flight.departureAirport} ${flight.departureTime || ''} → ${flight.arrivalAirport} ${flight.arrivalTime || ''}
+          </div>
+          <div style="display: flex; gap: 1rem; font-size: 0.75rem; color: var(--text-muted);">
+            <span>✈️ ${flight.cabin}</span>
+            <span>⏱️ ${Math.floor(flight.duration / 60)}h ${flight.duration % 60}m</span>
+            <span>${flight.stops === 0 ? '🎯 Direct' : `🔄 ${flight.stops} stop${flight.stops > 1 ? 's' : ''}`}</span>
+          </div>
         </div>
         <div style="text-align: right;">
           <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary);">$${flight.priceTotal}</div>
           <div style="font-size: 0.75rem; color: var(--text-muted);">per person</div>
         </div>
-      </div>
-      <div style="display: flex; gap: 1rem; font-size: 0.813rem; color: var(--text-secondary);">
-        <span>✈️ ${flight.cabin}</span>
-        <span>⏱️ ${Math.floor(flight.duration / 60)}h ${flight.duration % 60}m</span>
-        <span>${flight.stops === 0 ? '🎯 Direct' : `🔄 ${flight.stops} stop${flight.stops > 1 ? 's' : ''}`}</span>
       </div>
     </div>
   `).join('');
@@ -669,19 +687,17 @@ async function generateMockItinerary(destination, startDate, endDate) {
     const activitiesPerDay = 3;
     const totalActivities = tripDays * activitiesPerDay;
 
-    // If we don't have enough experiences, generate more using AI
+    // If we don't have enough experiences, generate more generic ones
     if (experiences.length < totalActivities) {
-      console.log(`Only ${experiences.length} experiences available, need ${totalActivities}. Generating more with AI...`);
-      addChatMessage(`Found ${experiences.length} curated experiences. Generating ${totalActivities - experiences.length} more personalized recommendations...`, 'assistant');
+      console.log(`Only ${experiences.length} experiences available, need ${totalActivities}. Adding generic experiences...`);
 
-      const prefs = planningState.preferences;
-      const additionalExperiences = await generateAIExperiences(
+      const additionalExperiences = generateGenericExperiences(
         destination,
-        totalActivities - experiences.length,
-        prefs
+        totalActivities - experiences.length
       );
 
       experiences = [...experiences, ...additionalExperiences];
+      console.log(`Total experiences after adding generics: ${experiences.length}`);
     }
 
     // Select diverse experiences for the full trip

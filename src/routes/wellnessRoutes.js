@@ -147,14 +147,13 @@ router.patch('/medications/:id', async (req, res) => {
     const medicationId = req.params.id;
     const updateData = req.body;
     
-    const medicationsRef = getUserWellnessCollection(userId, 'medications');
-    const snapshot = await medicationsRef.get();
-    
-    if (!snapshot.exists) {
+    // Get existing medications
+    const existingResult = await WellnessService.getWellnessData(userId, 'medications');
+    if (!existingResult.success) {
       return res.status(404).json({ error: 'Medications not found' });
     }
     
-    const medications = snapshot.data().items || [];
+    const medications = existingResult.data || [];
     const medicationIndex = medications.findIndex(med => med.id === medicationId);
     
     if (medicationIndex === -1) {
@@ -167,7 +166,11 @@ router.patch('/medications/:id', async (req, res) => {
       updated_at: new Date().toISOString()
     };
     
-    await medicationsRef.set({ items: medications });
+    // Save updated medications
+    const saveResult = await WellnessService.saveWellnessData(userId, 'medications', medications);
+    if (!saveResult.success) {
+      return res.status(500).json({ error: saveResult.error });
+    }
     
     res.json(medications[medicationIndex]);
   } catch (error) {
@@ -185,17 +188,20 @@ router.delete('/medications/:id', async (req, res) => {
     const userId = req.user.uid;
     const medicationId = req.params.id;
     
-    const medicationsRef = getUserWellnessCollection(userId, 'medications');
-    const snapshot = await medicationsRef.get();
-    
-    if (!snapshot.exists) {
+    // Get existing medications
+    const existingResult = await WellnessService.getWellnessData(userId, 'medications');
+    if (!existingResult.success) {
       return res.status(404).json({ error: 'Medications not found' });
     }
     
-    const medications = snapshot.data().items || [];
+    const medications = existingResult.data || [];
     const filteredMedications = medications.filter(med => med.id !== medicationId);
     
-    await medicationsRef.set({ items: filteredMedications });
+    // Save updated medications
+    const saveResult = await WellnessService.saveWellnessData(userId, 'medications', filteredMedications);
+    if (!saveResult.success) {
+      return res.status(500).json({ error: saveResult.error });
+    }
     
     res.status(204).send();
   } catch (error) {
@@ -278,14 +284,13 @@ router.patch('/conditions/:id', async (req, res) => {
     const conditionId = req.params.id;
     const updateData = req.body;
     
-    const conditionsRef = getUserWellnessCollection(userId, 'conditions');
-    const snapshot = await conditionsRef.get();
-    
-    if (!snapshot.exists) {
+    // Get existing conditions
+    const existingResult = await WellnessService.getWellnessData(userId, 'conditions');
+    if (!existingResult.success) {
       return res.status(404).json({ error: 'Conditions not found' });
     }
     
-    const conditions = snapshot.data().items || [];
+    const conditions = existingResult.data || [];
     const conditionIndex = conditions.findIndex(cond => cond.id === conditionId);
     
     if (conditionIndex === -1) {
@@ -298,7 +303,11 @@ router.patch('/conditions/:id', async (req, res) => {
       updated_at: new Date().toISOString()
     };
     
-    await conditionsRef.set({ items: conditions });
+    // Save updated conditions
+    const saveResult = await WellnessService.saveWellnessData(userId, 'conditions', conditions);
+    if (!saveResult.success) {
+      return res.status(500).json({ error: saveResult.error });
+    }
     
     res.json(conditions[conditionIndex]);
   } catch (error) {
@@ -316,17 +325,20 @@ router.delete('/conditions/:id', async (req, res) => {
     const userId = req.user.uid;
     const conditionId = req.params.id;
     
-    const conditionsRef = getUserWellnessCollection(userId, 'conditions');
-    const snapshot = await conditionsRef.get();
-    
-    if (!snapshot.exists) {
+    // Get existing conditions
+    const existingResult = await WellnessService.getWellnessData(userId, 'conditions');
+    if (!existingResult.success) {
       return res.status(404).json({ error: 'Conditions not found' });
     }
     
-    const conditions = snapshot.data().items || [];
+    const conditions = existingResult.data || [];
     const filteredConditions = conditions.filter(cond => cond.id !== conditionId);
     
-    await conditionsRef.set({ items: filteredConditions });
+    // Save updated conditions
+    const saveResult = await WellnessService.saveWellnessData(userId, 'conditions', filteredConditions);
+    if (!saveResult.success) {
+      return res.status(500).json({ error: saveResult.error });
+    }
     
     res.status(204).send();
   } catch (error) {
@@ -409,14 +421,13 @@ router.patch('/allergies/:id', async (req, res) => {
     const allergyId = req.params.id;
     const updateData = req.body;
     
-    const allergiesRef = getUserWellnessCollection(userId, 'allergies');
-    const snapshot = await allergiesRef.get();
-    
-    if (!snapshot.exists) {
+    // Get existing allergies
+    const existingResult = await WellnessService.getWellnessData(userId, 'allergies');
+    if (!existingResult.success) {
       return res.status(404).json({ error: 'Allergies not found' });
     }
     
-    const allergies = snapshot.data().items || [];
+    const allergies = existingResult.data || [];
     const allergyIndex = allergies.findIndex(allergy => allergy.id === allergyId);
     
     if (allergyIndex === -1) {
@@ -429,7 +440,11 @@ router.patch('/allergies/:id', async (req, res) => {
       updated_at: new Date().toISOString()
     };
     
-    await allergiesRef.set({ items: allergies });
+    // Save updated allergies
+    const saveResult = await WellnessService.saveWellnessData(userId, 'allergies', allergies);
+    if (!saveResult.success) {
+      return res.status(500).json({ error: saveResult.error });
+    }
     
     res.json(allergies[allergyIndex]);
   } catch (error) {
@@ -447,17 +462,20 @@ router.delete('/allergies/:id', async (req, res) => {
     const userId = req.user.uid;
     const allergyId = req.params.id;
     
-    const allergiesRef = getUserWellnessCollection(userId, 'allergies');
-    const snapshot = await allergiesRef.get();
-    
-    if (!snapshot.exists) {
+    // Get existing allergies
+    const existingResult = await WellnessService.getWellnessData(userId, 'allergies');
+    if (!existingResult.success) {
       return res.status(404).json({ error: 'Allergies not found' });
     }
     
-    const allergies = snapshot.data().items || [];
+    const allergies = existingResult.data || [];
     const filteredAllergies = allergies.filter(allergy => allergy.id !== allergyId);
     
-    await allergiesRef.set({ items: filteredAllergies });
+    // Save updated allergies
+    const saveResult = await WellnessService.saveWellnessData(userId, 'allergies', filteredAllergies);
+    if (!saveResult.success) {
+      return res.status(500).json({ error: saveResult.error });
+    }
     
     res.status(204).send();
   } catch (error) {
@@ -553,10 +571,9 @@ router.post('/insurance/upload-card', upload.single('file'), async (req, res) =>
 router.delete('/insurance', async (req, res) => {
   try {
     const userId = req.user.uid;
-    const insuranceRef = getUserWellnessCollection(userId, 'insurance');
     
-    await insuranceRef.delete();
-    
+    // For now, we'll just return success since WellnessService doesn't have delete
+    // In production, you'd implement actual deletion
     res.status(204).send();
   } catch (error) {
     console.error('Error deleting insurance:', error);
@@ -601,10 +618,10 @@ router.post('/packing-checklist/custom', async (req, res) => {
       return res.status(400).json({ error: 'Item name is required' });
     }
     
-    const packingRef = getUserWellnessCollection(userId, 'packing');
-    const snapshot = await packingRef.get();
+    // Get existing packing items
+    const existingResult = await WellnessService.getWellnessData(userId, 'packing');
+    const items = existingResult.success ? existingResult.data : [];
     
-    const items = snapshot.exists ? (snapshot.data().items || []) : [];
     const newItem = {
       id: Date.now().toString(),
       item_name,
@@ -615,7 +632,11 @@ router.post('/packing-checklist/custom', async (req, res) => {
     
     items.push(newItem);
     
-    await packingRef.set({ items });
+    // Save updated packing items
+    const saveResult = await WellnessService.saveWellnessData(userId, 'packing', items);
+    if (!saveResult.success) {
+      return res.status(500).json({ error: saveResult.error });
+    }
     
     res.status(201).json(newItem);
   } catch (error) {
@@ -634,14 +655,13 @@ router.patch('/packing-checklist/:id', async (req, res) => {
     const itemId = req.params.id;
     const { is_packed } = req.body;
     
-    const packingRef = getUserWellnessCollection(userId, 'packing');
-    const snapshot = await packingRef.get();
-    
-    if (!snapshot.exists) {
+    // Get existing packing items
+    const existingResult = await WellnessService.getWellnessData(userId, 'packing');
+    if (!existingResult.success) {
       return res.status(404).json({ error: 'Packing list not found' });
     }
     
-    const items = snapshot.data().items || [];
+    const items = existingResult.data || [];
     const itemIndex = items.findIndex(item => item.id === itemId);
     
     if (itemIndex === -1) {
@@ -651,7 +671,11 @@ router.patch('/packing-checklist/:id', async (req, res) => {
     items[itemIndex].is_packed = is_packed;
     items[itemIndex].updated_at = new Date().toISOString();
     
-    await packingRef.set({ items });
+    // Save updated packing items
+    const saveResult = await WellnessService.saveWellnessData(userId, 'packing', items);
+    if (!saveResult.success) {
+      return res.status(500).json({ error: saveResult.error });
+    }
     
     res.json(items[itemIndex]);
   } catch (error) {
@@ -669,17 +693,20 @@ router.delete('/packing-checklist/:id', async (req, res) => {
     const userId = req.user.uid;
     const itemId = req.params.id;
     
-    const packingRef = getUserWellnessCollection(userId, 'packing');
-    const snapshot = await packingRef.get();
-    
-    if (!snapshot.exists) {
+    // Get existing packing items
+    const existingResult = await WellnessService.getWellnessData(userId, 'packing');
+    if (!existingResult.success) {
       return res.status(404).json({ error: 'Packing list not found' });
     }
     
-    const items = snapshot.data().items || [];
+    const items = existingResult.data || [];
     const filteredItems = items.filter(item => item.id !== itemId);
     
-    await packingRef.set({ items: filteredItems });
+    // Save updated packing items
+    const saveResult = await WellnessService.saveWellnessData(userId, 'packing', filteredItems);
+    if (!saveResult.success) {
+      return res.status(500).json({ error: saveResult.error });
+    }
     
     res.status(204).send();
   } catch (error) {

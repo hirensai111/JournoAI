@@ -26,11 +26,18 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 const app = express();
-// Railway provides PORT via environment variable - MUST use it
+
+// CRITICAL: Railway automatically provides PORT - DO NOT set it manually in Railway dashboard!
 const PORT = process.env.PORT || 3001;
 
 // Log the port being used for debugging
-console.log(`📌 Starting server with PORT=${PORT} (from ${process.env.PORT ? 'Railway env' : 'default'})`);
+if (!process.env.PORT) {
+  console.warn('⚠️  WARNING: No PORT environment variable detected!');
+  console.warn('⚠️  Railway should provide this automatically.');
+  console.warn('⚠️  Using fallback port 3001 for local development.');
+} else {
+  console.log(`✅ Using Railway-provided PORT=${PORT}`);
+}
 
 // Middleware
 app.use(cors());

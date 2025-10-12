@@ -6,9 +6,3 @@ cmds = ['npm ci --only=production']
 
 [start]
 cmd = 'npm start'
-
-[providers]
-nodejs = true
-
-[detectors]
-nodejs = true

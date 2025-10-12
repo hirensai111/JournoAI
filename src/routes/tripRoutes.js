@@ -192,85 +192,19 @@ router.post('/itinerary/enhanced', async (req, res) => {
       console.log('✈️  Flight info:', flightInfo);
     }
 
-    // Calculate trip duration
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const tripDuration = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    // Use TripAdvisor + OpenAI for real, diverse experiences
+    console.log('🎯 Using TripAdvisor + OpenAI integration for authentic experiences');
+    const days = await generateEnhancedItinerary(destination, startDate, endDate, preferences, flightInfo);
 
-    console.log(`⏱️  Trip duration: ${tripDuration} days`);
+    console.log(`✅ Generated ${days.length} days with OpenAI`);
 
-    // Get recommender instance
-    const recommender = await getRecommender();
-    console.log('✅ Recommender initialized');
-
-    // Create itinerary generator instance with recommender
-    const generator = new ItineraryGenerator(recommender);
-
-    // Generate detailed itinerary with all the extra fields
-    const itineraryData = await generator.generateItinerary({
-      destination: destination,
-      city: destination,
-      tripDuration: tripDuration,
-      startDate: startDate,
-      conditions: preferences?.accessibility || [],
-      preferences: preferences?.vibe || [],
-      accessibility_needs: preferences?.accessibility || [],
-      dietary: [],
-      soloTravel: false,
-      userId: userId || null,
-      wellnessData: null,
-      flightInfo: flightInfo || null
-    });
-
-    console.log('✅ Itinerary generated successfully');
-
-    // Transform the response to match frontend expectations
-    // The generator returns { days: [...], destination, trip_duration, etc }
-    const days = itineraryData.days || [];
-
-    console.log(`📦 Returning ${days.length} days`);
-
-    // Helper function to get activity icon
-    const getActivityIcon = (type) => {
-      const icons = {
-        arrival: '✈️',
-        accommodation: '🏨',
-        meal: '🍽️',
-        rest: '💤',
-        experience: '🎯',
-        medication: '💊',
-        optional: '⭐'
-      };
-      return icons[type] || '📍';
-    };
-
-    // Transform days to match frontend format expectations
-    const transformedDays = days.map((day, index) => ({
-      title: day.title || `Day ${index + 1}`,
-      date: day.date || '',
-      highlight: day.theme || day.title || `Explore ${destination}`,
-      activities: day.activities.map(activity => ({
-        icon: activity.icon || getActivityIcon(activity.type),
-        name: activity.title,
-        time: activity.time,
-        description: activity.description,
-        type: activity.type,
-        duration: activity.duration_hours,
-        accessibility: activity.accessibility || [],
-        estimated_steps: activity.estimated_steps,
-        medical_notes: activity.medical_notes,
-        importance: activity.importance
-      })),
-      fatigue_level: day.fatigue_level,
-      medical_safety_score: day.medical_safety_score,
-      daily_steps_estimate: day.daily_steps_estimate,
-      medical_notes: day.medical_notes
-    }));
-
+    // OpenAI itinerary is already in the correct format with:
+    // { day, date, title, highlight, activities: [{time, name, description, duration, type, icon}] }
+    // Just return it directly
     res.json({
       success: true,
-      itinerary: transformedDays,
-      count: transformedDays.length
+      itinerary: days,
+      count: days.length
     });
   } catch (error) {
     console.error('❌ Error generating enhanced itinerary:', error);

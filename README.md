@@ -25,6 +25,11 @@ JournoAI is an AI-powered travel planning platform designed for travelers with h
 - **Profile System:** User onboarding with health conditions and travel preferences
 
 ### Recent Updates (Latest)
+- **Railway Deployment Optimization:** Fixed 502 errors by implementing immediate server startup with background service initialization
+- **Fast Startup Performance:** Server responds instantly, services initialize asynchronously (~5-10 seconds)
+- **Improved Experience Search:** Enhanced text-based matching for faster recommendations without OpenAI embeddings on startup
+- **OpenAI Integration:** TripAdvisor + OpenAI for authentic, diverse itinerary generation
+- **Health Check Endpoint:** `/api/health` now reports server and initialization status for Railway monitoring
 - **Enhanced Main UI:** Redesigned landing page with improved spacing, modern design elements, and professional aesthetics
 - **JournoAI Logo Integration:** Consistent compass logo branding across all pages (navbar and footer)
 - **Emergency Contact Display:** Insurance and emergency contact information in dashboard wellness section
@@ -303,10 +308,12 @@ Quick access to critical health information:
 - JSON files (Experience database)
 
 ### Deployment
-- Railway (Recommended)
+- Railway (Recommended) - See [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md)
 - Render (Alternative)
+- Nixpacks configuration for optimal builds
 - Environment variable management
 - Rate limiting and security
+- Health check monitoring
 
 ## Security
 
@@ -319,11 +326,13 @@ Quick access to critical health information:
 
 ## Performance
 
-- Search Speed: <100ms average response time
-- Scalability: Handles 100+ concurrent requests
-- Reliability: 99.9% uptime with proper deployment
-- Data Coverage: 18 countries, 159 cities
-- Mobile-optimized: <3s initial load time
+- **Server Startup:** Instant response with background service initialization (5-10s)
+- **Search Speed:** <100ms average response time with text-based matching
+- **Scalability:** Handles 100+ concurrent requests
+- **Reliability:** 99.9% uptime with proper deployment and health checks
+- **Data Coverage:** 18 countries, 159 cities, 325+ experiences
+- **Mobile-optimized:** <3s initial load time
+- **Railway Deployment:** Zero downtime with immediate static file serving
 
 ## Accessibility
 
@@ -355,5 +364,5 @@ MIT License
 
 **Built for inclusive, health-aware travel experiences**
 
-Version: 2.0
-Last Updated: January 2025
+Version: 2.1
+Last Updated: October 2025

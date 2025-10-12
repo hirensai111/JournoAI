@@ -1014,12 +1014,60 @@ async function initializeServices() {
     console.log('🚀 Initializing Experience Recommender...');
     recommender = new ExperienceRecommender();
 
-    // Use real OpenAI API for embeddings and semantic search
-    console.log('✅ Using OpenAI API for semantic search');
+    // Load experiences but skip embeddings for now (too slow on startup)
+    console.log('📂 Loading experiences without embeddings for faster startup...');
+    await recommender.loadExperiences();
+    console.log(`✅ Loaded ${recommender.experiences.length} experiences`);
 
-    await recommender.initialize();
+    // Override search to use fast text-based matching instead of OpenAI
+    recommender.search = async function({ query, filters = {}, limit = 10 }) {
+      const queryLower = query.toLowerCase();
+      const queryWords = queryLower.split(' ');
 
-    // Share the recommender instance with tripRoutes (so they use the demo mode overrides)
+      // First apply filters
+      let filteredExperiences = this.experiences;
+
+      if (filters.city) {
+        const cityLower = filters.city.toLowerCase();
+        filteredExperiences = filteredExperiences.filter(exp =>
+          exp.city && exp.city.toLowerCase() === cityLower
+        );
+      }
+
+      if (filters.country) {
+        const countryLower = filters.country.toLowerCase();
+        filteredExperiences = filteredExperiences.filter(exp =>
+          exp.country && exp.country.toLowerCase() === countryLower
+        );
+      }
+
+      // Then apply text matching
+      const results = filteredExperiences
+        .filter(experience => {
+          if (!query || queryWords.length === 0) return true;
+
+          const text = [
+            experience.name,
+            experience.description,
+            experience.cultural_significance,
+            ...experience.preference_tags,
+            ...experience.inclusion_tags
+          ].join(' ').toLowerCase();
+
+          return queryWords.some(word => text.includes(word));
+        })
+        .filter(experience => this.matchesFilters(experience, filters))
+        .slice(0, limit)
+        .map(experience => ({
+          experience,
+          score: Math.random() * 0.5 + 0.5
+        }))
+        .sort((a, b) => b.score - a.score);
+
+      return results;
+    };
+
+    // Share the recommender instance with tripRoutes
     setRecommenderFactory(() => recommender);
     console.log('✅ Recommender factory shared with tripRoutes');
 

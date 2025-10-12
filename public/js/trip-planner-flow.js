@@ -377,9 +377,11 @@ function generateFlightOptions(baseFlight, prefs) {
     const departureTime = `${departureHour.toString().padStart(2, '0')}:${departureMinute.toString().padStart(2, '0')}`;
 
     // Calculate arrival time (departure + duration + timezone difference)
-    const arrivalTotalMinutes = (departureHour * 60 + departureMinute + duration + 360) % (24 * 60); // +6 hours timezone
+    const durationInMinutes = Math.round(duration); // Ensure integer
+    const timezoneOffset = 360; // +6 hours for Boston to Paris
+    const arrivalTotalMinutes = (departureHour * 60 + departureMinute + durationInMinutes + timezoneOffset) % (24 * 60);
     const arrivalHour = Math.floor(arrivalTotalMinutes / 60);
-    const arrivalMinute = arrivalTotalMinutes % 60;
+    const arrivalMinute = Math.floor(arrivalTotalMinutes % 60); // Ensure integer
     const arrivalTime = `${arrivalHour.toString().padStart(2, '0')}:${arrivalMinute.toString().padStart(2, '0')}`;
 
     flights.push({

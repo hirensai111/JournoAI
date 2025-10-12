@@ -1110,9 +1110,9 @@
         console.error('Error loading city image:', error);
       }
 
-      // Display health conditions with proper formatting
-      const conditions = trip.conditions && trip.conditions.length > 0
-        ? trip.conditions.map(c => c.replace(/_/g, ' ')).slice(0, 2).join(', ')
+      // Display health conditions from wellness data
+      const conditions = window.wellnessData && window.wellnessData.conditions && window.wellnessData.conditions.length > 0
+        ? window.wellnessData.conditions.map(c => c.name).slice(0, 2).join(', ')
         : 'None';
       document.getElementById('trip-conditions').textContent = conditions;
 

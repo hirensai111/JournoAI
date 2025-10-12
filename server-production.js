@@ -38,10 +38,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate limiting
+// Rate limiting (increased for development)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Increased from 100 to 1000 for development
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use('/api/', limiter);
@@ -50,7 +50,7 @@ app.use('/api/', limiter);
 app.use('/api/trips', tripRoutes);
 
 // Register wellness routes
-app.use('/api/user', wellnessRoutes);
+app.use('/api/wellness', wellnessRoutes);
 
 // Serve main page
 app.get('/', (req, res) => {

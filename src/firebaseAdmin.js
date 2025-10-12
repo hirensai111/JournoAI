@@ -414,14 +414,20 @@ const WellnessService = {
     }
 
     try {
+      const path = `${Collections.USERS}/${userId}/wellness/${collectionName}`;
+      console.log(`📖 Fetching wellness data from: ${path}`);
       const wellnessRef = doc(db, Collections.USERS, userId, 'wellness', collectionName);
       const docSnap = await getDoc(wellnessRef);
 
+      console.log(`📖 Document exists: ${docSnap.exists()}`);
       if (!docSnap.exists()) {
+        console.log(`⚠️ No ${collectionName} found for user: ${userId}`);
         return { success: true, data: [] };
       }
 
-      const data = docSnap.data().items || [];
+      const docData = docSnap.data();
+      console.log(`📖 Document data:`, JSON.stringify(docData));
+      const data = docData.items || [];
       console.log(`✅ Retrieved ${data.length} ${collectionName} for user: ${userId}`);
       return { success: true, data };
     } catch (error) {

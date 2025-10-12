@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wellness Check-In - JourniAI</title>
+  <title>Wellness - JourniAI</title>
   <link rel="stylesheet" href="/css/style.css">
   <style>
     /* Wellness-specific styles */
@@ -329,47 +329,6 @@
       color: #dc2626;
     }
 
-    .packing-progress {
-      background: var(--bg-secondary);
-      border-radius: var(--radius-md);
-      padding: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .packing-progress-bar {
-      background: var(--border);
-      height: 8px;
-      border-radius: 4px;
-      overflow: hidden;
-      margin-bottom: 0.5rem;
-    }
-
-    .packing-progress-fill {
-      background: var(--success);
-      height: 100%;
-      transition: width 0.3s;
-    }
-
-    .packing-item {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem;
-      background: white;
-      border-radius: var(--radius-md);
-      margin-bottom: 0.5rem;
-      border: 1px solid var(--border);
-    }
-
-    .packing-item input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-    }
-
-    .packing-item.packed {
-      opacity: 0.6;
-      text-decoration: line-through;
-    }
 
     .insurance-card {
       background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
@@ -501,11 +460,10 @@
 </head>
 <body>
   <!-- Navigation -->
-  <nav style="background: white; border-bottom: 1px solid var(--border); padding: 1rem 0;">
-    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
-      <div style="display: flex; align-items: center; gap: 1rem;">
-        <a href="/dashboard.html" style="text-decoration: none; color: var(--text-primary); font-weight: 600; font-size: 1.25rem;">
-          <!-- Journey AI Logo -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/" class="navbar-brand">
+        <div class="navbar-logo">
           <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="20" cy="20" r="18" stroke="#8B1538" stroke-width="2.5" fill="white"/>
             <path d="M20 3V7M20 33V37M3 20H7M33 20H37" stroke="#8B1538" stroke-width="2" stroke-linecap="round"/>
@@ -522,22 +480,47 @@
               </linearGradient>
             </defs>
           </svg>
-          JourniAI
-        </a>
-      </div>
-      <div style="display: flex; align-items: center; gap: 1rem;">
-        <button id="signout-btn" class="btn btn-ghost" style="display: none;">Sign out</button>
+        </div>
+        <span>Journey AI</span>
+      </a>
+
+      <ul class="navbar-nav">
+        <li><a href="/dashboard.html" class="navbar-link">Dashboard</a></li>
+        <li><a href="/mytrips.html" class="navbar-link">My Trips</a></li>
+        <li><a href="/wellness.html" class="navbar-link" style="color: var(--primary);">Wellness</a></li>
+        <li><a href="/profile.html" class="navbar-link">Profile</a></li>
+      </ul>
+
+      <div class="navbar-actions">
+        <div id="user-menu" style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="text-align: right; display: none;" id="user-info">
+            <p style="font-size: 0.875rem; font-weight: 500;" id="user-name">Loading...</p>
+            <p style="font-size: 0.75rem; color: var(--text-muted);" id="user-email"></p>
+          </div>
+          <button id="signout-btn" class="btn btn-ghost" style="display: none;">Sign out</button>
+        </div>
       </div>
     </div>
   </nav>
 
   <!-- Main Content -->
-  <div style="min-height: calc(100vh - 80px); background: var(--bg-secondary);">
-    <div class="wellness-container">
-      <!-- Header -->
-      <div class="wellness-header">
-        <h1>Wellness Check-In</h1>
-        <p>Manage your health information for safe and comfortable travel</p>
+  <div style="min-height: calc(100vh - 80px); background: var(--bg-secondary); padding: 2rem 0;">
+    <div class="container">
+      <!-- Welcome Hero -->
+      <div style="margin-bottom: 2rem; padding: 3rem 2rem; border-radius: var(--radius-xl); background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95)); color: white; display: flex; align-items: center; gap: 2rem;">
+        <div style="background: rgba(255,255,255,0.2); border-radius: 50%; padding: 1.5rem; display: flex; align-items: center; justify-content: center;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>
+          </svg>
+        </div>
+        <div style="flex: 1;">
+          <h1 style="color: white; font-size: 2.5rem; margin-bottom: 0.5rem;">Wellness</h1>
+          <p style="color: rgba(255,255,255,0.9); font-size: 1.125rem;">Manage your health information for safe and comfortable travel</p>
+        </div>
+      </div>
+
+      <!-- Wellness Container -->
+      <div class="wellness-container" style="padding: 0; max-width: 100%;">
       </div>
 
       <!-- Tabs -->
@@ -561,14 +544,6 @@
             <path d="M12 21c0-1 1-3 3-3s3 2 3 3-1 3-3 3-3-2-3-3"/>
           </svg>
           Medical Conditions
-        </button>
-        <button class="wellness-tab" data-section="packing-checklist">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-            <line x1="12" y1="22.08" x2="12" y2="12"/>
-          </svg>
-          Packing Checklist
         </button>
         <button class="wellness-tab" data-section="insurance">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -602,13 +577,6 @@
         </div>
       </div>
 
-      <!-- Packing Checklist Section -->
-      <div id="packing-checklist-section" class="wellness-section">
-        <div id="packing-checklist-content">
-          <!-- Content will be loaded here -->
-        </div>
-      </div>
-
       <!-- Insurance Section -->
       <div id="insurance-section" class="wellness-section">
         <div id="insurance-content">
@@ -621,6 +589,7 @@
         <div id="allergies-content">
           <!-- Content will be loaded here -->
         </div>
+      </div>
       </div>
     </div>
   </div>
@@ -691,7 +660,7 @@
           <div style="background: #f0f9ff; padding: 1rem; border-radius: var(--radius-md); border-left: 4px solid var(--primary);">
             <div id="packing-calculation" style="font-weight: 500; color: var(--text-primary);"></div>
             <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
-              This will be automatically added to your packing checklist
+              Recommended quantity for your trip
             </div>
           </div>
         </div>
@@ -886,6 +855,11 @@
   <div id="toast-container"></div>
 
   <!-- Scripts -->
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  
   <script src="/js/firebase-config.js"></script>
   <script src="/js/auth-service.js"></script>
   <script>
@@ -893,58 +867,132 @@
     let currentUser = null;
     let currentSection = 'medications';
     let editingItem = null;
+    let dataStore = {
+      medications: [],
+      conditions: [],
+      allergies: [],
+      insurance: []
+    };
 
     // Initialize the page
-    document.addEventListener('DOMContentLoaded', function() {
-      initializeAuth();
+    document.addEventListener('DOMContentLoaded', async function() {
+      console.log('DOM loaded, initializing wellness page...');
       initializeTabs();
+      initializeForms();
+      await initializeAuth();
       loadAllData();
     });
 
     // Authentication
     async function initializeAuth() {
-      try {
-        console.log('Initializing authentication...');
-        // For demo purposes, use a test token
-        currentUser = {
-          getIdToken: () => Promise.resolve('test-token'),
-          uid: 'demo-user-id'
-        };
-        
-        console.log('Authentication initialized with demo user:', currentUser.uid);
-        document.getElementById('signout-btn').style.display = 'block';
-        document.getElementById('signout-btn').onclick = () => {
-          window.location.href = '/login.html';
-        };
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-        window.location.href = '/login.html';
-      }
+      return new Promise((resolve) => {
+        try {
+          console.log('Initializing authentication...');
+          
+          // Wait for Firebase auth state
+          if (typeof firebase !== 'undefined' && firebase.auth) {
+            firebase.auth().onAuthStateChanged(async (user) => {
+              if (user) {
+                currentUser = user;
+                console.log('✅ User authenticated:', user.email);
+                console.log('✅ User ID:', user.uid);
+                
+                // Update navbar with user info
+                document.getElementById('user-name').textContent = user.displayName || 'User';
+                document.getElementById('user-email').textContent = user.email;
+                document.getElementById('user-info').style.display = 'block';
+                
+                const signoutBtn = document.getElementById('signout-btn');
+                if (signoutBtn) {
+                  signoutBtn.style.display = 'block';
+                  signoutBtn.onclick = async () => {
+                    await firebase.auth().signOut();
+                    window.location.href = '/signin.html';
+                  };
+                }
+                
+                // Fetch user profile for full name
+                try {
+                  const token = await user.getIdToken();
+                  const response = await fetch(`/api/user/profile/${user.uid}`, {
+                    headers: {
+                      'Authorization': `Bearer ${token}`
+                    }
+                  });
+                  
+                  if (response.ok) {
+                    const userProfile = await response.json();
+                    if (userProfile.full_name) {
+                      document.getElementById('user-name').textContent = userProfile.full_name;
+                    }
+                  }
+                } catch (error) {
+                  console.error('Error fetching user profile:', error);
+                }
+                
+                resolve();
+              } else {
+                console.log('⚠️ No user signed in, redirecting to signin page');
+                window.location.href = '/signin.html';
+              }
+            });
+          } else {
+            console.error('❌ Firebase not available, redirecting to signin page');
+            window.location.href = '/signin.html';
+          }
+        } catch (error) {
+          console.error('Auth initialization error:', error);
+          window.location.href = '/signin.html';
+        }
+      });
     }
 
     // Tab functionality
     function initializeTabs() {
+      console.log('Initializing tabs...');
       const tabs = document.querySelectorAll('.wellness-tab');
+      console.log(`Found ${tabs.length} tabs`);
+      
       tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
+        tab.addEventListener('click', function(e) {
+          e.preventDefault();
           const section = this.dataset.section;
+          console.log(`Tab clicked: ${section}`);
           switchSection(section);
         });
       });
+      
+      console.log('Tabs initialized successfully');
     }
 
     function switchSection(section) {
+      console.log(`Switching to section: ${section}`);
+      
       // Update tab states
       document.querySelectorAll('.wellness-tab').forEach(tab => {
         tab.classList.remove('active');
       });
-      document.querySelector(`[data-section="${section}"]`).classList.add('active');
+      
+      const activeTab = document.querySelector(`[data-section="${section}"]`);
+      if (activeTab) {
+        activeTab.classList.add('active');
+        console.log(`✅ Tab activated: ${section}`);
+      } else {
+        console.error(`❌ Tab not found for section: ${section}`);
+      }
 
       // Update section states
       document.querySelectorAll('.wellness-section').forEach(sec => {
         sec.classList.remove('active');
       });
-      document.getElementById(`${section}-section`).classList.add('active');
+      
+      const activeSection = document.getElementById(`${section}-section`);
+      if (activeSection) {
+        activeSection.classList.add('active');
+        console.log(`✅ Section shown: ${section}`);
+      } else {
+        console.error(`❌ Section not found: ${section}-section`);
+      }
 
       currentSection = section;
       loadSectionData(section);
@@ -956,7 +1004,6 @@
       await Promise.all([
         loadSectionData('medications'),
         loadSectionData('conditions'),
-        loadSectionData('packing-checklist'),
         loadSectionData('insurance'),
         loadSectionData('allergies')
       ]);
@@ -965,7 +1012,15 @@
 
     async function loadSectionData(section) {
       try {
-        const response = await fetch(`/api/user/${section}`, {
+        console.log(`Loading data for section: ${section}`);
+        
+        if (!currentUser) {
+          console.warn('No current user, showing empty state');
+          renderEmptyState(section);
+          return;
+        }
+        
+        const response = await fetch(`/api/wellness/${section}`, {
           headers: {
             'Authorization': `Bearer ${await currentUser.getIdToken()}`
           }
@@ -973,14 +1028,14 @@
 
         if (response.ok) {
           const data = await response.json();
-          console.log(`Loaded ${section} data:`, data);
+          console.log(`✅ Loaded ${section} data:`, data);
           renderSection(section, data);
         } else {
-          console.error(`Failed to load ${section}:`, response.statusText);
+          console.warn(`⚠️ Failed to load ${section}: ${response.status} ${response.statusText}`);
           renderEmptyState(section);
         }
       } catch (error) {
-        console.error(`Error loading ${section}:`, error);
+        console.error(`❌ Error loading ${section}:`, error);
         renderEmptyState(section);
       }
     }
@@ -988,6 +1043,9 @@
     function renderSection(section, data) {
       console.log(`Rendering ${section} with data:`, data);
       const container = document.getElementById(`${section}-content`);
+      
+      // Store data in dataStore for later retrieval
+      dataStore[section] = data || [];
       
       if (!data || data.length === 0) {
         console.log(`No data for ${section}, showing empty state`);
@@ -1001,9 +1059,6 @@
           break;
         case 'conditions':
           renderConditions(data);
-          break;
-        case 'packing-checklist':
-          renderPackingList(data);
           break;
         case 'insurance':
           renderInsurance(data);
@@ -1041,16 +1096,6 @@
           description: 'Add your conditions and doctor\'s instructions',
           buttonText: '+ Add Medical Condition'
         },
-        'packing-checklist': {
-          icon: `<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-            <line x1="12" y1="22.08" x2="12" y2="12"/>
-          </svg>`,
-          title: 'Complete medications and conditions sections first',
-          description: 'We\'ll generate personalized packing suggestions based on your health information',
-          buttonText: null
-        },
         insurance: {
           icon: `<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -1085,26 +1130,70 @@
     }
 
     // Modal functions
-    function openModal(section, item = null) {
+    function openModal(section, itemOrId = null) {
+      console.log(`Opening modal for: ${section}`, itemOrId);
+      
+      // If itemOrId is a string, it's an ID - retrieve the item from dataStore
+      let item = null;
+      if (typeof itemOrId === 'string') {
+        item = dataStore[section]?.find(i => i.id === itemOrId);
+        console.log(`Retrieved item from dataStore:`, item);
+      } else {
+        item = itemOrId;
+      }
+      
       editingItem = item;
-      const modal = document.getElementById(`${section}-modal`);
-      const title = document.getElementById(`${section}-modal-title`);
+      
+      // Convert plural section name to singular for modal ID
+      // medications -> medication, conditions -> condition, allergies -> allergy, insurance -> insurance
+      let modalName = section;
+      if (section === 'medications') modalName = 'medication';
+      else if (section === 'conditions') modalName = 'condition';
+      else if (section === 'allergies') modalName = 'allergy';
+      else if (section === 'insurance') modalName = 'insurance';
+      
+      const modal = document.getElementById(`${modalName}-modal`);
+      const title = document.getElementById(`${modalName}-modal-title`);
+      
+      if (!modal) {
+        console.error(`❌ Modal not found: ${modalName}-modal`);
+        return;
+      }
+      
+      if (!title) {
+        console.error(`❌ Title not found: ${modalName}-modal-title`);
+      }
+      
+      // Get singular form for title
+      const singularName = modalName.charAt(0).toUpperCase() + modalName.slice(1);
       
       if (item) {
-        title.textContent = `Edit ${section.slice(0, -1)}`;
-        populateForm(section, item);
+        if (title) title.textContent = `Edit ${singularName}`;
+        populateForm(modalName, item);
       } else {
-        title.textContent = `Add ${section.slice(0, -1)}`;
-        clearForm(section);
+        if (title) title.textContent = `Add ${singularName}`;
+        clearForm(modalName);
       }
       
       modal.classList.add('active');
+      console.log(`✅ Modal opened: ${modalName}`);
     }
 
     function closeModal(modalId) {
-      document.getElementById(modalId).classList.remove('active');
+      console.log(`Closing modal: ${modalId}`);
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.remove('active');
+        console.log(`✅ Modal closed: ${modalId}`);
+      } else {
+        console.error(`❌ Modal not found: ${modalId}`);
+      }
       editingItem = null;
     }
+    
+    // Make functions globally accessible for inline onclick handlers
+    window.openModal = openModal;
+    window.closeModal = closeModal;
 
     function clearForm(section) {
       const form = document.getElementById(`${section}-form`);
@@ -1125,11 +1214,35 @@
       });
     }
 
-    // Form submissions
-    document.getElementById('medication-form').addEventListener('submit', handleMedicationSubmit);
-    document.getElementById('condition-form').addEventListener('submit', handleConditionSubmit);
-    document.getElementById('allergy-form').addEventListener('submit', handleAllergySubmit);
-    document.getElementById('insurance-form').addEventListener('submit', handleInsuranceSubmit);
+    // Form submissions initialization
+    function initializeForms() {
+      console.log('Initializing form handlers...');
+      
+      const medicationForm = document.getElementById('medication-form');
+      const conditionForm = document.getElementById('condition-form');
+      const allergyForm = document.getElementById('allergy-form');
+      const insuranceForm = document.getElementById('insurance-form');
+      
+      if (medicationForm) {
+        medicationForm.addEventListener('submit', handleMedicationSubmit);
+        console.log('✅ Medication form handler added');
+      }
+      
+      if (conditionForm) {
+        conditionForm.addEventListener('submit', handleConditionSubmit);
+        console.log('✅ Condition form handler added');
+      }
+      
+      if (allergyForm) {
+        allergyForm.addEventListener('submit', handleAllergySubmit);
+        console.log('✅ Allergy form handler added');
+      }
+      
+      if (insuranceForm) {
+        insuranceForm.addEventListener('submit', handleInsuranceSubmit);
+        console.log('✅ Insurance form handler added');
+      }
+    }
 
     async function handleMedicationSubmit(e) {
       e.preventDefault();
@@ -1224,8 +1337,8 @@
 
       try {
         const url = editingItem 
-          ? `/api/user/${section}/${editingItem.id}`
-          : `/api/user/${section}`;
+          ? `/api/wellness/${section}/${editingItem.id}`
+          : `/api/wellness/${section}`;
         
         const method = editingItem ? 'PATCH' : 'POST';
         
@@ -1258,7 +1371,7 @@
       const formData = new FormData();
       formData.append('file', file);
       
-      const response = await fetch('/api/user/insurance/upload-card', {
+      const response = await fetch('/api/wellness/insurance/upload-card', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${await currentUser.getIdToken()}`
@@ -1280,7 +1393,7 @@
       }
 
       try {
-        const response = await fetch(`/api/user/${section}/${id}`, {
+        const response = await fetch(`/api/wellness/${section}/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${await currentUser.getIdToken()}`
@@ -1298,6 +1411,9 @@
         showToast('Failed to delete. Please try again.', 'error');
       }
     }
+    
+    // Make deleteItem globally accessible
+    window.deleteItem = deleteItem;
 
     // Render functions
     function renderMedications(medications) {
@@ -1319,7 +1435,7 @@
               ${med.notes ? `<div style="margin-top: 0.5rem;"><strong>Instructions:</strong> ${med.notes}</div>` : ''}
             </div>
             <div class="actions">
-              <button class="btn-edit" onclick="openModal('medications', ${JSON.stringify(med).replace(/"/g, '&quot;')})">Edit</button>
+              <button class="btn-edit" onclick="openModal('medications', '${med.id}')">Edit</button>
               <button class="btn-delete" onclick="deleteItem('medications', '${med.id}')">Delete</button>
             </div>
           </div>
@@ -1350,7 +1466,7 @@
               ` : ''}
             </div>
             <div class="actions">
-              <button class="btn-edit" onclick="openModal('conditions', ${JSON.stringify(condition).replace(/"/g, '&quot;')})">Edit</button>
+              <button class="btn-edit" onclick="openModal('conditions', '${condition.id}')">Edit</button>
               <button class="btn-delete" onclick="deleteItem('conditions', '${condition.id}')">Delete</button>
             </div>
           </div>
@@ -1376,7 +1492,7 @@
               ${allergy.symptoms ? `<div class="allergy-symptoms"><strong>Symptoms:</strong> ${allergy.symptoms}</div>` : ''}
             </div>
             <div class="actions">
-              <button class="btn-edit" onclick="openModal('allergies', ${JSON.stringify(allergy).replace(/"/g, '&quot;')})">Edit</button>
+              <button class="btn-edit" onclick="openModal('allergies', '${allergy.id}')">Edit</button>
               <button class="btn-delete" onclick="deleteItem('allergies', '${allergy.id}')">Delete</button>
             </div>
           </div>
@@ -1424,46 +1540,13 @@
           ` : ''}
           ${insurance.travel_policy ? `<div style="margin-top: 1rem;"><strong>Travel Policy:</strong> ${insurance.travel_policy}</div>` : ''}
           <div class="actions" style="margin-top: 1.5rem;">
-            <button class="btn-edit" onclick="openModal('insurance', ${JSON.stringify(insurance).replace(/"/g, '&quot;')})">Edit</button>
+            <button class="btn-edit" onclick="openModal('insurance', '${insurance.id}')">Edit</button>
             <button class="add-btn" onclick="generateEmergencyCard()">Generate Emergency Contact Card</button>
           </div>
         </div>
       `;
     }
 
-    function renderPackingList(packingItems) {
-      const container = document.getElementById('packing-checklist-content');
-      
-      if (!packingItems || packingItems.length === 0) {
-        renderEmptyState('packing-checklist');
-        return;
-      }
-
-      const packedCount = packingItems.filter(item => item.is_packed).length;
-      const totalCount = packingItems.length;
-      const progressPercent = (packedCount / totalCount) * 100;
-
-      container.innerHTML = `
-        <div class="packing-progress">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <span><strong>Packing Progress</strong></span>
-            <span>${packedCount}/${totalCount} items packed</span>
-          </div>
-          <div class="packing-progress-bar">
-            <div class="packing-progress-fill" style="width: ${progressPercent}%"></div>
-          </div>
-        </div>
-        ${packingItems.map(item => `
-          <div class="packing-item ${item.is_packed ? 'packed' : ''}">
-            <input type="checkbox" ${item.is_packed ? 'checked' : ''} onchange="togglePackingItem('${item.id}', this.checked)">
-            <span>${item.item_name}</span>
-            ${item.is_auto_generated ? '<span style="color: var(--text-muted); font-size: 0.75rem;">(Auto-generated)</span>' : ''}
-            ${!item.is_auto_generated ? `<button class="btn-delete" onclick="deleteItem('packing-checklist', '${item.id}')" style="margin-left: auto;">Delete</button>` : ''}
-          </div>
-        `).join('')}
-        <button class="add-btn" onclick="addCustomPackingItem()">+ Add Custom Item</button>
-      `;
-    }
 
     // Packing calculation function
     function updatePackingEstimate() {
@@ -1537,49 +1620,6 @@
     }
 
     // Additional functions
-    async function togglePackingItem(id, isPacked) {
-      try {
-        await fetch(`/api/user/packing-checklist/${id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${await currentUser.getIdToken()}`
-          },
-          body: JSON.stringify({ is_packed: isPacked })
-        });
-        
-        loadSectionData('packing-checklist');
-      } catch (error) {
-        console.error('Toggle packing item error:', error);
-        showToast('Failed to update item', 'error');
-      }
-    }
-
-    function addCustomPackingItem() {
-      const itemName = prompt('Enter custom packing item:');
-      if (itemName) {
-        submitCustomPackingItem(itemName);
-      }
-    }
-
-    async function submitCustomPackingItem(itemName) {
-      try {
-        await fetch('/api/user/packing-checklist/custom', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${await currentUser.getIdToken()}`
-          },
-          body: JSON.stringify({ item_name: itemName })
-        });
-        
-        showToast('Custom item added!', 'success');
-        loadSectionData('packing-checklist');
-      } catch (error) {
-        console.error('Add custom item error:', error);
-        showToast('Failed to add item', 'error');
-      }
-    }
 
     function generateDietaryCard() {
       // This would generate a multi-language dietary card
@@ -1595,6 +1635,13 @@
       // This would open a modal to view the full-size image
       window.open(imageUrl, '_blank');
     }
+    
+    // Make additional functions globally accessible for inline onclick handlers
+    window.updatePackingEstimate = updatePackingEstimate;
+    window.updateAllergyCategory = updateAllergyCategory;
+    window.generateDietaryCard = generateDietaryCard;
+    window.generateEmergencyCard = generateEmergencyCard;
+    window.openImageModal = openImageModal;
 
     // Toast notifications
     function showToast(message, type = 'success') {

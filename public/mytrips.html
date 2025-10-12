@@ -25,6 +25,8 @@
       padding: 3rem 2rem;
       border-radius: var(--radius-xl);
       background: linear-gradient(135deg, rgba(139, 21, 56, 0.95), rgba(232, 119, 34, 0.95));
+      background-size: cover;
+      background-position: center;
       color: white;
       position: relative;
       overflow: hidden;
@@ -37,8 +39,15 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: url('data:image/svg+xml,<svg width="60" height="60" xmlns="http://www.w3.org/2000/svg"><path d="M0 0h60v60H0z" fill="none"/><path d="M30 10l5 15h16l-13 10 5 15-13-10-13 10 5-15-13-10h16z" fill="rgba(255,255,255,0.05)"/></svg>');
-      opacity: 0.3;
+      background: rgba(0, 0, 0, 0.3);
+      opacity: 1;
+      z-index: 1;
+    }
+
+    .trip-hero > * {
+      position: relative;
+      z-index: 2;
+      text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
     }
 
     .countdown-badge {
@@ -365,6 +374,7 @@
       <ul class="navbar-nav">
         <li><a href="/dashboard.html" class="navbar-link">Dashboard</a></li>
         <li><a href="/mytrips.html" class="navbar-link" style="color: var(--primary);">My Trips</a></li>
+        <li><a href="/wellness.html" class="navbar-link">Wellness</a></li>
         <li><a href="/profile.html" class="navbar-link">Profile</a></li>
       </ul>
 
@@ -664,7 +674,7 @@
         await autoUpdateTripStatus(tripData);
 
         // Display trip
-        displayTrip(tripData);
+        await displayTrip(tripData);
 
       } catch (error) {
         console.error('Error loading trip:', error);
@@ -769,7 +779,7 @@
     };
 
     // Display trip
-    function displayTrip(trip) {
+    async function displayTrip(trip) {
       document.getElementById('loading-state').style.display = 'none';
       document.getElementById('trip-content').style.display = 'block';
 
@@ -778,6 +788,51 @@
       document.getElementById('trip-dates').textContent = formatTripDates(trip.start_date, trip.end_date);
       document.getElementById('trip-duration').textContent = `${trip.duration || 0} days`;
       document.getElementById('trip-status').textContent = formatStatus(trip.status);
+
+      // Load city image for hero background
+      try {
+        const destination = (trip.destination || 'city').toLowerCase();
+        console.log('Loading image for destination:', destination);
+        
+        // Curated hero images for each destination
+        const cityHeroImages = {
+          'paris': 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1920&h=600&fit=crop',
+          'rome': 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1920&h=600&fit=crop',
+          'roma': 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1920&h=600&fit=crop',
+          'tokyo': 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1920&h=600&fit=crop',
+          'london': 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=1920&h=600&fit=crop',
+          'new york': 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=1920&h=600&fit=crop',
+          'barcelona': 'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=1920&h=600&fit=crop',
+          'amsterdam': 'https://images.unsplash.com/photo-1534351590666-13e3e96b5017?w=1920&h=600&fit=crop',
+          'berlin': 'https://images.unsplash.com/photo-1560969184-10fe8719e047?w=1920&h=600&fit=crop',
+          'dubai': 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=1920&h=600&fit=crop',
+          'singapore': 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=1920&h=600&fit=crop',
+          'bangkok': 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=1920&h=600&fit=crop',
+          'istanbul': 'https://images.unsplash.com/photo-1527838832700-5059252407fa?w=1920&h=600&fit=crop',
+          'sydney': 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=1920&h=600&fit=crop',
+          'lisbon': 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=1920&h=600&fit=crop',
+          'prague': 'https://images.unsplash.com/photo-1541849546-216549ae216d?w=1920&h=600&fit=crop',
+          'vienna': 'https://images.unsplash.com/photo-1516550893923-42d28e5677af?w=1920&h=600&fit=crop',
+          'madrid': 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=1920&h=600&fit=crop',
+          'athens': 'https://images.unsplash.com/photo-1555993539-1732b0258235?w=1920&h=600&fit=crop',
+          'venice': 'https://images.unsplash.com/photo-1514890547357-a9ee288728e0?w=1920&h=600&fit=crop'
+        };
+        
+        // Get hero image for destination or use default
+        const imageUrl = cityHeroImages[destination] || `https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1920&h=600&fit=crop`;
+        console.log('City image URL:', imageUrl);
+        
+        const heroElement = document.querySelector('.trip-hero');
+        
+        if (heroElement) {
+          heroElement.style.backgroundImage = `url('${imageUrl}')`;
+          heroElement.style.backgroundSize = 'cover';
+          heroElement.style.backgroundPosition = 'center';
+          console.log('✅ Background image set successfully');
+        }
+      } catch (error) {
+        console.error('Error loading city image:', error);
+      }
 
       // Display health conditions with proper formatting
       const conditions = trip.conditions && trip.conditions.length > 0

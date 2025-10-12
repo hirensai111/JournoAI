@@ -37,12 +37,6 @@
         <button onclick="loadInsurance()">Load Insurance</button>
         <div id="insurance-data" class="data"></div>
     </div>
-    
-    <div class="section">
-        <h2>Packing Checklist</h2>
-        <button onclick="loadPacking()">Load Packing</button>
-        <div id="packing-data" class="data"></div>
-    </div>
 
     <script>
         const API_BASE = '/api/user';
@@ -104,27 +98,12 @@
             }
         }
         
-        async function loadPacking() {
-            try {
-                const response = await fetch(`${API_BASE}/packing-checklist`, {
-                    headers: { 'Authorization': `Bearer ${TOKEN}` }
-                });
-                const data = await response.json();
-                document.getElementById('packing-data').innerHTML = 
-                    `<pre>${JSON.stringify(data, null, 2)}</pre>`;
-            } catch (error) {
-                document.getElementById('packing-data').innerHTML = 
-                    `<div style="color: red;">Error: ${error.message}</div>`;
-            }
-        }
-        
         // Load all data on page load
         window.addEventListener('load', () => {
             loadMedications();
             loadConditions();
             loadAllergies();
             loadInsurance();
-            loadPacking();
         });
     </script>
 </body>

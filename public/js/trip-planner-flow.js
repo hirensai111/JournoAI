@@ -810,8 +810,8 @@ async function generateEnhancedItinerary(destination, startDate, endDate, prefer
 
     // Transform the API response to match our UI format
     const itinerary = data.itinerary.map((day, idx) => {
-      // Fetch image for the day's highlight
-      const highlightImage = getCuratedImage(day.activities[0]?.name || destination, destination);
+      // Fetch image for the day's highlight - use day index to ensure variety
+      const highlightImage = getCuratedImage(day.activities[0]?.name || destination, destination, idx);
 
       return {
         title: day.title || `Day ${idx + 1}`,
@@ -997,12 +997,12 @@ async function fetchImageForExperience(experienceName, destination) {
 /**
  * Get curated high-quality images from Unsplash with variety to avoid repetition
  */
-function getCuratedImage(experienceName, destination) {
+function getCuratedImage(experienceName, destination, dayIndex = 0) {
   const name = experienceName.toLowerCase();
   const dest = destination.toLowerCase();
 
-  // Create a seed from the experience name for consistent but varied images
-  const seed = experienceName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  // Create a seed from the experience name AND day index for varied images
+  const seed = experienceName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) + (dayIndex * 100);
 
   // Curated collections organized by destination and activity type
   // Each category has multiple images to avoid repetition

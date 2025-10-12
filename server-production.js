@@ -14,6 +14,7 @@ import TripPlannerService from './src/tripPlannerService.js';
 import TripAssistantChatbot from './src/tripAssistantChatbot.js';
 import { UserService, TripService } from './src/firebaseAdmin.js';
 import tripRoutes from './src/routes/tripRoutes.js';
+import wellnessRoutes from './src/routes/wellnessRoutes.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -47,6 +48,9 @@ app.use('/api/', limiter);
 
 // Register trip routes (includes /api/trips/compose endpoint)
 app.use('/api/trips', tripRoutes);
+
+// Register wellness routes
+app.use('/api/user', wellnessRoutes);
 
 // Serve main page
 app.get('/', (req, res) => {

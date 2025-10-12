@@ -384,6 +384,92 @@ const WellnessService = {
       console.error('❌ Error getting check-ins:', error.message);
       return { success: false, error: error.message };
     }
+  },
+
+  // Wellness Data Operations (Medications, Conditions, Allergies, etc.)
+  async saveWellnessData(userId, collectionName, data) {
+    if (!db) {
+      console.log('📝 Would save wellness data:', { userId, collectionName, data });
+      return { success: true, id: `${collectionName}_${Date.now()}` };
+    }
+
+    try {
+      const wellnessRef = doc(db, Collections.USERS, userId, 'wellness', collectionName);
+      await setDoc(wellnessRef, {
+        items: data,
+        updated_at: serverTimestamp()
+      });
+
+      console.log(`✅ Wellness ${collectionName} saved for user: ${userId}`);
+      return { success: true };
+    } catch (error) {
+      console.error(`❌ Error saving wellness ${collectionName}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getWellnessData(userId, collectionName) {
+    if (!db) {
+      return { success: true, data: [] };
+    }
+
+    try {
+      const wellnessRef = doc(db, Collections.USERS, userId, 'wellness', collectionName);
+      const docSnap = await getDoc(wellnessRef);
+
+      if (!docSnap.exists()) {
+        return { success: true, data: [] };
+      }
+
+      const data = docSnap.data().items || [];
+      console.log(`✅ Retrieved ${data.length} ${collectionName} for user: ${userId}`);
+      return { success: true, data };
+    } catch (error) {
+      console.error(`❌ Error getting wellness ${collectionName}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async saveInsuranceData(userId, insuranceData) {
+    if (!db) {
+      console.log('📝 Would save insurance data:', { userId, insuranceData });
+      return { success: true };
+    }
+
+    try {
+      const insuranceRef = doc(db, Collections.USERS, userId, 'wellness', 'insurance');
+      await setDoc(insuranceRef, {
+        ...insuranceData,
+        updated_at: serverTimestamp()
+      });
+
+      console.log(`✅ Insurance data saved for user: ${userId}`);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error saving insurance data:', error.message);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getInsuranceData(userId) {
+    if (!db) {
+      return { success: false, error: 'Firestore not initialized' };
+    }
+
+    try {
+      const insuranceRef = doc(db, Collections.USERS, userId, 'wellness', 'insurance');
+      const docSnap = await getDoc(insuranceRef);
+
+      if (!docSnap.exists()) {
+        return { success: false, error: 'Insurance data not found' };
+      }
+
+      console.log(`✅ Retrieved insurance data for user: ${userId}`);
+      return { success: true, data: docSnap.data() };
+    } catch (error) {
+      console.error('❌ Error getting insurance data:', error.message);
+      return { success: false, error: error.message };
+    }
   }
 };
 

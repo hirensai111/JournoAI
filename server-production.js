@@ -759,6 +759,23 @@ app.get('/api/user/:user_id/trips', async (req, res) => {
   }
 });
 
+// Get Single Trip
+app.get('/api/user/:user_id/trips/:trip_id', async (req, res) => {
+  try {
+    const { trip_id } = req.params;
+    const result = await TripService.getTrip(trip_id);
+
+    if (result.success) {
+      res.json(result.data);
+    } else {
+      res.status(404).json({ error: result.error || 'Trip not found' });
+    }
+  } catch (error) {
+    console.error('Get trip error:', error);
+    res.status(500).json({ error: 'Failed to fetch trip' });
+  }
+});
+
 // Trip Assistant Chatbot Endpoint
 app.post('/api/trip-assistant/chat', async (req, res) => {
   try {

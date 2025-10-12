@@ -123,9 +123,615 @@
       background: var(--text-muted);
     }
 
+    /* Trip Planner Responsive Styles */
+    .planner-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: white;
+      gap: 1rem;
+    }
+
+    .planner-header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .planner-header-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .planner-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      padding: 1.5rem 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .planner-card {
+      display: flex;
+      flex-direction: column;
+      height: 70vh;
+      max-height: 800px;
+    }
+
+    @media (max-width: 1024px) {
+      .planner-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.25rem;
+      }
+
+      .planner-card {
+        height: 60vh;
+        max-height: 600px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .planner-header {
+        padding: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .planner-header-left {
+        gap: 0.75rem;
+      }
+
+      .planner-header-left > div:first-child {
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+      }
+
+      .planner-header-left > div:first-child svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .planner-header-left > div:last-child > div:first-child {
+        font-size: 0.875rem !important;
+      }
+
+      .planner-header-left > div:last-child > div:last-child {
+        font-size: 0.688rem !important;
+        line-height: 1.3;
+      }
+
+      .planner-header-actions {
+        width: 100%;
+        order: 3;
+        justify-content: space-between;
+      }
+
+      .planner-header-actions .btn {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        white-space: nowrap;
+        flex: 1;
+      }
+
+      .planner-header-actions .btn svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .planner-header-actions .btn-icon {
+        flex: 0;
+        min-width: 36px;
+        padding: 0.5rem;
+      }
+
+      .planner-grid {
+        padding: 1rem;
+        gap: 1rem;
+      }
+
+      .planner-card {
+        height: 50vh;
+        max-height: 500px;
+        min-height: 400px;
+      }
+
+      .planner-card > div:first-child {
+        padding: 1rem !important;
+      }
+
+      .planner-card > div:first-child h3 {
+        font-size: 1rem !important;
+      }
+
+      .planner-card > div:first-child p {
+        font-size: 0.75rem !important;
+      }
+
+      .planner-card #chat-messages,
+      .planner-card #plan-preview {
+        padding: 0.875rem !important;
+        gap: 0.875rem;
+      }
+
+      .planner-card > div:last-child {
+        padding: 0.875rem !important;
+      }
+
+      #chat-input {
+        font-size: 0.875rem !important;
+        padding: 0.625rem 0.875rem !important;
+        rows: 2 !important;
+      }
+
+      .planner-card .btn {
+        font-size: 0.8125rem;
+        padding: 0.625rem 0.875rem;
+      }
+
+      .planner-card .badge {
+        font-size: 0.688rem !important;
+        padding: 0.313rem 0.625rem !important;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .planner-header {
+        padding: 0.875rem;
+      }
+
+      .planner-header-left > div:first-child {
+        width: 32px;
+        height: 32px;
+      }
+
+      .planner-header-left > div:last-child > div:first-child {
+        font-size: 0.813rem !important;
+      }
+
+      .planner-header-left > div:last-child > div:last-child {
+        font-size: 0.625rem !important;
+      }
+
+      .planner-header-actions .btn {
+        font-size: 0.688rem;
+        padding: 0.438rem 0.625rem;
+      }
+
+      .planner-header-actions .btn svg {
+        width: 12px;
+        height: 12px;
+      }
+
+      .planner-header-actions .btn-icon {
+        min-width: 32px;
+        padding: 0.438rem;
+      }
+
+      .planner-grid {
+        padding: 0.75rem;
+        gap: 0.875rem;
+      }
+
+      .planner-card {
+        height: 45vh;
+        max-height: 450px;
+        min-height: 350px;
+      }
+
+      .planner-card > div:first-child {
+        padding: 0.875rem !important;
+      }
+
+      .planner-card > div:first-child h3 {
+        font-size: 0.938rem !important;
+        margin-bottom: 0.188rem !important;
+      }
+
+      .planner-card > div:first-child p {
+        font-size: 0.688rem !important;
+      }
+
+      .planner-card #chat-messages,
+      .planner-card #plan-preview {
+        padding: 0.75rem !important;
+        gap: 0.75rem;
+      }
+
+      .planner-card > div:last-child {
+        padding: 0.75rem !important;
+      }
+
+      #chat-input {
+        font-size: 0.8125rem !important;
+        padding: 0.563rem 0.75rem !important;
+        margin-bottom: 0.625rem !important;
+      }
+
+      .planner-card .btn {
+        font-size: 0.75rem;
+        padding: 0.563rem 0.75rem;
+        min-height: 36px;
+      }
+
+      .planner-card .btn svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .planner-card .badge {
+        font-size: 0.625rem !important;
+        padding: 0.25rem 0.5rem !important;
+      }
+
+      /* Hide button text on very small screens, keep icons */
+      .planner-header-actions .btn:not(.btn-icon) span {
+        display: none;
+      }
+
+      .planner-header-actions .btn:not(.btn-icon)::after {
+        content: attr(data-mobile-text);
+        display: inline;
+      }
+    }
+
     @media (max-width: 1024px) {
       #trip-wizard-panel > div:nth-child(2) {
         grid-template-columns: 1fr !important;
+      }
+    }
+
+    /* Trip Card Styles */
+    .trip-card {
+      position: relative;
+      border-radius: var(--radius-2xl);
+      overflow: hidden;
+      background: white;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .trip-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-xl);
+      border-color: var(--primary-light);
+    }
+
+    .trip-card-image {
+      position: relative;
+      width: 100%;
+      height: 200px;
+      overflow: hidden;
+    }
+
+    .trip-card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .trip-card:hover .trip-card-image img {
+      transform: scale(1.05);
+    }
+
+    .trip-card-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.4));
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      padding: 1rem;
+    }
+
+    .trip-status-badge {
+      padding: 0.375rem 0.75rem;
+      border-radius: var(--radius-xl);
+      font-size: 0.75rem;
+      font-weight: 600;
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .trip-card-content {
+      padding: 1.25rem;
+    }
+
+    .trip-card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.75rem 0;
+      color: var(--text-primary);
+    }
+
+    .trip-card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .trip-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .trip-meta-item svg {
+      color: var(--primary);
+    }
+
+    .trip-card-created {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    /* Trip Details Modal */
+    .trip-details-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .trip-details-modal.active {
+      display: flex;
+    }
+
+    .trip-details-content {
+      background: white;
+      border-radius: var(--radius-2xl);
+      max-width: 900px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .trip-details-header {
+      position: relative;
+      height: 250px;
+      background-size: cover;
+      background-position: center;
+      border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+      overflow: hidden;
+    }
+
+    .trip-details-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6));
+    }
+
+    .trip-details-header-content {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 1.5rem;
+      color: white;
+    }
+
+    .trip-details-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border: none;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .trip-details-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+    }
+
+    .trip-details-body {
+      padding: 2rem;
+    }
+
+    .trip-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .trip-info-item {
+      padding: 1rem;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+    }
+
+    .trip-info-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .trip-info-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* Mobile Responsive Styles */
+    @media (max-width: 768px) {
+      #main-content {
+        padding: 1.5rem 0 !important;
+      }
+      
+      .trip-card-image {
+        height: 160px;
+      }
+      
+      .trip-details-header {
+        height: 180px;
+      }
+      
+      .trip-details-body {
+        padding: 1.5rem;
+      }
+      
+      .trip-info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      #welcome-hero {
+        padding: 2rem 1.5rem !important;
+        margin-bottom: 1.5rem !important;
+      }
+
+      #welcome-message {
+        font-size: 2rem !important;
+      }
+
+      #welcome-hero p {
+        font-size: 1rem !important;
+      }
+
+      /* Quick actions mobile */
+      #main-content > div > div:nth-child(2) {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+      }
+
+      /* Trip wizard panel full width on mobile */
+      #trip-wizard-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      /* Wizard content padding */
+      #trip-wizard-panel > div:first-child {
+        padding: 1rem !important;
+      }
+
+      .wizard-step {
+        padding: 1rem !important;
+      }
+
+      /* Cards mobile padding */
+      .flight-card, .hotel-card, .experience-card {
+        padding: 0.75rem !important;
+      }
+    }
+
+    @media (max-width: 640px) {
+      #welcome-hero {
+        padding: 1.5rem 1rem !important;
+      }
+
+      #welcome-message {
+        font-size: 1.5rem !important;
+        word-break: break-word;
+        line-height: 1.3;
+      }
+
+      #welcome-hero p {
+        font-size: 0.875rem !important;
+        word-break: break-word;
+        line-height: 1.5;
+      }
+
+      /* Section headers mobile */
+      #my-trips-section > div:first-child,
+      #wellness-summary-section > div:first-child {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 1rem;
+      }
+
+      #my-trips-section h2,
+      #wellness-summary-section h2 {
+        font-size: 1.25rem !important;
+      }
+
+      /* Hide user info text on mobile */
+      #user-info {
+        display: none !important;
+      }
+
+      /* Simplify quick action cards */
+      .card > div {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+      }
+
+      .card h4 {
+        font-size: 0.9375rem !important;
+        word-break: break-word;
+      }
+
+      .card p {
+        font-size: 0.75rem !important;
+        word-break: break-word;
+      }
+
+      /* Trip card text mobile */
+      #trips-container .card h3 {
+        font-size: 1rem !important;
+      }
+
+      #trips-container .card p {
+        font-size: 0.8125rem !important;
+      }
+
+      /* Button text sizing */
+      .btn {
+        font-size: 0.75rem !important;
+        padding: 0.5rem 0.875rem !important;
       }
     }
   </style>
@@ -175,8 +781,29 @@
     </div>
   </nav>
 
+  <!-- Loading Screen -->
+  <div id="page-loader" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-secondary); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+    <svg width="60" height="60" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation: spin 1s linear infinite;">
+      <circle cx="20" cy="20" r="18" stroke="#8B1538" stroke-width="2.5" fill="white"/>
+      <path d="M20 3V7M20 33V37M3 20H7M33 20H37" stroke="#8B1538" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="20" cy="20" r="14" stroke="#E5E7EB" stroke-width="1"/>
+      <g transform="rotate(45 20 20)">
+        <path d="M20 6L21 20L20 34L19 20L20 6Z" fill="url(#loader-gradient)" stroke="#8B1538" stroke-width="1.2"/>
+      </g>
+      <circle cx="20" cy="20" r="3.5" fill="#8B1538"/>
+      <circle cx="20" cy="20" r="2" fill="white"/>
+      <defs>
+        <linearGradient id="loader-gradient" x1="20" y1="6" x2="20" y2="34">
+          <stop offset="0%" stop-color="#E87722"/>
+          <stop offset="100%" stop-color="#8B1538"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <p style="margin-top: 1.5rem; color: var(--text-secondary); font-weight: 500;">Loading your dashboard...</p>
+  </div>
+
   <!-- Main Content -->
-  <div style="min-height: calc(100vh - 80px); background: var(--bg-secondary); padding: 2rem 0;">
+  <div id="main-content" style="min-height: calc(100vh - 80px); background: var(--bg-secondary); padding: 2rem 0; display: none;">
     <div class="container">
       <!-- Welcome Header -->
       <div id="welcome-hero" style="margin-bottom: 2rem; padding: 3rem 2rem; border-radius: var(--radius-xl); background: linear-gradient(135deg, rgba(139, 21, 56, 0.95), rgba(232, 119, 34, 0.95)); color: white;">
@@ -273,6 +900,21 @@
     </div>
   </div>
 
+  <!-- Trip Details Modal -->
+  <div id="trip-details-modal" class="trip-details-modal" onclick="closeIfClickedOutside(event)">
+    <div class="trip-details-content" onclick="event.stopPropagation()">
+      <button class="trip-details-close" onclick="closeTripDetailsModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+      <div id="trip-details-modal-content">
+        <!-- Trip details will be loaded here -->
+      </div>
+    </div>
+  </div>
+
   <!-- Trip Planning Wizard - Side Panel -->
   <div id="trip-wizard-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100;" onclick="closeTripWizard()"></div>
 
@@ -281,62 +923,60 @@
     <!-- LAYLA-STYLE TRIP PLANNER -->
 
     <!-- Top Bar -->
-    <div style="position: sticky; top: 0; background: white; border-bottom: 1px solid var(--border); padding: 1rem 2rem; z-index: 10; backdrop-filter: blur(8px); background: rgba(255,255,255,0.95);">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 1rem;">
-          <div style="width: 36px; height: 36px; border-radius: 50%; background: white; display: grid; place-items: center; border: 2px solid var(--primary);">
-            <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="20" cy="20" r="18" stroke="#8B1538" stroke-width="2.5" fill="white"/>
-              <path d="M20 3V7M20 33V37M3 20H7M33 20H37" stroke="#8B1538" stroke-width="2" stroke-linecap="round"/>
-              <circle cx="20" cy="20" r="14" stroke="#E5E7EB" stroke-width="1"/>
-              <g transform="rotate(45 20 20)">
-                <path d="M20 6L21 20L20 34L19 20L20 6Z" fill="url(#g1)" stroke="#8B1538" stroke-width="1.2"/>
-              </g>
-              <circle cx="20" cy="20" r="3.5" fill="#8B1538"/>
-              <circle cx="20" cy="20" r="2" fill="white"/>
-              <defs>
-                <linearGradient id="g1" x1="20" y1="6" x2="20" y2="34">
-                  <stop offset="0%" stop-color="#E87722"/>
-                  <stop offset="100%" stop-color="#8B1538"/>
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-          <div>
-            <div style="font-size: 1rem; font-weight: 600;">AI Trip Planner</div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary);">Tell me your style & budget, I'll design your trip</div>
-          </div>
+    <div class="planner-header" style="position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px); background: rgba(255,255,255,0.95);">
+      <div class="planner-header-left">
+        <div style="width: 36px; height: 36px; border-radius: 50%; background: white; display: grid; place-items: center; border: 2px solid var(--primary);">
+          <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="18" stroke="#8B1538" stroke-width="2.5" fill="white"/>
+            <path d="M20 3V7M20 33V37M3 20H7M33 20H37" stroke="#8B1538" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="20" cy="20" r="14" stroke="#E5E7EB" stroke-width="1"/>
+            <g transform="rotate(45 20 20)">
+              <path d="M20 6L21 20L20 34L19 20L20 6Z" fill="url(#g1)" stroke="#8B1538" stroke-width="1.2"/>
+            </g>
+            <circle cx="20" cy="20" r="3.5" fill="#8B1538"/>
+            <circle cx="20" cy="20" r="2" fill="white"/>
+            <defs>
+              <linearGradient id="g1" x1="20" y1="6" x2="20" y2="34">
+                <stop offset="0%" stop-color="#E87722"/>
+                <stop offset="100%" stop-color="#8B1538"/>
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
-        <div style="display: flex; gap: 0.5rem; align-items: center;">
-          <button class="btn btn-ghost" onclick="regeneratePlan()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
-            </svg>
-            Generate Plan
-          </button>
-          <button class="btn btn-ghost" onclick="exportPlanJSON()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Export JSON
-          </button>
-          <button class="btn btn-ghost btn-icon" onclick="closeTripWizard()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
+        <div>
+          <div style="font-size: 1rem; font-weight: 600;">AI Trip Planner</div>
+          <div style="font-size: 0.75rem; color: var(--text-secondary);">Tell me your style & budget, I'll design your trip</div>
         </div>
+      </div>
+      <div class="planner-header-actions">
+        <button class="btn btn-ghost" onclick="regeneratePlan()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+          </svg>
+          <span>Generate Plan</span>
+        </button>
+        <button class="btn btn-ghost" onclick="exportPlanJSON()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Export JSON</span>
+        </button>
+        <button class="btn btn-ghost btn-icon" onclick="closeTripWizard()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
     </div>
 
     <!-- Main Content: Chat + Preview -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1.5rem 2rem; max-width: 1400px; margin: 0 auto;">
-      
+    <div class="planner-grid">
+
       <!-- Left: Chat -->
-      <div class="card" style="display: flex; flex-direction: column; height: 70vh; max-height: 800px;">
+      <div class="card planner-card">
         <div style="padding: 1.25rem; border-bottom: 1px solid var(--border);">
           <h3 style="margin: 0 0 0.25rem 0; font-size: 1.125rem;">Conversation</h3>
           <p style="margin: 0; font-size: 0.813rem; color: var(--text-secondary);">Describe your trip in natural language</p>
@@ -370,7 +1010,7 @@
       </div>
 
       <!-- Right: Plan Preview -->
-      <div class="card" style="display: flex; flex-direction: column; height: 70vh; max-height: 800px;">
+      <div class="card planner-card">
         <div style="padding: 1.25rem; border-bottom: 1px solid var(--border);">
           <h3 style="margin: 0 0 0.25rem 0; font-size: 1.125rem;">Plan Preview</h3>
           <p style="margin: 0; font-size: 0.813rem; color: var(--text-secondary);">Auto-updates as you change preferences</p>
@@ -483,6 +1123,13 @@
 
     let currentUser = null;
     let userProfile = null;
+    let dataLoaded = false;
+
+    // Hide loader and show content
+    function showContent() {
+      document.getElementById('page-loader').style.display = 'none';
+      document.getElementById('main-content').style.display = 'block';
+    }
 
     // Auth Protection
     window.firebaseAuth.onAuthStateChanged((user) => {
@@ -500,6 +1147,12 @@
         loadUserProfile();
         loadUserTrips();
         loadWellnessSummary();
+
+        // Mark data as loaded
+        dataLoaded = true;
+
+        // Show content after quick glimpse (300ms)
+        setTimeout(showContent, 300);
       }
     });
 
@@ -2057,25 +2710,56 @@
     function displayTrips(trips) {
       const container = document.getElementById('trips-container');
 
-      let html = '<div style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">';
+      let html = '<div style="display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">';
 
       trips.forEach(trip => {
+        const statusColors = {
+          'upcoming': { bg: 'var(--primary-light)', color: 'var(--primary)', label: 'Upcoming' },
+          'in_progress': { bg: '#d1fae5', color: 'var(--success)', label: 'In Progress' },
+          'finished': { bg: 'var(--bg-tertiary)', color: 'var(--text-secondary)', label: 'Finished' },
+          'planned': { bg: '#fef3c7', color: '#d97706', label: 'Planned' }
+        };
+        
+        const status = statusColors[trip.status] || statusColors['upcoming'];
+        const imageUrl = getCityImageUrl(trip.destination);
+        
         html += `
-          <div class="card" style="cursor: pointer;" onclick="viewTripDetails('${trip.id}')">
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
-              <h4 style="margin: 0;">${trip.destination}</h4>
-              <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: var(--primary-light); color: var(--primary); border-radius: 4px;">${trip.status}</span>
+          <div class="trip-card" data-trip-id="${trip.id}" onclick="viewTripDetails('${trip.id}')">
+            <div class="trip-card-image">
+              <img src="${imageUrl}" alt="${trip.destination}" 
+                   onerror="this.src='https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80'">
+              <div class="trip-card-overlay">
+                <div class="trip-status-badge" style="background: ${status.bg}; color: ${status.color};">
+                  ${status.label}
+                </div>
+              </div>
             </div>
-            <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-              ${trip.duration || tripData.duration} days • ${(() => {
-                const [year, month, day] = trip.start_date.split('-').map(Number);
-                const localDate = new Date(year, month - 1, day);
-                return localDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-              })()}
-            </p>
-            <p style="font-size: 0.75rem; color: var(--text-muted);">
-              Created ${new Date(trip.created_at?.seconds * 1000 || Date.now()).toLocaleDateString()}
-            </p>
+            <div class="trip-card-content">
+              <h3 class="trip-card-title">${trip.destination}</h3>
+              <div class="trip-card-meta">
+                <div class="trip-meta-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  <span>${trip.duration || tripData.duration} days</span>
+                </div>
+                <div class="trip-meta-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  <span>${(() => {
+                    const [year, month, day] = trip.start_date.split('-').map(Number);
+                    const localDate = new Date(year, month - 1, day);
+                    return localDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  })()}</span>
+                </div>
+              </div>
+              <p class="trip-card-created">Created ${new Date(trip.created_at?.seconds * 1000 || Date.now()).toLocaleDateString()}</p>
+            </div>
           </div>
         `;
       });
@@ -2083,10 +2767,326 @@
       html += '</div>';
       container.innerHTML = html;
     }
+    
+    function getCityImageUrl(destination) {
+      // Using Pexels royalty-free images with specific city queries
+      // Format: https://images.pexels.com/photos/{photo-id}/pexels-photo-{photo-id}.jpeg?auto=compress&cs=tinysrgb&w=800
+      
+      const cityImages = {
+        // Europe - Famous landmarks
+        'paris': 'https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=800',  // Eiffel Tower
+        'rome': 'https://images.pexels.com/photos/2225439/pexels-photo-2225439.jpeg?auto=compress&cs=tinysrgb&w=800',  // Colosseum
+        'london': 'https://images.pexels.com/photos/460672/pexels-photo-460672.jpeg?auto=compress&cs=tinysrgb&w=800',  // Big Ben
+        'barcelona': 'https://images.pexels.com/photos/819764/pexels-photo-819764.jpeg?auto=compress&cs=tinysrgb&w=800',  // Sagrada Familia
+        'venice': 'https://images.pexels.com/photos/1796730/pexels-photo-1796730.jpeg?auto=compress&cs=tinysrgb&w=800',  // Venice canal
+        'amsterdam': 'https://images.pexels.com/photos/1722183/pexels-photo-1722183.jpeg?auto=compress&cs=tinysrgb&w=800',  // Amsterdam
+        'berlin': 'https://images.pexels.com/photos/2570063/pexels-photo-2570063.jpeg?auto=compress&cs=tinysrgb&w=800',  // Brandenburg Gate
+        'prague': 'https://images.pexels.com/photos/161012/prague-czech-republic-city-architecture-161012.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'athens': 'https://images.pexels.com/photos/1285625/pexels-photo-1285625.jpeg?auto=compress&cs=tinysrgb&w=800',  // Acropolis
+        'vienna': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'florence': 'https://images.pexels.com/photos/1268975/pexels-photo-1268975.jpeg?auto=compress&cs=tinysrgb&w=800',  // Florence
+        'milan': 'https://images.pexels.com/photos/1797161/pexels-photo-1797161.jpeg?auto=compress&cs=tinysrgb&w=800',  // Milan Cathedral
+        'lisbon': 'https://images.pexels.com/photos/2901214/pexels-photo-2901214.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'madrid': 'https://images.pexels.com/photos/1388030/pexels-photo-1388030.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'dublin': 'https://images.pexels.com/photos/2416653/pexels-photo-2416653.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'edinburgh': 'https://images.pexels.com/photos/1386444/pexels-photo-1386444.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'budapest': 'https://images.pexels.com/photos/1268871/pexels-photo-1268871.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'switzerland': 'https://images.pexels.com/photos/1906658/pexels-photo-1906658.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'zurich': 'https://images.pexels.com/photos/1906658/pexels-photo-1906658.jpeg?auto=compress&cs=tinysrgb&w=800',
+        
+        // Asia - Iconic views
+        'tokyo': 'https://images.pexels.com/photos/2339009/pexels-photo-2339009.jpeg?auto=compress&cs=tinysrgb&w=800',  // Tokyo skyline
+        'japan': 'https://images.pexels.com/photos/402028/pexels-photo-402028.jpeg?auto=compress&cs=tinysrgb&w=800',  // Mt Fuji
+        'kyoto': 'https://images.pexels.com/photos/402028/pexels-photo-402028.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'bangkok': 'https://images.pexels.com/photos/1031659/pexels-photo-1031659.jpeg?auto=compress&cs=tinysrgb&w=800',  // Bangkok temple
+        'thailand': 'https://images.pexels.com/photos/1007657/pexels-photo-1007657.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'singapore': 'https://images.pexels.com/photos/1031659/pexels-photo-1031659.jpeg?auto=compress&cs=tinysrgb&w=800',  // Marina Bay
+        'dubai': 'https://images.pexels.com/photos/1470502/pexels-photo-1470502.jpeg?auto=compress&cs=tinysrgb&w=800',  // Burj Khalifa
+        'hong kong': 'https://images.pexels.com/photos/1031659/pexels-photo-1031659.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'shanghai': 'https://images.pexels.com/photos/1707640/pexels-photo-1707640.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'china': 'https://images.pexels.com/photos/2412609/pexels-photo-2412609.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'beijing': 'https://images.pexels.com/photos/2412609/pexels-photo-2412609.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'seoul': 'https://images.pexels.com/photos/237211/pexels-photo-237211.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'india': 'https://images.pexels.com/photos/1583339/pexels-photo-1583339.jpeg?auto=compress&cs=tinysrgb&w=800',  // Taj Mahal
+        'delhi': 'https://images.pexels.com/photos/1583339/pexels-photo-1583339.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'mumbai': 'https://images.pexels.com/photos/1583339/pexels-photo-1583339.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'bali': 'https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'kuala lumpur': 'https://images.pexels.com/photos/1470502/pexels-photo-1470502.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'vietnam': 'https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=800',
+        
+        // Americas
+        'new york': 'https://images.pexels.com/photos/466685/pexels-photo-466685.jpeg?auto=compress&cs=tinysrgb&w=800',  // NYC
+        'new york city': 'https://images.pexels.com/photos/466685/pexels-photo-466685.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'nyc': 'https://images.pexels.com/photos/466685/pexels-photo-466685.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'san francisco': 'https://images.pexels.com/photos/208745/pexels-photo-208745.jpeg?auto=compress&cs=tinysrgb&w=800',  // Golden Gate
+        'los angeles': 'https://images.pexels.com/photos/169677/pexels-photo-169677.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'las vegas': 'https://images.pexels.com/photos/161772/las-vegas-downtown-fremont-street-experience-nevada-161772.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'miami': 'https://images.pexels.com/photos/186077/pexels-photo-186077.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'chicago': 'https://images.pexels.com/photos/1823681/pexels-photo-1823681.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'toronto': 'https://images.pexels.com/photos/374870/pexels-photo-374870.jpeg?auto=compress&cs=tinysrgb&w=800',  // CN Tower
+        'canada': 'https://images.pexels.com/photos/1680140/pexels-photo-1680140.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'vancouver': 'https://images.pexels.com/photos/1141853/pexels-photo-1141853.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'mexico': 'https://images.pexels.com/photos/1084743/pexels-photo-1084743.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'rio de janeiro': 'https://images.pexels.com/photos/351283/pexels-photo-351283.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'brazil': 'https://images.pexels.com/photos/351283/pexels-photo-351283.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'buenos aires': 'https://images.pexels.com/photos/16181773/pexels-photo-16181773.jpeg?auto=compress&cs=tinysrgb&w=800',
+        
+        // Oceania
+        'sydney': 'https://images.pexels.com/photos/783682/pexels-photo-783682.jpeg?auto=compress&cs=tinysrgb&w=800',  // Opera House
+        'australia': 'https://images.pexels.com/photos/783682/pexels-photo-783682.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'melbourne': 'https://images.pexels.com/photos/1619299/pexels-photo-1619299.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'new zealand': 'https://images.pexels.com/photos/1450353/pexels-photo-1450353.jpeg?auto=compress&cs=tinysrgb&w=800',
+        
+        // Middle East & Africa
+        'cairo': 'https://images.pexels.com/photos/262780/pexels-photo-262780.jpeg?auto=compress&cs=tinysrgb&w=800',  // Pyramids
+        'egypt': 'https://images.pexels.com/photos/262780/pexels-photo-262780.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'istanbul': 'https://images.pexels.com/photos/1549326/pexels-photo-1549326.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'turkey': 'https://images.pexels.com/photos/1549326/pexels-photo-1549326.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'morocco': 'https://images.pexels.com/photos/2272171/pexels-photo-2272171.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'cape town': 'https://images.pexels.com/photos/259447/pexels-photo-259447.jpeg?auto=compress&cs=tinysrgb&w=800',
+        
+        // Country fallbacks
+        'italy': 'https://images.pexels.com/photos/2225439/pexels-photo-2225439.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'france': 'https://images.pexels.com/photos/338515/pexels-photo-338515.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'spain': 'https://images.pexels.com/photos/819764/pexels-photo-819764.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'germany': 'https://images.pexels.com/photos/2570063/pexels-photo-2570063.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'greece': 'https://images.pexels.com/photos/1285625/pexels-photo-1285625.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'united kingdom': 'https://images.pexels.com/photos/460672/pexels-photo-460672.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'uk': 'https://images.pexels.com/photos/460672/pexels-photo-460672.jpeg?auto=compress&cs=tinysrgb&w=800'
+      };
+      
+      // Handle undefined or null destination
+      if (!destination) {
+        return 'https://images.pexels.com/photos/1285625/pexels-photo-1285625.jpeg?auto=compress&cs=tinysrgb&w=800';
+      }
 
-    function viewTripDetails(tripId) {
-      alert(`Trip details view coming soon! Trip ID: ${tripId}`);
-      console.log('View trip:', tripId);
+      // Normalize destination name
+      const normalizedDest = destination.toLowerCase().trim();
+
+      // Direct match
+      if (cityImages[normalizedDest]) {
+        return cityImages[normalizedDest];
+      }
+
+      // Try partial matching for "City, Country" format
+      const cityPart = normalizedDest.split(',')[0].trim();
+      if (cityImages[cityPart]) {
+        return cityImages[cityPart];
+      }
+
+      // Fallback to a generic but beautiful travel image
+      return 'https://images.pexels.com/photos/1285625/pexels-photo-1285625.jpeg?auto=compress&cs=tinysrgb&w=800';
+    }
+
+    async function viewTripDetails(tripId) {
+      try {
+        // Fetch trip details
+        const response = await fetch(`/api/user/${currentUser.uid}/trips/${tripId}`);
+        const tripData = await response.json();
+        
+        if (!tripData) {
+          console.error('Trip not found');
+          return;
+        }
+        
+        const imageUrl = getCityImageUrl(tripData.destination);
+        const statusColors = {
+          'upcoming': { bg: 'var(--primary-light)', color: 'var(--primary)', label: 'Upcoming' },
+          'in_progress': { bg: '#d1fae5', color: 'var(--success)', label: 'In Progress' },
+          'finished': { bg: 'var(--bg-tertiary)', color: 'var(--text-secondary)', label: 'Finished' },
+          'planned': { bg: '#fef3c7', color: '#d97706', label: 'Planned' }
+        };
+        const status = statusColors[tripData.status] || statusColors['upcoming'];
+        
+        // Format dates
+        const startDate = new Date(tripData.start_date);
+        const endDate = new Date(tripData.end_date);
+        const formattedStart = startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        const formattedEnd = endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        
+        // Build itinerary HTML
+        let itineraryHtml = '';
+        if (tripData.itinerary && tripData.itinerary.days) {
+          itineraryHtml = tripData.itinerary.days.map((day, index) => `
+            <div style="margin-bottom: 1.5rem; padding: 1.25rem; background: var(--bg-secondary); border-radius: var(--radius-lg); border-left: 4px solid var(--primary);">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                <div>
+                  <h4 style="margin: 0 0 0.25rem 0; font-size: 1.125rem;">Day ${day.day_number}</h4>
+                  <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">${day.title || 'Exploration Day'}</p>
+                </div>
+              </div>
+              ${day.activities ? day.activities.map((activity, actIndex) => `
+                <div style="margin-bottom: 1rem; padding-left: 1rem; border-left: 2px solid var(--border);">
+                  <div style="display: flex; align-items: start; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <span style="font-weight: 600; color: var(--primary);">${activity.time || `Activity ${actIndex + 1}`}</span>
+                  </div>
+                  <h5 style="margin: 0 0 0.25rem 0; font-size: 1rem;">${activity.name || activity.title}</h5>
+                  <p style="margin: 0; font-size: 0.875rem; color: var(--text-secondary);">${activity.description || activity.details || ''}</p>
+                  ${activity.location ? `
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      ${activity.location}
+                    </div>
+                  ` : ''}
+                </div>
+              `).join('') : '<p style="color: var(--text-muted); font-size: 0.875rem;">No activities planned</p>'}
+            </div>
+          `).join('');
+        }
+        
+        // Build checklist HTML
+        let checklistHtml = '';
+        if (tripData.checklist && tripData.checklist.items) {
+          const categories = {};
+          tripData.checklist.items.forEach(item => {
+            const category = item.category || 'General';
+            if (!categories[category]) categories[category] = [];
+            categories[category].push(item);
+          });
+          
+          checklistHtml = Object.entries(categories).map(([category, items]) => `
+            <div style="margin-bottom: 1.5rem;">
+              <h5 style="margin-bottom: 0.75rem; font-size: 1rem; color: var(--text-primary);">${category}</h5>
+              ${items.map(item => `
+                <div style="display: flex; align-items: start; gap: 0.75rem; padding: 0.75rem; background: ${item.completed ? 'var(--bg-tertiary)' : 'white'}; border-radius: var(--radius); margin-bottom: 0.5rem; border: 1px solid var(--border);">
+                  <div style="width: 20px; height: 20px; border-radius: 4px; border: 2px solid ${item.completed ? 'var(--success)' : 'var(--border)'}; background: ${item.completed ? 'var(--success)' : 'transparent'}; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 0.125rem;">
+                    ${item.completed ? `
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    ` : ''}
+                  </div>
+                  <div style="flex: 1;">
+                    <div style="font-size: 0.875rem; color: var(--text-primary); ${item.completed ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${item.task || item.text}</div>
+                    ${item.due_date ? `
+                      <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                        Due: ${new Date(item.due_date).toLocaleDateString()}
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `).join('');
+        }
+        
+        // Display modal content
+        document.getElementById('trip-details-modal-content').innerHTML = `
+          <div class="trip-details-header" style="background-image: url('${imageUrl}');">
+            <div class="trip-details-header-content">
+              <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div style="padding-right: 3rem;">
+                  <div style="display: inline-flex; padding: 0.375rem 0.75rem; background: ${status.bg}; color: ${status.color}; border-radius: var(--radius-xl); font-size: 0.75rem; font-weight: 600; margin-bottom: 0.75rem; backdrop-filter: blur(8px);">
+                    ${status.label}
+                  </div>
+                  <h2 style="margin: 0; font-size: 2rem; text-shadow: 2px 2px 8px rgba(0,0,0,0.8);">${tripData.destination}</h2>
+                </div>
+              </div>
+              <div>
+                <p style="margin: 0; font-size: 0.875rem; text-shadow: 2px 2px 8px rgba(0,0,0,0.8);">
+                  ${formattedStart} - ${formattedEnd}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="trip-details-body">
+            <!-- Trip Info Grid -->
+            <div class="trip-info-grid">
+              <div class="trip-info-item">
+                <div class="trip-info-label">Duration</div>
+                <div class="trip-info-value">${tripData.duration || tripData.itinerary?.days?.length || 'N/A'} days</div>
+              </div>
+              <div class="trip-info-item">
+                <div class="trip-info-label">Origin</div>
+                <div class="trip-info-value">${tripData.origin || 'N/A'}</div>
+              </div>
+              <div class="trip-info-item">
+                <div class="trip-info-label">Created</div>
+                <div class="trip-info-value">${new Date(tripData.created_at?.seconds * 1000 || Date.now()).toLocaleDateString()}</div>
+              </div>
+              ${tripData.budget ? `
+                <div class="trip-info-item">
+                  <div class="trip-info-label">Budget</div>
+                  <div class="trip-info-value">${tripData.budget}</div>
+                </div>
+              ` : ''}
+            </div>
+            
+            <!-- Daily Itinerary -->
+            ${itineraryHtml ? `
+              <div style="margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                  <h3 style="margin: 0; font-size: 1.25rem;">Daily Itinerary</h3>
+                  <button class="btn btn-ghost btn-sm" onclick="window.location.href='/mytrips.html?trip=${tripData.id}'">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                    Full View
+                  </button>
+                </div>
+                ${itineraryHtml}
+              </div>
+            ` : ''}
+            
+            <!-- Pre-Trip Checklist -->
+            ${checklistHtml ? `
+              <div style="margin-bottom: 2rem;">
+                <h3 style="margin: 0 0 1rem 0; font-size: 1.25rem;">Pre-Trip Checklist</h3>
+                ${checklistHtml}
+              </div>
+            ` : ''}
+            
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+              <button class="btn btn-primary" onclick="window.location.href='/mytrips.html?trip=${tripData.id}'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 6 3 9v9l6-3 6 3 6-3V6l-6 3-6-3z" />
+                  <path d="M9 6v9m6-6v9" />
+                </svg>
+                View Full Trip
+              </button>
+              <button class="btn btn-secondary" onclick="editTrip('${tripData.id}')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Edit Trip
+              </button>
+              <button class="btn btn-ghost" onclick="closeTripDetailsModal()">Close</button>
+            </div>
+          </div>
+        `;
+        
+        // Show modal
+        document.getElementById('trip-details-modal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+      } catch (error) {
+        console.error('Failed to load trip details:', error);
+        alert('Failed to load trip details. Please try again.');
+      }
+    }
+    
+    function closeTripDetailsModal() {
+      document.getElementById('trip-details-modal').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+    
+    function closeIfClickedOutside(event) {
+      if (event.target.id === 'trip-details-modal') {
+        closeTripDetailsModal();
+      }
+    }
+    
+    function editTrip(tripId) {
+      alert(`Edit trip functionality coming soon! Trip ID: ${tripId}`);
+      // You can implement trip editing here
     }
 
     // Wellness Summary Functions
@@ -2544,6 +3544,40 @@
     });
   </script>
 
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-nav">
+    <div class="mobile-nav-container">
+      <a href="/dashboard.html" class="mobile-nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="/mytrips.html" class="mobile-nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 6 3 9v9l6-3 6 3 6-3V6l-6 3-6-3z"/>
+          <path d="M9 6v9m6-6v9"/>
+        </svg>
+        <span>My Trips</span>
+      </a>
+      <a href="/wellness.html" class="mobile-nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        <span>Wellness</span>
+      </a>
+      <a href="/profile.html" class="mobile-nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>Profile</span>
+      </a>
+    </div>
+  </nav>
 
 </body>
 </html>

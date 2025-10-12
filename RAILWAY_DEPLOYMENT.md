@@ -86,13 +86,27 @@ FIREBASE_CLIENT_EMAIL=your_firebase_client_email
 OPENAI_API_KEY=your_openai_api_key
 ```
 
-### **Optional API Keys:**
+### **⚠️ IMPORTANT: API Keys for Real Data**
+
+**Without these API keys, the app will use MOCK/DEMO data for flights and hotels!**
+
+#### **Amadeus Flight API (REQUIRED for real flight data)**
 ```bash
-# Amadeus Flight API (for flight search)
 AMADEUS_CLIENT_ID=your_amadeus_client_id
 AMADEUS_CLIENT_SECRET=your_amadeus_client_secret
-AMADEUS_HOSTNAME=test
+AMADEUS_HOSTNAME=test  # Use 'test' for testing, 'production' for live data
+```
 
+**How to get Amadeus API keys:**
+1. Sign up at https://developers.amadeus.com/
+2. Create a new app in the dashboard
+3. Copy your API Key (Client ID) and API Secret (Client Secret)
+4. Add them to Railway environment variables
+
+**⚠️ If these are missing, flight searches will return hardcoded mock data instead of real flights!**
+
+#### **Optional API Keys (for enhanced features):**
+```bash
 # Booking.com API (for hotel search)
 BOOKING_API_KEY=your_booking_api_key
 
@@ -138,6 +152,25 @@ Mari/
 
 ## 🔍 **Troubleshooting**
 
+### **❗ Flight searches showing hardcoded/mock data instead of real flights:**
+**Root Cause:** Amadeus API keys are not set in Railway environment variables
+
+**Solution:**
+1. Go to Railway Dashboard → Your Service → Variables tab
+2. Add these environment variables:
+   ```
+   AMADEUS_CLIENT_ID=your_amadeus_client_id
+   AMADEUS_CLIENT_SECRET=your_amadeus_client_secret
+   AMADEUS_HOSTNAME=test
+   ```
+3. Get your API keys from https://developers.amadeus.com/
+4. Railway will auto-redeploy after adding variables
+5. Check logs for: `✅ Amadeus API keys found - using live API`
+
+**How to verify it's fixed:**
+- Check Railway logs for: `🎭 DEMO MODE: No Amadeus API keys - using mock data` (means NOT fixed)
+- Look for: `✅ Amadeus API keys found - using live API` (means FIXED!)
+
 ### **If deployment fails:**
 1. Check Railway logs for errors
 2. Verify all environment variables are set
@@ -145,7 +178,7 @@ Mari/
 4. Check that all dependencies are in `package.json`
 
 ### **If app doesn't start:**
-1. Verify `PORT` environment variable is set
+1. Verify `PORT` environment variable is NOT manually set (Railway provides it automatically)
 2. Check that Firebase credentials are valid
 3. Ensure all required API keys are provided
 

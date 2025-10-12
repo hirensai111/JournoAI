@@ -1,0 +1,22 @@
+# Ignore Python files to prevent Railway from detecting as Python project
+*.py
+*.pyc
+__pycache__/
+venv/
+env/
+.venv/
+requirements.txt
+Pipfile
+Pipfile.lock
+
+# Ignore development files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.log
+logs/
+node_modules/
+.git/
+.DS_Store

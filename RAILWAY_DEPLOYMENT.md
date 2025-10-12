@@ -1,40 +1,69 @@
 # 🚀 Railway Deployment Guide for Journey AI
 
-## ✅ **FIXED: Railway Configuration Added**
+## ✅ **FIXED: Railway 502 Error Resolved**
 
-The following files have been added to fix the Railway deployment:
+### Root Cause Identified:
+The 502 error was caused by the server taking too long to initialize before binding to the port. Railway's health check would timeout because:
+1. Server loaded 345 experiences from JSON files
+2. Initialized Firebase Client SDK
+3. Created all service instances (recommender, flight search, hotels, etc.)
+4. **THEN** called `app.listen()` - too late for Railway's health check
 
-### **1. nixpacks.toml**
+### Solution Implemented:
+- **Immediate server startup**: `app.listen()` is called immediately on module load
+- **Background initialization**: Services initialize asynchronously after server starts
+- **Health check compatibility**: `/api/health` responds instantly, reports initialization status
+- **Zero downtime**: Static files work immediately, API endpoints work after ~5-10 seconds
+
+---
+
+## 📋 **Files Configured for Railway**
+
+### **1. railway.json** (Railway V2 configuration)
+```json
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "nixpacksConfigPath": "nixpacks.toml"
+  },
+  "deploy": {
+    "runtime": "V2",
+    "numReplicas": 1,
+    "startCommand": "npm start",
+    "healthcheckPath": "/api/health",
+    "healthcheckTimeout": 100,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}
+```
+
+### **2. nixpacks.toml**
 ```toml
 [phases.setup]
 nixPkgs = ['nodejs_20']
 
 [phases.install]
-cmds = ['npm install']
+cmds = ['npm ci --only=production']
 
 [start]
 cmd = 'npm start'
 ```
 
-### **2. Procfile**
-```
-web: npm start
-```
-
-### **3. Updated package.json**
-- Added `engines` field specifying Node.js 18.x
-- Updated `start` script to use `server-production.js`
+### **3. package.json**
+- `"engines": { "node": "18.x" }` - Specifies Node.js version
+- `"start": "node server-production.js"` - Production start command
 
 ---
 
-## 🔧 **Required Environment Variables**
+## 🔧 **Railway Environment Variables**
 
-Set these in your Railway dashboard under **Variables**:
+Railway automatically provides the `PORT` environment variable. You don't need to set it manually.
 
-### **Essential Variables:**
+### **Optional Variables (for enhanced features):**
 ```bash
-# Server Configuration
-PORT=3001
+# Node Environment
 NODE_ENV=production
 
 # Firebase (Required for wellness features)

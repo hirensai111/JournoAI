@@ -48,6 +48,11 @@ app.use('/api/', limiter);
 // Register trip routes (includes /api/trips/compose endpoint)
 app.use('/api/trips', tripRoutes);
 
+// Serve main page
+app.get('/', (req, res) => {
+  res.sendFile('index.html', { root: 'public' });
+});
+
 // Initialize recommender and conversation manager
 let recommender;
 let conversationManager;

@@ -1,5 +1,11 @@
 /* Journey AI - Modern, Accessible Styling */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+* {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
 :root {
   --primary: #2563eb;
   --primary-hover: #1d4ed8;

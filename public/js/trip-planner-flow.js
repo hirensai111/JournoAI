@@ -585,12 +585,16 @@ async function generateAndDisplayItinerary() {
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
         <div style="border: 1px solid var(--border); border-radius: 8px; padding: 1rem; background: var(--bg-secondary);">
           <div style="font-weight: 600; margin-bottom: 0.5rem;">✈️ ${flight.carrier}</div>
-          <div style="font-size: 0.875rem; color: var(--text-secondary);">${flight.departureAirport} → ${flight.arrivalAirport}</div>
+          <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+            ${prefs.startDate} • ${flight.departureAirport} ${flight.departureTime} → ${flight.arrivalAirport} ${flight.arrivalTime}
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">⏱️ ${Math.floor(flight.duration / 60)}h ${flight.duration % 60}m • ${flight.stops === 0 ? 'Direct' : `${flight.stops} stop${flight.stops > 1 ? 's' : ''}`}</div>
           <div style="font-size: 0.875rem; color: var(--primary); font-weight: 600; margin-top: 0.25rem;">$${flight.priceTotal}</div>
         </div>
         <div style="border: 1px solid var(--border); border-radius: 8px; padding: 1rem; background: var(--bg-secondary);">
           <div style="font-weight: 600; margin-bottom: 0.5rem;">🏨 ${hotel.name}</div>
           <div style="font-size: 0.875rem; color: var(--text-secondary);">${hotel.neighborhood} • ${hotel.rating}/10</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">${prefs.startDate} to ${prefs.endDate} • ${tripDays} nights</div>
           <div style="font-size: 0.875rem; color: var(--primary); font-weight: 600; margin-top: 0.25rem;">$${hotel.pricePerNight}/night</div>
         </div>
       </div>
@@ -683,7 +687,9 @@ async function generateMockItinerary(destination, startDate, endDate) {
       'historic_site': '🏺'
     };
 
-    const timeSlots = ['9:00 AM', '12:00 PM', '3:00 PM', '7:00 PM'];
+    // Get flight arrival time to adjust Day 1 schedule
+    const flight = planningState.selectedFlight;
+    const flightArrivalHour = flight?.arrivalTime ? parseInt(flight.arrivalTime.split(':')[0]) : 15;
 
     // Calculate activities per day (3 activities per day)
     const activitiesPerDay = 3;
@@ -705,22 +711,62 @@ async function generateMockItinerary(destination, startDate, endDate) {
     // Select diverse experiences for the full trip
     const selectedExperiences = selectDiverseExperiences(experiences, totalActivities);
 
-    // Group into days
+    // Group into days with smart timing
     const days = [];
     for (let dayIdx = 0; dayIdx < tripDays; dayIdx++) {
       const dayExperiences = selectedExperiences.slice(dayIdx * activitiesPerDay, (dayIdx + 1) * activitiesPerDay);
 
-      days.push({
-        title: getDayTitle(dayIdx, tripDays),
-        highlight: dayExperiences[0]?.name || `Explore ${destination}`,
-        activities: dayExperiences.map((exp, idx) => ({
+      // Generate realistic times based on day and activity type
+      const activities = dayExperiences.map((exp, idx) => {
+        let time;
+
+        if (dayIdx === 0) {
+          // Day 1: Adjust for flight arrival
+          if (flightArrivalHour <= 12) {
+            // Morning arrival: Start activities at 2 PM
+            time = ['2:00 PM', '5:00 PM', '7:30 PM'][idx];
+          } else if (flightArrivalHour <= 16) {
+            // Afternoon arrival: Evening activities only
+            time = ['6:00 PM', '8:00 PM', '9:30 PM'][idx];
+          } else {
+            // Evening arrival: Just dinner
+            time = ['8:00 PM', '9:00 PM', '10:00 PM'][idx];
+          }
+        } else if (dayIdx === tripDays - 1) {
+          // Last day: End by noon for checkout/departure
+          time = ['8:00 AM', '10:00 AM', '11:30 AM'][idx];
+        } else {
+          // Regular days: Varied timing based on activity type
+          if (exp.type === 'market') {
+            time = ['8:30 AM', '9:00 AM', '9:30 AM'][idx];
+          } else if (exp.type === 'restaurant' || exp.type === 'cafe') {
+            time = ['12:30 PM', '7:00 PM', '8:00 PM'][idx];
+          } else if (exp.type === 'museum' || exp.type === 'cultural_site') {
+            time = ['10:00 AM', '2:00 PM', '3:30 PM'][idx];
+          } else if (exp.type === 'tour') {
+            time = ['9:00 AM', '2:30 PM', '4:00 PM'][idx];
+          } else if (exp.type === 'park') {
+            time = ['4:00 PM', '5:00 PM', '5:30 PM'][idx];
+          } else {
+            // Default times for other types
+            time = ['10:00 AM', '2:00 PM', '6:00 PM'][idx];
+          }
+        }
+
+        return {
           icon: typeIcons[exp.type] || '🎯',
           name: exp.name,
-          time: timeSlots[idx],
+          time: time || '10:00 AM',
           description: exp.description.substring(0, 100) + '...',
           type: exp.type,
           accessibility: exp.accessibility_notes
-        }))
+        };
+      });
+
+      days.push({
+        title: getDayTitle(dayIdx, tripDays),
+        highlight: dayExperiences[0]?.name || `Explore ${destination}`,
+        activities
       });
     }
 

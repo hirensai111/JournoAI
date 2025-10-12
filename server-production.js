@@ -13,7 +13,7 @@ import BookingComHotelSearch from './src/bookingComHotelSearch.js';
 import TripPlannerService from './src/tripPlannerService.js';
 import TripAssistantChatbot from './src/tripAssistantChatbot.js';
 import { UserService, TripService } from './src/firebaseAdmin.js';
-import tripRoutes from './src/routes/tripRoutes.js';
+import tripRoutes, { setRecommenderFactory } from './src/routes/tripRoutes.js';
 import wellnessRoutes from './src/routes/wellnessRoutes.js';
 import dotenv from 'dotenv';
 
@@ -987,8 +987,34 @@ async function startServer() {
       const queryLower = query.toLowerCase();
       const queryWords = queryLower.split(' ');
 
-      const results = this.experiences
+      // First apply filters, then text search
+      let filteredExperiences = this.experiences;
+
+      // Apply city/country filters first (most important) - case insensitive
+      if (filters.city) {
+        console.log(`   📍 Filtering by city: ${filters.city}`);
+        const cityLower = filters.city.toLowerCase();
+        filteredExperiences = filteredExperiences.filter(exp =>
+          exp.city && exp.city.toLowerCase() === cityLower
+        );
+      }
+
+      if (filters.country) {
+        console.log(`   🌍 Filtering by country: ${filters.country}`);
+        const countryLower = filters.country.toLowerCase();
+        filteredExperiences = filteredExperiences.filter(exp =>
+          exp.country && exp.country.toLowerCase() === countryLower
+        );
+      }
+
+      console.log(`   After location filters: ${filteredExperiences.length} experiences`);
+
+      // Then apply text matching
+      const results = filteredExperiences
         .filter(experience => {
+          // If no query text, match all (just use filters)
+          if (!query || queryWords.length === 0) return true;
+
           const text = [
             experience.name,
             experience.description,
@@ -1008,11 +1034,15 @@ async function startServer() {
         }))
         .sort((a, b) => b.score - a.score);
 
-      console.log(`✅ Found ${results.length} results`);
+      console.log(`✅ Found ${results.length} results for ${filters.city || filters.country || query}`);
       return results;
     };
 
     await recommender.initialize();
+
+    // Share the recommender instance with tripRoutes (so they use the demo mode overrides)
+    setRecommenderFactory(() => recommender);
+    console.log('✅ Recommender factory shared with tripRoutes');
 
     console.log('🤖 Initializing Conversation Manager...');
     conversationManager = new ConversationManager(recommender);

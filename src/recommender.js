@@ -149,14 +149,18 @@ class ExperienceRecommender {
   }
 
   matchesFilters(experience, filters) {
-    // Country filter
-    if (filters.country && experience.country !== filters.country) {
-      return false;
+    // Country filter - case insensitive
+    if (filters.country) {
+      const countryMatch = experience.country &&
+        experience.country.toLowerCase() === filters.country.toLowerCase();
+      if (!countryMatch) return false;
     }
 
-    // City filter
-    if (filters.city && experience.city !== filters.city) {
-      return false;
+    // City filter - case insensitive
+    if (filters.city) {
+      const cityMatch = experience.city &&
+        experience.city.toLowerCase() === filters.city.toLowerCase();
+      if (!cityMatch) return false;
     }
 
     // Accessibility needs filter

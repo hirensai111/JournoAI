@@ -11,9 +11,33 @@ import { searchHotelsHotelbeds } from '../../lib/trips/adapters/hotelbeds.js';
 import { searchExperiences } from '../../lib/trips/adapters/experiences.js';
 import { generateEnhancedItinerary } from '../../lib/trips/adapters/tripadvisor.js';
 import ItineraryGenerator from '../itineraryGenerator.js';
+import ExperienceRecommender from '../recommender.js';
 import { TripService } from '../firebaseAdmin.js';
 
 const router = express.Router();
+
+// Initialize shared recommender instance for itinerary generation
+let sharedRecommender = null;
+let recommenderFactory = null;
+
+// Set recommender factory from main server
+export function setRecommenderFactory(factory) {
+  recommenderFactory = factory;
+}
+
+async function getRecommender() {
+  if (recommenderFactory) {
+    // Use the factory provided by main server (with demo mode overrides)
+    return recommenderFactory();
+  }
+
+  // Fallback: create own instance
+  if (!sharedRecommender) {
+    sharedRecommender = new ExperienceRecommender();
+    await sharedRecommender.initialize();
+  }
+  return sharedRecommender;
+}
 
 /**
  * POST /api/trips/compose
@@ -162,10 +186,10 @@ router.post('/itinerary/enhanced', async (req, res) => {
       });
     }
 
-    console.log('Generating enhanced itinerary for:', destination);
-    console.log('Dates:', startDate, 'to', endDate);
+    console.log('🗺️  Generating enhanced itinerary for:', destination);
+    console.log('📅 Dates:', startDate, 'to', endDate);
     if (flightInfo) {
-      console.log('Flight info:', flightInfo);
+      console.log('✈️  Flight info:', flightInfo);
     }
 
     // Calculate trip duration
@@ -173,8 +197,14 @@ router.post('/itinerary/enhanced', async (req, res) => {
     const end = new Date(endDate);
     const tripDuration = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
-    // Create itinerary generator instance
-    const generator = new ItineraryGenerator();
+    console.log(`⏱️  Trip duration: ${tripDuration} days`);
+
+    // Get recommender instance
+    const recommender = await getRecommender();
+    console.log('✅ Recommender initialized');
+
+    // Create itinerary generator instance with recommender
+    const generator = new ItineraryGenerator(recommender);
 
     // Generate detailed itinerary with all the extra fields
     const itineraryData = await generator.generateItinerary({
@@ -192,20 +222,63 @@ router.post('/itinerary/enhanced', async (req, res) => {
       flightInfo: flightInfo || null
     });
 
+    console.log('✅ Itinerary generated successfully');
+
     // Transform the response to match frontend expectations
-    // The generator returns { itinerary: [...days] }
-    const days = itineraryData.itinerary || [];
+    // The generator returns { days: [...], destination, trip_duration, etc }
+    const days = itineraryData.days || [];
+
+    console.log(`📦 Returning ${days.length} days`);
+
+    // Helper function to get activity icon
+    const getActivityIcon = (type) => {
+      const icons = {
+        arrival: '✈️',
+        accommodation: '🏨',
+        meal: '🍽️',
+        rest: '💤',
+        experience: '🎯',
+        medication: '💊',
+        optional: '⭐'
+      };
+      return icons[type] || '📍';
+    };
+
+    // Transform days to match frontend format expectations
+    const transformedDays = days.map((day, index) => ({
+      title: day.title || `Day ${index + 1}`,
+      date: day.date || '',
+      highlight: day.theme || day.title || `Explore ${destination}`,
+      activities: day.activities.map(activity => ({
+        icon: activity.icon || getActivityIcon(activity.type),
+        name: activity.title,
+        time: activity.time,
+        description: activity.description,
+        type: activity.type,
+        duration: activity.duration_hours,
+        accessibility: activity.accessibility || [],
+        estimated_steps: activity.estimated_steps,
+        medical_notes: activity.medical_notes,
+        importance: activity.importance
+      })),
+      fatigue_level: day.fatigue_level,
+      medical_safety_score: day.medical_safety_score,
+      daily_steps_estimate: day.daily_steps_estimate,
+      medical_notes: day.medical_notes
+    }));
 
     res.json({
       success: true,
-      itinerary: days,
-      count: days.length
+      itinerary: transformedDays,
+      count: transformedDays.length
     });
   } catch (error) {
-    console.error('Error generating enhanced itinerary:', error);
+    console.error('❌ Error generating enhanced itinerary:', error);
+    console.error('Stack trace:', error.stack);
     res.status(500).json({
       error: 'Failed to generate enhanced itinerary',
-      message: error.message
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });

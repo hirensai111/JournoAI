@@ -182,8 +182,9 @@ class ItineraryGenerator {
 
     // Day 1 is always arrival/rest day
     const arrivalDate = startDate ? new Date(startDate) : new Date();
+    const destination = experiences[0]?.city || experiences[0]?.country || 'destination';
 
-    days.push(this.createArrivalDay(arrivalDate, conditions, medications));
+    days.push(this.createArrivalDay(arrivalDate, conditions, medications, destination));
     cumulativeFatigue += 20; // Arrival day baseline fatigue
 
     // Generate remaining days
@@ -242,13 +243,13 @@ class ItineraryGenerator {
   /**
    * Create arrival day (Day 1)
    */
-  createArrivalDay(date, conditions, medications = []) {
+  createArrivalDay(date, conditions, medications = [], destination = '') {
     const activities = [
       {
         time: '09:00',
         type: 'arrival',
         title: 'Arrive at Airport',
-        description: 'Wheelchair assistance pre-booked, accessible transportation confirmed',
+        description: `Arrive at ${destination || 'destination'} airport. Wheelchair assistance pre-booked, accessible transportation confirmed`,
         duration_hours: '2',
         accessibility: ['wheelchair_accessible', 'medical_assistance_available'],
         estimated_steps: 500,
@@ -284,7 +285,9 @@ class ItineraryGenerator {
           description: 'Unpack, organize medications, set up room, nap if needed',
           duration_hours: '3',
           importance: 'CRITICAL',
-          medical_notes: 'Store insulin properly, set up blood glucose monitor, adjust medication timing for timezone'
+          medical_notes: conditions.includes('type_1_diabetes') ?
+            'Store insulin properly, set up blood glucose monitor, adjust medication timing for timezone' :
+            'Organize medications, rest after travel'
         },
         {
           time: '18:00',

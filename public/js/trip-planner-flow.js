@@ -8,8 +8,10 @@ let planningState = {
   step: 'initial', // initial, flights, hotels, itinerary, saved
   preferences: null,
   selectedFlight: null,
+  selectedReturnFlight: null,
   selectedHotel: null,
   allFlights: [],
+  allReturnFlights: [],
   allHotels: [],
   itinerary: null
 };
@@ -79,9 +81,28 @@ async function handleChatSubmit() {
       return;
     }
 
+    // Now ask for flight type (one-way or round-trip)
+    planningState.step = 'awaiting_flight_type';
+    addChatMessage(`Great! Would you like a one-way flight or a round-trip (return) flight?`, 'assistant');
+    return;
+  }
+
+  if (planningState.step === 'awaiting_flight_type') {
+    const lower = text.toLowerCase();
+    if (/one[\s-]?way|single|outbound only/i.test(lower)) {
+      planningState.preferences.tripType = 'one-way';
+      planningState.preferences.tripTypeProvided = true;
+    } else if (/round[\s-]?trip|return|two[\s-]?way|both ways/i.test(lower)) {
+      planningState.preferences.tripType = 'round-trip';
+      planningState.preferences.tripTypeProvided = true;
+    } else {
+      addChatMessage('Please choose: one-way or round-trip', 'assistant');
+      return;
+    }
+
     // All info collected - now fetch flights
     const prefs = planningState.preferences;
-    addChatMessage(`Perfect! Planning a ${prefs.budget} trip for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} from ${prefs.origin} to ${prefs.destination}.\n\nDates: ${prefs.startDate} to ${prefs.endDate}`, 'assistant');
+    addChatMessage(`Perfect! Planning a ${prefs.budget} ${prefs.tripType} trip for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} from ${prefs.origin} to ${prefs.destination}.\n\nDates: ${prefs.startDate} to ${prefs.endDate}`, 'assistant');
 
     // Show loading in preview section
     showPreviewLoading('Searching for flights...', '✈️');
@@ -122,8 +143,15 @@ async function handleChatSubmit() {
     return;
   }
 
+  // Check if trip type provided
+  if (!prefs.tripTypeProvided) {
+    planningState.step = 'awaiting_flight_type';
+    addChatMessage(`Great! Would you like a one-way flight or a round-trip (return) flight?`, 'assistant');
+    return;
+  }
+
   // All info provided - fetch flights
-  addChatMessage(`Perfect! Planning a ${prefs.budget} trip for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} from ${prefs.origin} to ${prefs.destination}.\n\nDates: ${prefs.startDate} to ${prefs.endDate}`, 'assistant');
+  addChatMessage(`Perfect! Planning a ${prefs.budget} ${prefs.tripType} trip for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} from ${prefs.origin} to ${prefs.destination}.\n\nDates: ${prefs.startDate} to ${prefs.endDate}`, 'assistant');
 
   // Show loading in preview section
   showPreviewLoading('Searching for flights...', '✈️');
@@ -224,6 +252,8 @@ function parseTripMessage(text) {
     travelersProvided: false,
     budget: null,
     budgetProvided: false,
+    tripType: null,
+    tripTypeProvided: false,
     startDate: null,
     endDate: null
   };
@@ -267,6 +297,15 @@ function parseTripMessage(text) {
     prefs.budgetProvided = true;
   }
 
+  // Extract trip type (one-way vs round-trip)
+  if (/one[\s-]?way|single|outbound only/i.test(lower)) {
+    prefs.tripType = 'one-way';
+    prefs.tripTypeProvided = true;
+  } else if (/round[\s-]?trip|return|two[\s-]?way|both ways/i.test(lower)) {
+    prefs.tripType = 'round-trip';
+    prefs.tripTypeProvided = true;
+  }
+
   // Try to parse dates using the new function
   const dateInfo = parseDateFromMessage(text);
   if (dateInfo.startDate) {
@@ -285,7 +324,9 @@ async function fetchAndDisplayFlights(prefs) {
     // Calculate dates if not provided (7 days from today)
     const startDate = prefs.startDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const endDate = prefs.endDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const tripType = prefs.tripType || 'one-way';
 
+    // Fetch outbound flights
     const response = await fetch('http://localhost:3001/api/trips/flights', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -307,15 +348,40 @@ async function fetchAndDisplayFlights(prefs) {
       return;
     }
 
-    // Store flight data directly from API
+    // Store outbound flight data
     planningState.allFlights = data.flights;
     planningState.step = 'flights';
-    planningState.preferences = { ...planningState.preferences, startDate, endDate };
+    planningState.preferences = { ...planningState.preferences, startDate, endDate, tripType };
+
+    // If round-trip, fetch return flights too
+    if (tripType === 'round-trip') {
+      const returnResponse = await fetch('http://localhost:3001/api/trips/flights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          origin: prefs.destination, // Reverse the origin and destination
+          destination: prefs.origin,
+          startDate: endDate, // Return on the end date
+          endDate: new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Next day as fallback
+          travelers: prefs.travelers || 1,
+          budget: prefs.budget || 'mid',
+          travelersProfiles: []
+        })
+      });
+
+      const returnData = await returnResponse.json();
+      if (returnData && returnData.flights && returnData.flights.length > 0) {
+        planningState.allReturnFlights = returnData.flights;
+      }
+    }
 
     // Display flight selection UI
-    displayFlightSelection(planningState.allFlights);
+    displayFlightSelection(planningState.allFlights, tripType);
 
-    addChatMessage(`Found ${planningState.allFlights.length} flights! Choose your preferred option:`, 'assistant');
+    const message = tripType === 'round-trip'
+      ? `Found ${planningState.allFlights.length} outbound flights! Choose your preferred option:`
+      : `Found ${planningState.allFlights.length} flights! Choose your preferred option:`;
+    addChatMessage(message, 'assistant');
 
   } catch (error) {
     console.error('Error fetching flights:', error);
@@ -440,8 +506,9 @@ function formatDateTime(isoString) {
 /**
  * Display flight selection cards in the plan preview
  */
-function displayFlightSelection(flights) {
+function displayFlightSelection(flights, tripType = 'one-way') {
   const preview = document.getElementById('plan-preview');
+  const flightLabel = tripType === 'round-trip' ? 'Outbound Flights' : 'Flights';
 
   const flightsHTML = flights.map(flight => {
     // Get outbound flight details
@@ -495,7 +562,7 @@ function displayFlightSelection(flights) {
         </div>
         <div style="text-align: right; margin-left: 1rem;">
           <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary);">$${Math.round(flight.priceTotal)}</div>
-          <div style="font-size: 0.75rem; color: var(--text-muted);">per person</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">total</div>
         </div>
       </div>
     </div>
@@ -504,7 +571,7 @@ function displayFlightSelection(flights) {
 
   preview.innerHTML = `
     <div style="padding: 1rem;">
-      <h3 style="margin: 0 0 1rem 0; font-size: 1.125rem; font-weight: 600;">✈️ Select Your Flight</h3>
+      <h3 style="margin: 0 0 1rem 0; font-size: 1.125rem; font-weight: 600;">✈️ Select Your ${flightLabel}</h3>
       ${flightsHTML}
     </div>
   `;
@@ -518,7 +585,6 @@ window.selectFlight = async function(flightId) {
   if (!flight) return;
 
   planningState.selectedFlight = flight;
-  planningState.step = 'hotels';
 
   // Highlight selected flight
   document.querySelectorAll('.flight-option').forEach(el => {
@@ -528,7 +594,114 @@ window.selectFlight = async function(flightId) {
   event.target.closest('.flight-option').style.borderColor = 'var(--primary)';
   event.target.closest('.flight-option').style.background = 'var(--primary-light)';
 
-  addChatMessage(`Great choice! ${flight.carrier} flight selected.`, 'assistant');
+  addChatMessage(`Great choice! ${flight.carrier} outbound flight selected.`, 'assistant');
+
+  // If round-trip, show return flight selection
+  const tripType = planningState.preferences?.tripType || 'one-way';
+  if (tripType === 'round-trip' && planningState.allReturnFlights && planningState.allReturnFlights.length > 0) {
+    planningState.step = 'return_flights';
+    displayReturnFlightSelection(planningState.allReturnFlights);
+    addChatMessage(`Now select your return flight:`, 'assistant');
+  } else {
+    // One-way or no return flights available, proceed to hotels
+    planningState.step = 'hotels';
+    showPreviewLoading('Finding hotels...', '🏨');
+    await fetchAndDisplayHotels();
+  }
+};
+
+/**
+ * Display return flight selection cards
+ */
+function displayReturnFlightSelection(flights) {
+  const preview = document.getElementById('plan-preview');
+
+  const flightsHTML = flights.map(flight => {
+    // Get return flight details
+    const outbound = flight.segments && flight.segments.length > 0 ? flight.segments[0] : null;
+    const outboundLast = flight.segments && flight.segments.length > 0 ? flight.segments[flight.segments.length - 1] : null;
+
+    let departureInfo = '';
+    let arrivalInfo = '';
+    let stopsInfo = '';
+    let durationInfo = '';
+
+    if (outbound && outboundLast) {
+      const depDateTime = formatDateTime(outbound.dep);
+      const arrDateTime = formatDateTime(outboundLast.arr);
+
+      departureInfo = `${outbound.from} ${depDateTime.time}`;
+      arrivalInfo = `${outboundLast.to} ${arrDateTime.time}`;
+
+      const stops = flight.segments.length - 1;
+      stopsInfo = stops === 0 ? '🎯 Direct' : `🔄 ${stops} stop${stops > 1 ? 's' : ''}`;
+
+      // Calculate total duration
+      const totalDuration = flight.segments.reduce((sum, seg) => sum + (seg.durationMinutes || 0), 0);
+      durationInfo = `⏱️ ${Math.floor(totalDuration / 60)}h ${totalDuration % 60}m`;
+    } else if (flight.departureAirport && flight.arrivalAirport) {
+      // Fallback to old format
+      departureInfo = `${flight.departureAirport} ${flight.departureTime || ''}`;
+      arrivalInfo = `${flight.arrivalAirport} ${flight.arrivalTime || ''}`;
+      stopsInfo = flight.stops === 0 ? '🎯 Direct' : `🔄 ${flight.stops} stop${flight.stops > 1 ? 's' : ''}`;
+      durationInfo = `⏱️ ${Math.floor(flight.duration / 60)}h ${flight.duration % 60}m`;
+    }
+
+    return `
+    <div class="return-flight-option" onclick="selectReturnFlight('${flight.id}')" style="border: 2px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; cursor: pointer; transition: all 0.2s; background: white;">
+      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem;">${flight.carrier}</div>
+          <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+            <div style="margin-bottom: 0.25rem;">
+              <strong>Departure:</strong> ${departureInfo}
+            </div>
+            <div style="margin-bottom: 0.25rem;">
+              <strong>Arrival:</strong> ${arrivalInfo}
+            </div>
+          </div>
+          <div style="display: flex; gap: 1rem; font-size: 0.75rem; color: var(--text-muted); flex-wrap: wrap;">
+            <span>✈️ ${flight.cabin}</span>
+            <span>${durationInfo}</span>
+            <span>${stopsInfo}</span>
+          </div>
+        </div>
+        <div style="text-align: right; margin-left: 1rem;">
+          <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary);">$${Math.round(flight.priceTotal)}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">total</div>
+        </div>
+      </div>
+    </div>
+  `;
+  }).join('');
+
+  preview.innerHTML = `
+    <div style="padding: 1rem;">
+      <h3 style="margin: 0 0 1rem 0; font-size: 1.125rem; font-weight: 600;">🔙 Select Your Return Flight</h3>
+      ${flightsHTML}
+    </div>
+  `;
+}
+
+/**
+ * Handle return flight selection
+ */
+window.selectReturnFlight = async function(flightId) {
+  const flight = planningState.allReturnFlights.find(f => f.id === flightId);
+  if (!flight) return;
+
+  planningState.selectedReturnFlight = flight;
+  planningState.step = 'hotels';
+
+  // Highlight selected flight
+  document.querySelectorAll('.return-flight-option').forEach(el => {
+    el.style.borderColor = 'var(--border)';
+    el.style.background = 'white';
+  });
+  event.target.closest('.return-flight-option').style.borderColor = 'var(--primary)';
+  event.target.closest('.return-flight-option').style.background = 'var(--primary-light)';
+
+  addChatMessage(`Perfect! ${flight.carrier} return flight selected.`, 'assistant');
 
   // Show loading in preview section for hotels
   showPreviewLoading('Finding hotels...', '🏨');
@@ -686,7 +859,50 @@ async function generateAndDisplayItinerary() {
       </div>
 
       <!-- Selected Flight & Hotel Summary -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+      <div style="display: grid; grid-template-columns: ${planningState.selectedReturnFlight ? '1fr' : '1fr 1fr'}; gap: 1rem; margin-bottom: 2rem;">
+        ${planningState.selectedReturnFlight ? `
+        <!-- Round-trip: Show both outbound and return flights in one card -->
+        <div style="border: 1px solid var(--border); border-radius: 8px; padding: 1rem; background: var(--bg-secondary);">
+          <div style="font-weight: 600; margin-bottom: 0.75rem;">✈️ Flights (Round-Trip)</div>
+
+          <!-- Outbound Flight -->
+          <div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);">
+            <div style="font-size: 0.813rem; color: var(--text-muted); margin-bottom: 0.25rem;">Outbound • ${flight.carrier}</div>
+            ${flight.segments && flight.segments.length > 0 ? `
+            <div style="font-size: 0.875rem; color: var(--text-secondary);">
+              <div><strong>Depart:</strong> ${flight.segments[0].from} ${formatDateTime(flight.segments[0].dep).date} ${formatDateTime(flight.segments[0].dep).time}</div>
+              <div><strong>Arrive:</strong> ${flight.segments[flight.segments.length - 1].to} ${formatDateTime(flight.segments[flight.segments.length - 1].arr).date} ${formatDateTime(flight.segments[flight.segments.length - 1].arr).time}</div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">⏱️ ${Math.floor(flight.segments.reduce((sum, seg) => sum + (seg.durationMinutes || 0), 0) / 60)}h ${flight.segments.reduce((sum, seg) => sum + (seg.durationMinutes || 0), 0) % 60}m • ${flight.segments.length - 1 === 0 ? 'Direct' : `${flight.segments.length - 1} stop${flight.segments.length - 1 > 1 ? 's' : ''}`}</div>
+            ` : `
+            <div style="font-size: 0.875rem; color: var(--text-secondary);">
+              ${prefs.startDate} • ${flight.departureAirport} ${flight.departureTime} → ${flight.arrivalAirport} ${flight.arrivalTime}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">⏱️ ${Math.floor(flight.duration / 60)}h ${flight.duration % 60}m • ${flight.stops === 0 ? 'Direct' : `${flight.stops} stop${flight.stops > 1 ? 's' : ''}`}</div>
+            `}
+            <div style="font-size: 0.813rem; color: var(--primary); font-weight: 600; margin-top: 0.25rem;">$${Math.round(flight.priceTotal)}</div>
+          </div>
+
+          <!-- Return Flight -->
+          <div>
+            <div style="font-size: 0.813rem; color: var(--text-muted); margin-bottom: 0.25rem;">Return • ${planningState.selectedReturnFlight.carrier}</div>
+            ${planningState.selectedReturnFlight.segments && planningState.selectedReturnFlight.segments.length > 0 ? `
+            <div style="font-size: 0.875rem; color: var(--text-secondary);">
+              <div><strong>Depart:</strong> ${planningState.selectedReturnFlight.segments[0].from} ${formatDateTime(planningState.selectedReturnFlight.segments[0].dep).date} ${formatDateTime(planningState.selectedReturnFlight.segments[0].dep).time}</div>
+              <div><strong>Arrive:</strong> ${planningState.selectedReturnFlight.segments[planningState.selectedReturnFlight.segments.length - 1].to} ${formatDateTime(planningState.selectedReturnFlight.segments[planningState.selectedReturnFlight.segments.length - 1].arr).date} ${formatDateTime(planningState.selectedReturnFlight.segments[planningState.selectedReturnFlight.segments.length - 1].arr).time}</div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">⏱️ ${Math.floor(planningState.selectedReturnFlight.segments.reduce((sum, seg) => sum + (seg.durationMinutes || 0), 0) / 60)}h ${planningState.selectedReturnFlight.segments.reduce((sum, seg) => sum + (seg.durationMinutes || 0), 0) % 60}m • ${planningState.selectedReturnFlight.segments.length - 1 === 0 ? 'Direct' : `${planningState.selectedReturnFlight.segments.length - 1} stop${planningState.selectedReturnFlight.segments.length - 1 > 1 ? 's' : ''}`}</div>
+            ` : `
+            <div style="font-size: 0.875rem; color: var(--text-secondary);">
+              ${prefs.endDate} • ${planningState.selectedReturnFlight.departureAirport} ${planningState.selectedReturnFlight.departureTime} → ${planningState.selectedReturnFlight.arrivalAirport} ${planningState.selectedReturnFlight.arrivalTime}
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">⏱️ ${Math.floor(planningState.selectedReturnFlight.duration / 60)}h ${planningState.selectedReturnFlight.duration % 60}m • ${planningState.selectedReturnFlight.stops === 0 ? 'Direct' : `${planningState.selectedReturnFlight.stops} stop${planningState.selectedReturnFlight.stops > 1 ? 's' : ''}`}</div>
+            `}
+            <div style="font-size: 0.813rem; color: var(--primary); font-weight: 600; margin-top: 0.25rem;">$${Math.round(planningState.selectedReturnFlight.priceTotal)}</div>
+          </div>
+        </div>
+        ` : `
+        <!-- One-way: Show single flight -->
         <div style="border: 1px solid var(--border); border-radius: 8px; padding: 1rem; background: var(--bg-secondary);">
           <div style="font-weight: 600; margin-bottom: 0.5rem;">✈️ ${flight.carrier}</div>
           ${flight.segments && flight.segments.length > 0 ? `
@@ -703,6 +919,7 @@ async function generateAndDisplayItinerary() {
           `}
           <div style="font-size: 0.875rem; color: var(--primary); font-weight: 600; margin-top: 0.25rem;">$${Math.round(flight.priceTotal)}</div>
         </div>
+        `}
         <div style="border: 1px solid var(--border); border-radius: 8px; padding: 1rem; background: var(--bg-secondary);">
           <div style="font-weight: 600; margin-bottom: 0.5rem;">🏨 ${hotel.name}</div>
           <div style="font-size: 0.875rem; color: var(--text-secondary);">${hotel.neighborhood} • ${hotel.rating}/10</div>

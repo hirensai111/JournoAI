@@ -34,13 +34,13 @@ class ItineraryGenerator {
       }
     };
 
-    // Activity intensity scoring
+    // Activity intensity scoring (reduced for health conditions)
     this.activityIntensity = {
       sedentary: 5,
-      low: 15,
-      moderate: 35,
-      high: 60,
-      extreme: 90
+      low: 10,
+      moderate: 15,  // Reduced from 35 to 15 for better fatigue management
+      high: 25,      // Reduced from 60 (but we filter out high activities anyway)
+      extreme: 40    // Reduced from 90 (but we filter out extreme activities)
     };
   }
 
@@ -195,12 +195,26 @@ class ItineraryGenerator {
       // Determine if this should be a rest day
       const needsRestDay = this.shouldBeRestDay(cumulativeFatigue, dayNum, tripDuration, conditions);
 
+      console.log(`🔍 Day ${dayNum}: cumulative fatigue = ${cumulativeFatigue}, needsRestDay = ${needsRestDay}, tripDuration = ${tripDuration}`);
+
       if (needsRestDay) {
+        console.log(`  → Creating REST DAY for day ${dayNum}`);
         days.push(this.createRestDay(currentDate, dayNum, cumulativeFatigue, conditions, medications));
         cumulativeFatigue = Math.max(20, cumulativeFatigue - 30); // Rest reduces fatigue
+        console.log(`  → Fatigue after rest: ${cumulativeFatigue}`);
       } else {
+        console.log(`  → Creating ACTIVITY DAY for day ${dayNum}`);
         // Create activity day
-        const availableExperiences = experiences.filter(exp => !experiencesUsed.has(exp.id));
+        // Try to use unused experiences first, but if all are used, allow reuse
+        let availableExperiences = experiences.filter(exp => !experiencesUsed.has(exp.id));
+
+        // If no unused experiences left, reset and allow reuse
+        if (availableExperiences.length === 0) {
+          console.log(`⚠️  Day ${dayNum}: All experiences used, allowing reuse`);
+          experiencesUsed.clear();
+          availableExperiences = experiences;
+        }
+
         const day = this.createActivityDay({
           currentDate,
           dayNum,
@@ -222,6 +236,7 @@ class ItineraryGenerator {
 
         days.push(day);
         cumulativeFatigue += day.fatigue_added;
+        console.log(`  → Day ${dayNum} added ${day.fatigue_added} fatigue, new cumulative: ${cumulativeFatigue}`);
       }
     }
 
@@ -381,8 +396,8 @@ class ItineraryGenerator {
     let dayFatigue = 0;
     const activities = [];
 
-    // Morning activity (main attraction)
-    const morningExp = this.selectExperience(availableExperiences, preferences, 'morning', dayFatigue);
+    // Morning activity (main attraction) - pass dayNum for rotation
+    const morningExp = this.selectExperience(availableExperiences, preferences, 'morning', dayFatigue, dayNum);
     if (morningExp) {
       activities.push({
         time: '09:30',
@@ -405,10 +420,11 @@ class ItineraryGenerator {
         booking_info: this.generateBookingInfo(morningExp)
       });
 
-      dayFatigue += this.activityIntensity[morningExp.activity_level] || 20;
+      // Add fatigue based on activity level (now properly reduced)
+      dayFatigue += this.activityIntensity[morningExp.activity_level] || 10;
     }
 
-    // Mandatory rest break
+    // Mandatory rest break (reduces fatigue)
     activities.push({
       time: '11:45',
       type: 'rest',
@@ -420,6 +436,7 @@ class ItineraryGenerator {
         ['Check blood glucose', 'Hydrate', 'Snack if needed', 'Monitor energy levels'] :
         ['Hydrate', 'Rest', 'Assess energy']
     });
+    dayFatigue -= 3; // Rest break reduces fatigue
 
     // Lunch
     const lunchExp = this.selectRestaurant(availableExperiences);
@@ -441,7 +458,7 @@ class ItineraryGenerator {
       });
     }
 
-    // Afternoon rest (mandatory)
+    // Afternoon rest (mandatory) - major fatigue reduction
     activities.push({
       time: '14:00',
       type: 'rest',
@@ -451,6 +468,7 @@ class ItineraryGenerator {
       importance: 'CRITICAL',
       purpose: 'Prevent fatigue buildup, allow body to recover'
     });
+    dayFatigue -= 10; // Long afternoon rest significantly reduces fatigue
 
     // Optional evening activity (only if fatigue is low)
     if (dayFatigue < 35) {
@@ -471,22 +489,26 @@ class ItineraryGenerator {
     // Add allergy warnings if restaurants are included
     const allergyNotes = this.generateAllergyNotes(allergies);
 
+    // Ensure net fatigue for the day is at least 2 (minimal increase)
+    // Built-in rest breaks mean we recover during the day
+    const netDayFatigue = Math.max(2, dayFatigue);
+
     return {
       day_number: dayNum,
       date: currentDate.toISOString().split('T')[0],
       title: morningExp ? `${this.getDayTheme(morningExp)}` : 'Exploration Day',
       theme: morningExp?.type || 'Cultural exploration',
-      fatigue_risk: Math.min(100, cumulativeFatigue + dayFatigue),
-      fatigue_level: this.getFatigueLevel(cumulativeFatigue + dayFatigue),
+      fatigue_risk: Math.min(100, cumulativeFatigue + netDayFatigue),
+      fatigue_level: this.getFatigueLevel(cumulativeFatigue + netDayFatigue),
       medical_safety_score: this.calculateMedicalSafetyScore(activitiesWithMeds),
       medical_safety_display: this.getStarRating(this.calculateMedicalSafetyScore(activitiesWithMeds)),
       activities: activitiesWithMeds,
       daily_steps_estimate: activitiesWithMeds.reduce((sum, act) => sum + (act.estimated_steps || 0), 0),
-      fatigue_added: dayFatigue,
+      fatigue_added: netDayFatigue,
       rest_periods: activitiesWithMeds.filter(a => a.type === 'rest').length,
-      medical_notes: this.generateMedicalNotes(conditions, dayFatigue),
+      medical_notes: this.generateMedicalNotes(conditions, netDayFatigue),
       allergy_warnings: allergyNotes.length > 0 ? allergyNotes : null,
-      fatigue_warning: dayFatigue > 40 ? 'If fatigue score >60 by noon, skip evening activity' : null
+      fatigue_warning: netDayFatigue > 40 ? 'If fatigue score >60 by noon, skip evening activity' : null
     };
   }
 
@@ -509,10 +531,13 @@ class ItineraryGenerator {
   /**
    * Select appropriate experience based on criteria
    */
-  selectExperience(experiences, preferences, timeOfDay, currentFatigue) {
+  selectExperience(experiences, preferences, timeOfDay, currentFatigue, dayNum = 1) {
+    // Filter out restaurants and cafes (they're for lunch, not morning activities)
     // Filter by activity level (only low-moderate for health conditions)
     const suitable = experiences.filter(exp =>
-      ['sedentary', 'low', 'moderate'].includes(exp.activity_level)
+      ['sedentary', 'low', 'moderate'].includes(exp.activity_level) &&
+      exp.type !== 'restaurant' &&
+      exp.type !== 'cafe'
     );
 
     if (suitable.length === 0) return null;
@@ -522,7 +547,12 @@ class ItineraryGenerator {
       exp.preference_tags?.some(tag => preferences.includes(tag))
     );
 
-    return preferred[0] || suitable[0];
+    const pool = preferred.length > 0 ? preferred : suitable;
+
+    // Add variety by rotating through experiences based on day number
+    // This ensures different experiences even when reusing
+    const index = (dayNum - 2) % pool.length; // dayNum starts at 2 for first activity day
+    return pool[index] || pool[0];
   }
 
   /**
@@ -536,15 +566,25 @@ class ItineraryGenerator {
    * Determine if day should be a rest day
    */
   shouldBeRestDay(cumulativeFatigue, dayNum, tripDuration, conditions) {
-    // Day 4 is always a rest day (mid-trip recovery)
-    if (dayNum === Math.ceil(tripDuration / 2)) return true;
+    // Only add mid-trip rest day for longer trips (10+ days)
+    if (tripDuration >= 10 && dayNum === Math.ceil(tripDuration / 2)) {
+      console.log(`    ✓ Rest day triggered: Mid-trip rest for ${tripDuration}-day trip`);
+      return true;
+    }
 
-    // If fatigue is high, force rest day
+    // If fatigue is critically high, force rest day
     const threshold = this.getFatigueThreshold(conditions);
-    if (cumulativeFatigue > threshold.moderate) return true;
+    console.log(`    Threshold check: cumulative=${cumulativeFatigue}, threshold.high=${threshold.high}, conditions=${JSON.stringify(conditions)}`);
+    if (cumulativeFatigue > threshold.high) {
+      console.log(`    ✓ Rest day triggered: Fatigue ${cumulativeFatigue} > ${threshold.high}`);
+      return true;
+    }
 
-    // Every 3-4 days, consider rest
-    if (dayNum % 3 === 0 && cumulativeFatigue > threshold.low) return true;
+    // For trips 14+ days, consider rest every 5 days if fatigue is moderate
+    if (tripDuration >= 14 && dayNum % 5 === 0 && cumulativeFatigue > threshold.moderate) {
+      console.log(`    ✓ Rest day triggered: Periodic rest (day ${dayNum}, every 5 days)`);
+      return true;
+    }
 
     return false;
   }

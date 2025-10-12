@@ -1,0 +1,453 @@
+/**
+ * Responsive Overrides
+ * Device-specific styling for clear mobile vs desktop distinction
+ */
+
+/* ========================================
+   Device-Specific Base Styles
+   ======================================== */
+
+/* Mobile-specific base */
+body.device-mobile {
+  font-size: 15px;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+/* Tablet-specific base */
+body.device-tablet {
+  font-size: 16px;
+}
+
+/* Desktop-specific base */
+body.device-desktop {
+  font-size: 16px;
+}
+
+/* ========================================
+   Touch-Optimized Interactions (Mobile)
+   ======================================== */
+
+body.device-mobile .btn,
+body.device-mobile button,
+body.device-mobile [role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 12px 20px;
+  font-size: 15px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+body.device-mobile input,
+body.device-mobile textarea,
+body.device-mobile select {
+  font-size: 16px !important; /* Prevents iOS zoom */
+  min-height: 44px;
+  padding: 12px 16px;
+}
+
+/* ========================================
+   Layout Adjustments
+   ======================================== */
+
+/* Mobile: Stack elements vertically */
+body.device-mobile .features-grid,
+body.device-mobile .steps-grid,
+body.device-mobile .hero-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+body.device-mobile .hero-actions .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Desktop: Maintain grid layouts */
+body.device-desktop .features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+}
+
+body.device-desktop .hero-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  justify-content: center;
+}
+
+/* ========================================
+   Navigation Adjustments
+   ======================================== */
+
+/* Mobile: Hide desktop nav, show mobile nav */
+body.device-mobile .navbar-nav {
+  display: none !important;
+}
+
+body.device-mobile .navbar-actions .btn {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+/* Desktop: Show full navigation */
+body.device-desktop .navbar-nav {
+  display: flex;
+}
+
+body.device-desktop .mobile-nav {
+  display: none !important;
+}
+
+/* ========================================
+   Typography Scaling
+   ======================================== */
+
+/* Mobile typography */
+body.device-mobile h1 {
+  font-size: 1.75rem !important;
+  line-height: 1.2;
+}
+
+body.device-mobile h2 {
+  font-size: 1.5rem !important;
+  line-height: 1.3;
+}
+
+body.device-mobile h3 {
+  font-size: 1.25rem !important;
+}
+
+body.device-mobile h4 {
+  font-size: 1.0625rem !important;
+}
+
+body.device-mobile p {
+  font-size: 0.9375rem !important;
+  line-height: 1.65;
+}
+
+/* Desktop typography */
+body.device-desktop h1 {
+  font-size: 2.5rem;
+}
+
+body.device-desktop h2 {
+  font-size: 2rem;
+}
+
+body.device-desktop h3 {
+  font-size: 1.5rem;
+}
+
+body.device-desktop h4 {
+  font-size: 1.25rem;
+}
+
+body.device-desktop p {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* ========================================
+   Card Adaptations
+   ======================================== */
+
+/* Mobile cards */
+body.device-mobile .card,
+body.device-mobile .feature-card {
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+body.device-mobile .card h3,
+body.device-mobile .feature-card h3 {
+  font-size: 1.125rem !important;
+}
+
+body.device-mobile .card p,
+body.device-mobile .feature-card p {
+  font-size: 0.875rem !important;
+}
+
+/* Desktop cards */
+body.device-desktop .card,
+body.device-desktop .feature-card {
+  padding: 2rem;
+}
+
+body.device-desktop .card:hover,
+body.device-desktop .feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ========================================
+   Dashboard-Specific Responsive Fixes
+   ======================================== */
+
+/* Mobile dashboard */
+body.device-mobile .dashboard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+body.device-mobile .dashboard-sidebar {
+  position: static !important;
+  width: 100% !important;
+  margin-bottom: 1rem;
+}
+
+body.device-mobile .dashboard-main {
+  width: 100% !important;
+  padding: 1rem;
+}
+
+body.device-mobile .trip-card,
+body.device-mobile .flight-card,
+body.device-mobile .hotel-card {
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Mobile: Simplify wizard panel */
+body.device-mobile .wizard-panel {
+  width: 100% !important;
+  height: 100vh !important;
+  right: 0 !important;
+  border-radius: 0 !important;
+}
+
+body.device-mobile .wizard-content {
+  padding: 1rem;
+}
+
+body.device-mobile .wizard-header {
+  padding: 1rem;
+}
+
+body.device-mobile .wizard-footer {
+  padding: 1rem;
+}
+
+/* Desktop dashboard */
+body.device-desktop .dashboard-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 2rem;
+}
+
+body.device-desktop .wizard-panel {
+  width: 500px;
+  height: 100vh;
+  right: -500px;
+  border-radius: 0;
+}
+
+body.device-desktop .wizard-panel.open {
+  right: 0;
+}
+
+/* ========================================
+   Modal & Overlay Fixes
+   ======================================== */
+
+/* Mobile modals: Full screen */
+body.device-mobile .modal,
+body.device-mobile .wizard-panel {
+  max-width: 100% !important;
+  width: 100% !important;
+  border-radius: 0 !important;
+}
+
+/* Desktop modals: Centered */
+body.device-desktop .modal {
+  max-width: 600px;
+  border-radius: 1.5rem;
+  margin: 2rem auto;
+}
+
+/* ========================================
+   Form Adaptations
+   ======================================== */
+
+/* Mobile forms */
+body.device-mobile .form-group {
+  margin-bottom: 1.25rem;
+}
+
+body.device-mobile .form-label {
+  font-size: 0.9375rem !important;
+  margin-bottom: 0.5rem;
+}
+
+body.device-mobile .form-input,
+body.device-mobile input[type="text"],
+body.device-mobile input[type="email"],
+body.device-mobile input[type="password"],
+body.device-mobile textarea,
+body.device-mobile select {
+  font-size: 16px !important;
+  padding: 12px 16px;
+  min-height: 44px;
+  border-radius: 0.75rem;
+}
+
+/* Desktop forms */
+body.device-desktop .form-input {
+  font-size: 0.875rem;
+  padding: 10px 16px;
+}
+
+/* ========================================
+   Spacing & Container Adjustments
+   ======================================== */
+
+/* Mobile spacing */
+body.device-mobile .container {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+body.device-mobile section {
+  padding-top: 2.5rem !important;
+  padding-bottom: 2.5rem !important;
+}
+
+body.device-mobile .hero {
+  padding: 2rem 0 3rem !important;
+}
+
+/* Desktop spacing */
+body.device-desktop .container {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+body.device-desktop section {
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+/* ========================================
+   Orientation-Specific Styles
+   ======================================== */
+
+/* Landscape mobile adjustments */
+body.device-mobile.orientation-landscape {
+  font-size: 14px;
+}
+
+body.device-mobile.orientation-landscape .hero {
+  padding: 1.5rem 0 2rem !important;
+}
+
+body.device-mobile.orientation-landscape h1 {
+  font-size: 1.5rem !important;
+}
+
+body.device-mobile.orientation-landscape h2 {
+  font-size: 1.25rem !important;
+}
+
+/* ========================================
+   Hover Effects (Desktop Only)
+   ======================================== */
+
+body.device-desktop .feature-card:hover,
+body.device-desktop .card:hover,
+body.device-desktop .btn:hover {
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
+}
+
+/* Disable hover effects on mobile/tablet */
+body.device-mobile .feature-card:hover,
+body.device-mobile .card:hover,
+body.device-tablet .feature-card:hover,
+body.device-tablet .card:hover {
+  transform: none;
+}
+
+/* ========================================
+   Scrollbar Styling
+   ======================================== */
+
+/* Hide scrollbars on mobile for cleaner look */
+body.device-mobile ::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+body.device-mobile ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body.device-mobile ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+/* Desktop scrollbars */
+body.device-desktop ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+body.device-desktop ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+body.device-desktop ::-webkit-scrollbar-thumb {
+  background: var(--border-hover);
+  border-radius: 4px;
+}
+
+body.device-desktop ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ========================================
+   Print Styles
+   ======================================== */
+
+@media print {
+  .navbar,
+  .mobile-nav,
+  .btn,
+  .wizard-panel,
+  .modal {
+    display: none !important;
+  }
+
+  body {
+    font-size: 12pt;
+  }
+}
+
+/* ========================================
+   Accessibility Enhancements
+   ======================================== */
+
+/* Focus visible for all interactive elements */
+body.device-desktop *:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+body.device-mobile *:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+/* Larger focus indicators on mobile */
+body.device-mobile a:focus,
+body.device-mobile button:focus,
+body.device-mobile input:focus {
+  outline-width: 3px;
+}

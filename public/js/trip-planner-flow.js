@@ -3,6 +3,8 @@
  * Handles step-by-step trip planning: Parse → Flights → Hotels → Itinerary → Save
  */
 
+// Note: Requires api-config.js to be loaded first (provides window.api)
+
 // Global state
 let planningState = {
   step: 'initial', // initial, flights, hotels, itinerary, saved
@@ -326,22 +328,16 @@ async function fetchAndDisplayFlights(prefs) {
     const endDate = prefs.endDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const tripType = prefs.tripType || 'one-way';
 
-    // Fetch outbound flights
-    const response = await fetch('http://localhost:3001/api/trips/flights', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        origin: prefs.origin,
-        destination: prefs.destination,
-        startDate,
-        endDate,
-        travelers: prefs.travelers || 1,
-        budget: prefs.budget || 'mid',
-        travelersProfiles: []
-      })
+    // Fetch outbound flights using API config
+    const data = await window.api.post('api/trips/flights', {
+      origin: prefs.origin,
+      destination: prefs.destination,
+      startDate,
+      endDate,
+      travelers: prefs.travelers || 1,
+      budget: prefs.budget || 'mid',
+      travelersProfiles: []
     });
-
-    const data = await response.json();
 
     if (!data || !data.flights || data.flights.length === 0) {
       addChatMessage('Sorry, I couldn\'t find flights. Please try again with different details.', 'assistant');
@@ -355,21 +351,15 @@ async function fetchAndDisplayFlights(prefs) {
 
     // If round-trip, fetch return flights too
     if (tripType === 'round-trip') {
-      const returnResponse = await fetch('http://localhost:3001/api/trips/flights', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          origin: prefs.destination, // Reverse the origin and destination
-          destination: prefs.origin,
-          startDate: endDate, // Return on the end date
-          endDate: new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Next day as fallback
-          travelers: prefs.travelers || 1,
-          budget: prefs.budget || 'mid',
-          travelersProfiles: []
-        })
+      const returnData = await window.api.post('api/trips/flights', {
+        origin: prefs.destination, // Reverse the origin and destination
+        destination: prefs.origin,
+        startDate: endDate, // Return on the end date
+        endDate: new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Next day as fallback
+        travelers: prefs.travelers || 1,
+        budget: prefs.budget || 'mid',
+        travelersProfiles: []
       });
-
-      const returnData = await returnResponse.json();
       if (returnData && returnData.flights && returnData.flights.length > 0) {
         planningState.allReturnFlights = returnData.flights;
       }
@@ -720,19 +710,13 @@ async function fetchAndDisplayHotels() {
     const endDate = prefs.endDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // Fetch real hotels from Hotelbeds API
-    const response = await fetch('http://localhost:3001/api/trips/hotels', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        destination: prefs.destination,
-        startDate,
-        endDate,
-        travelers: prefs.travelers || 1,
-        budget: prefs.budget || 'mid'
-      })
+    const data = await window.api.post('api/trips/hotels', {
+      destination: prefs.destination,
+      startDate,
+      endDate,
+      travelers: prefs.travelers || 1,
+      budget: prefs.budget || 'mid'
     });
-
-    const data = await response.json();
 
     if (!data || !data.hotels || data.hotels.length === 0) {
       addChatMessage('Sorry, I couldn\'t find hotels. Using demo options...', 'assistant');
@@ -1014,10 +998,9 @@ async function generateEnhancedItinerary(destination, startDate, endDate, prefer
       console.log('Flight info extracted:', flightInfo);
     }
 
-    const response = await fetch('http://localhost:3001/api/trips/itinerary/enhanced', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    let data;
+    try {
+      data = await window.api.post('api/trips/itinerary/enhanced', {
         destination: destination,
         startDate: startDate,
         endDate: endDate,
@@ -1027,16 +1010,12 @@ async function generateEnhancedItinerary(destination, startDate, endDate, prefer
           budget: preferences.budget || 'mid'
         },
         flightInfo: flightInfo
-      })
-    });
-
-    if (!response.ok) {
-      console.error('Enhanced itinerary API failed:', response.status);
+      });
+    } catch (error) {
+      console.error('Enhanced itinerary API failed:', error);
       console.log('⚠️  Falling back to basic itinerary generation');
       return await generateMockItinerary(destination, startDate, endDate);
     }
-
-    const data = await response.json();
 
     if (!data.success || !data.itinerary || data.itinerary.length === 0) {
       console.error('Invalid itinerary response');

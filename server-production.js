@@ -1014,76 +1014,8 @@ async function initializeServices() {
     console.log('🚀 Initializing Experience Recommender...');
     recommender = new ExperienceRecommender();
 
-    // Enable demo mode to avoid API quota issues
-    console.log('🎭 ENABLING DEMO MODE (No OpenAI API calls)');
-
-    // Override createEmbeddings to use mock data
-    recommender.createEmbeddings = async function() {
-      console.log('🎭 DEMO MODE: Creating mock embeddings');
-      this.embeddings = this.experiences.map(experience => ({
-        experience,
-        embedding: Array(1536).fill(0).map(() => Math.random() - 0.5) // Mock embedding
-      }));
-    };
-
-    // Override search to use text-based matching
-    const originalSearch = recommender.search;
-    recommender.search = async function({ query, filters = {}, limit = 10 }) {
-      console.log(`🔍 DEMO SEARCH: "${query}" with filters:`, filters);
-
-      const queryLower = query.toLowerCase();
-      const queryWords = queryLower.split(' ');
-
-      // First apply filters, then text search
-      let filteredExperiences = this.experiences;
-
-      // Apply city/country filters first (most important) - case insensitive
-      if (filters.city) {
-        console.log(`   📍 Filtering by city: ${filters.city}`);
-        const cityLower = filters.city.toLowerCase();
-        filteredExperiences = filteredExperiences.filter(exp =>
-          exp.city && exp.city.toLowerCase() === cityLower
-        );
-      }
-
-      if (filters.country) {
-        console.log(`   🌍 Filtering by country: ${filters.country}`);
-        const countryLower = filters.country.toLowerCase();
-        filteredExperiences = filteredExperiences.filter(exp =>
-          exp.country && exp.country.toLowerCase() === countryLower
-        );
-      }
-
-      console.log(`   After location filters: ${filteredExperiences.length} experiences`);
-
-      // Then apply text matching
-      const results = filteredExperiences
-        .filter(experience => {
-          // If no query text, match all (just use filters)
-          if (!query || queryWords.length === 0) return true;
-
-          const text = [
-            experience.name,
-            experience.description,
-            experience.cultural_significance,
-            ...experience.preference_tags,
-            ...experience.inclusion_tags
-          ].join(' ').toLowerCase();
-
-          const hasTextMatch = queryWords.some(word => text.includes(word));
-          return hasTextMatch;
-        })
-        .filter(experience => this.matchesFilters(experience, filters))
-        .slice(0, limit)
-        .map(experience => ({
-          experience,
-          score: Math.random() * 0.5 + 0.5 // Random score between 0.5-1.0
-        }))
-        .sort((a, b) => b.score - a.score);
-
-      console.log(`✅ Found ${results.length} results for ${filters.city || filters.country || query}`);
-      return results;
-    };
+    // Use real OpenAI API for embeddings and semantic search
+    console.log('✅ Using OpenAI API for semantic search');
 
     await recommender.initialize();
 

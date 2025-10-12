@@ -84,33 +84,52 @@ class ExperienceRecommender {
   }
 
   async createEmbeddings() {
-    const embeddingPromises = this.experiences.map(async (experience) => {
-      // Combine text fields for embedding
-      const textToEmbed = [
-        experience.name,
-        experience.description,
-        experience.cultural_significance,
-        experience.why_authentic
-      ].join(' ');
+    console.log('🔄 Creating embeddings (batched to respect API limits)...');
+    const BATCH_SIZE = 20; // Process 20 at a time
+    const DELAY_MS = 1000;  // 1 second delay between batches
 
-      try {
-        const response = await this.openai.embeddings.create({
-          model: 'text-embedding-3-small',
-          input: textToEmbed
-        });
+    const results = [];
 
-        return {
-          experience,
-          embedding: response.data[0].embedding
-        };
-      } catch (error) {
-        console.error(`Error creating embedding for ${experience.name}:`, error);
-        return null;
+    for (let i = 0; i < this.experiences.length; i += BATCH_SIZE) {
+      const batch = this.experiences.slice(i, i + BATCH_SIZE);
+      console.log(`  Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(this.experiences.length/BATCH_SIZE)} (${batch.length} experiences)...`);
+
+      const batchPromises = batch.map(async (experience) => {
+        // Combine text fields for embedding
+        const textToEmbed = [
+          experience.name,
+          experience.description,
+          experience.cultural_significance,
+          experience.why_authentic
+        ].join(' ');
+
+        try {
+          const response = await this.openai.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: textToEmbed
+          });
+
+          return {
+            experience,
+            embedding: response.data[0].embedding
+          };
+        } catch (error) {
+          console.error(`Error creating embedding for ${experience.name}:`, error.message);
+          return null;
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults.filter(r => r !== null));
+
+      // Delay between batches to respect rate limits
+      if (i + BATCH_SIZE < this.experiences.length) {
+        await new Promise(resolve => setTimeout(resolve, DELAY_MS));
       }
-    });
+    }
 
-    const results = await Promise.all(embeddingPromises);
-    this.embeddings = results.filter(result => result !== null);
+    this.embeddings = results;
+    console.log(`✅ Created ${this.embeddings.length}/${this.experiences.length} embeddings`);
   }
 
   async search({ query, filters = {}, limit = 10 }) {

@@ -1092,8 +1092,10 @@ async function startServer() {
     tripAssistantChatbot = new TripAssistantChatbot(recommender);
     console.log('✅ Trip assistant chatbot ready\n');
 
-    app.listen(PORT, () => {
-      console.log(`🌐 Server listening on http://localhost:${PORT}`);
+    const HOST = '0.0.0.0';
+    
+    app.listen(PORT, HOST, () => {
+      console.log(`🌐 Server listening on http://${HOST}:${PORT}`);
       console.log(`📊 Available endpoints:`);
       console.log(`   POST /api/recommend - Get recommendations`);
       console.log(`   POST /api/chat - Chat with Journey AI`);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - Journey AI</title>
+  <title>Dashboard - JournoAI</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -85,6 +85,18 @@
       to { transform: rotate(360deg); }
     }
 
+    /* Preview Loader Animation */
+    @keyframes dotPulse {
+      0%, 80%, 100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+      }
+      40% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
     .wizard-panel-open {
       right: 0 !important;
     }
@@ -122,7 +134,7 @@
   <!-- Navigation -->
   <nav class="navbar">
     <div class="navbar-container">
-      <a href="/" class="navbar-brand">
+      <a href="/dashboard.html" class="navbar-brand">
         <div class="navbar-logo">
           <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="20" cy="20" r="18" stroke="#8B1538" stroke-width="2.5" fill="white"/>
@@ -141,7 +153,7 @@
             </defs>
           </svg>
         </div>
-        <span>Journey AI</span>
+        <span>JournoAI</span>
       </a>
 
       <ul class="navbar-nav">
@@ -220,6 +232,17 @@
           </div>
         </a>
       </div>
+
+      <!-- Wellness Summary Card -->
+      <section id="wellness-summary-section" style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <h2>Health & Wellness</h2>
+          <a href="/wellness.html" class="btn btn-ghost">View All</a>
+        </div>
+        <div id="wellness-summary-container">
+          <!-- Wellness summary will be loaded here -->
+        </div>
+      </section>
 
       <!-- My Trips Section -->
       <section id="my-trips-section" style="margin-bottom: 2rem;">
@@ -476,6 +499,7 @@
         // Load user's profile and trips
         loadUserProfile();
         loadUserTrips();
+        loadWellnessSummary();
       }
     });
 
@@ -760,15 +784,24 @@
     }
 
     function updatePreferencesUI() {
-      document.getElementById('pref-destination').value = tripPrefs.destination;
-      document.getElementById('pref-origin').value = tripPrefs.origin;
-      document.getElementById('pref-travelers').value = tripPrefs.travelers;
-      document.getElementById('pref-start-date').value = tripPrefs.startDate;
-      document.getElementById('pref-end-date').value = tripPrefs.endDate;
-      
-      // Update budget buttons
+      // Check if elements exist before updating (new chat-based flow doesn't have these inputs)
+      const destEl = document.getElementById('pref-destination');
+      const originEl = document.getElementById('pref-origin');
+      const travelersEl = document.getElementById('pref-travelers');
+      const startDateEl = document.getElementById('pref-start-date');
+      const endDateEl = document.getElementById('pref-end-date');
+
+      if (destEl) destEl.value = tripPrefs.destination;
+      if (originEl) originEl.value = tripPrefs.origin;
+      if (travelersEl) travelersEl.value = tripPrefs.travelers;
+      if (startDateEl) startDateEl.value = tripPrefs.startDate;
+      if (endDateEl) endDateEl.value = tripPrefs.endDate;
+
+      // Update budget buttons if they exist
       ['budget', 'mid', 'premium'].forEach(b => {
         const btn = document.getElementById(`budget-${b}`);
+        if (!btn) return; // Skip if button doesn't exist
+
         if (b === tripPrefs.budget) {
           btn.classList.remove('btn-ghost');
           btn.classList.add('btn-primary');
@@ -801,10 +834,13 @@
     }
 
     function formatDate(dateStr) {
-      return new Date(dateStr).toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
+      // Parse date string and create date in local timezone to avoid timezone shift
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
       });
     }
 
@@ -1853,7 +1889,11 @@
                 <div>
                   <div style="display: inline-block; background: var(--primary); color: white; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 999px; margin-bottom: 0.5rem;">Day ${day.day_number}</div>
                   <h4 style="margin: 0; margin-bottom: 0.25rem;">${day.title}</h4>
-                  <p style="font-size: 0.875rem; color: var(--text-secondary);">${new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+                  <p style="font-size: 0.875rem; color: var(--text-secondary);">${(() => {
+                    const [year, month, dayNum] = day.date.split('-').map(Number);
+                    const localDate = new Date(year, month - 1, dayNum);
+                    return localDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+                  })()}</p>
                 </div>
                 <button class="btn btn-ghost btn-icon" onclick="editDay(${day.day_number}, '${data.trip_id}')" title="Edit this day">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1996,6 +2036,18 @@
 
         if (data.trips && data.trips.length > 0) {
           displayTrips(data.trips);
+
+          // Find the active trip and update tripData for language detection
+          const activeTrip = data.trips.find(t => t.status === 'in_progress' || t.status === 'upcoming');
+          if (activeTrip) {
+            tripData.destination = activeTrip.destination;
+            tripData.origin = activeTrip.origin;
+            tripData.startDate = activeTrip.start_date;
+            tripData.duration = activeTrip.duration;
+
+            // Reload wellness summary with the trip data
+            loadWellnessSummary();
+          }
         }
       } catch (error) {
         console.error('Failed to load trips:', error);
@@ -2015,7 +2067,11 @@
               <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: var(--primary-light); color: var(--primary); border-radius: 4px;">${trip.status}</span>
             </div>
             <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-              ${trip.duration || tripData.duration} days • ${new Date(trip.start_date).toLocaleDateString()}
+              ${trip.duration || tripData.duration} days • ${(() => {
+                const [year, month, day] = trip.start_date.split('-').map(Number);
+                const localDate = new Date(year, month - 1, day);
+                return localDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+              })()}
             </p>
             <p style="font-size: 0.75rem; color: var(--text-muted);">
               Created ${new Date(trip.created_at?.seconds * 1000 || Date.now()).toLocaleDateString()}
@@ -2031,6 +2087,354 @@
     function viewTripDetails(tripId) {
       alert(`Trip details view coming soon! Trip ID: ${tripId}`);
       console.log('View trip:', tripId);
+    }
+
+    // Wellness Summary Functions
+    async function loadWellnessSummary() {
+      if (!currentUser) return;
+
+      try {
+        // Fetch all wellness data in parallel
+        const [medicationsRes, conditionsRes, allergiesRes, insuranceRes] = await Promise.all([
+          fetch(`/api/wellness/medications`, {
+            headers: { 'Authorization': `Bearer ${await currentUser.getIdToken()}` }
+          }).catch(() => ({ ok: false })),
+          fetch(`/api/wellness/conditions`, {
+            headers: { 'Authorization': `Bearer ${await currentUser.getIdToken()}` }
+          }).catch(() => ({ ok: false })),
+          fetch(`/api/wellness/allergies`, {
+            headers: { 'Authorization': `Bearer ${await currentUser.getIdToken()}` }
+          }).catch(() => ({ ok: false })),
+          fetch(`/api/wellness/insurance`, {
+            headers: { 'Authorization': `Bearer ${await currentUser.getIdToken()}` }
+          }).catch(() => ({ ok: false }))
+        ]);
+
+        const wellnessData = {
+          medications: medicationsRes.ok ? await medicationsRes.json() : [],
+          conditions: conditionsRes.ok ? await conditionsRes.json() : [],
+          allergies: allergiesRes.ok ? await allergiesRes.json() : [],
+          insurance: insuranceRes.ok ? await insuranceRes.json() : null
+        };
+
+        displayWellnessSummary(wellnessData);
+      } catch (error) {
+        console.error('Failed to load wellness summary:', error);
+        displayEmptyWellness();
+      }
+    }
+
+    function displayWellnessSummary(data) {
+      const container = document.getElementById('wellness-summary-container');
+
+      const totalItems = (data.medications?.length || 0) + (data.conditions?.length || 0) + (data.allergies?.length || 0);
+
+      if (totalItems === 0) {
+        displayEmptyWellness();
+        return;
+      }
+
+      // Detect trip language (check if there's an active trip with a destination)
+      const hasActiveTrip = tripData && tripData.destination;
+      const targetLanguage = hasActiveTrip ? detectLanguageFromDestination(tripData.destination) : 'en';
+
+      container.innerHTML = `
+        <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
+            <div>
+              <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; color: white;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                  <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>
+                </svg>
+                <span>${translate('Health Information', targetLanguage)}</span>
+              </h3>
+              <p style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.9); margin: 0;">
+                ${hasActiveTrip ? translate('Translated for your trip', targetLanguage) : 'Important health information'}
+              </p>
+            </div>
+            ${targetLanguage !== 'en' ? `
+              <span style="padding: 0.375rem 0.75rem; background: rgba(255, 255, 255, 0.2); border-radius: var(--radius-md); font-size: 0.75rem; font-weight: 500; color: white; backdrop-filter: blur(10px);">
+                ${getFlagEmoji(targetLanguage)} ${getLanguageName(targetLanguage)}
+              </span>
+            ` : ''}
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+            ${data.medications && data.medications.length > 0 ? `
+              <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: var(--radius-lg); padding: 1.25rem; border: 1px solid rgba(255, 255, 255, 0.2);">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <rect x="9" y="2" width="6" height="20" rx="2"/>
+                    <path d="M7 10h10M7 14h10"/>
+                  </svg>
+                  <h4 style="margin: 0; font-size: 1rem; color: white;">${translate('Medications', targetLanguage)}</h4>
+                </div>
+                ${data.medications.slice(0, 3).map(med => `
+                  <div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
+                    <div style="font-weight: 500; color: white; margin-bottom: 0.25rem;">${med.name}</div>
+                    <div style="font-size: 0.813rem; color: rgba(255, 255, 255, 0.85);">
+                      ${translate(med.dosage, targetLanguage)} • ${translate(formatFrequency(med.frequency), targetLanguage)}
+                      ${med.refrigeration_required ? `<span style="margin-left: 0.5rem;">❄️</span>` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+                ${data.medications.length > 3 ? `
+                  <a href="/wellness.html" style="font-size: 0.813rem; color: white; text-decoration: none; font-weight: 500; opacity: 0.9;">
+                    ${translate('View all', targetLanguage)} ${data.medications.length} ${translate('medications', targetLanguage)} →
+                  </a>
+                ` : ''}
+              </div>
+            ` : ''}
+
+            ${data.conditions && data.conditions.length > 0 ? `
+              <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: var(--radius-lg); padding: 1.25rem; border: 1px solid rgba(255, 255, 255, 0.2);">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                  <h4 style="margin: 0; font-size: 1rem; color: white;">${translate('Medical Conditions', targetLanguage)}</h4>
+                </div>
+                ${data.conditions.slice(0, 3).map(condition => `
+                  <div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
+                    <div style="font-weight: 500; color: white; margin-bottom: 0.25rem;">${translate(condition.name, targetLanguage)}</div>
+                    <div style="font-size: 0.813rem; color: rgba(255, 255, 255, 0.85);">
+                      <span style="padding: 0.125rem 0.5rem; background: rgba(255, 255, 255, 0.25); border-radius: var(--radius-sm); font-size: 0.75rem; color: white;">
+                        ${translate(condition.severity, targetLanguage)}
+                      </span>
+                    </div>
+                  </div>
+                `).join('')}
+                ${data.conditions.length > 3 ? `
+                  <a href="/wellness.html" style="font-size: 0.813rem; color: white; text-decoration: none; font-weight: 500; opacity: 0.9;">
+                    ${translate('View all', targetLanguage)} ${data.conditions.length} ${translate('conditions', targetLanguage)} →
+                  </a>
+                ` : ''}
+              </div>
+            ` : ''}
+
+            ${data.allergies && data.allergies.length > 0 ? `
+              <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: var(--radius-lg); padding: 1.25rem; border: 1px solid rgba(255, 255, 255, 0.2);">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                  <h4 style="margin: 0; font-size: 1rem; color: white;">${translate('Allergies & Dietary', targetLanguage)}</h4>
+                </div>
+                ${data.allergies.slice(0, 3).map(allergy => `
+                  <div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
+                    <div style="font-weight: 500; color: white; margin-bottom: 0.25rem;">
+                      ${translate(allergy.allergen_name, targetLanguage)}
+                      ${allergy.epipen_required ? `<span style="font-size: 0.875rem;">💉</span>` : ''}
+                    </div>
+                    <div style="font-size: 0.813rem; color: rgba(255, 255, 255, 0.85);">
+                      ${translate(allergy.category, targetLanguage)}
+                      ${allergy.severity === 'life-threatening' || allergy.severity === 'severe' ?
+                        `<span style="font-weight: 500;"> • ${translate('Severe', targetLanguage)}</span>` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+                ${data.allergies.length > 3 ? `
+                  <a href="/wellness.html" style="font-size: 0.813rem; color: white; text-decoration: none; font-weight: 500; opacity: 0.9;">
+                    ${translate('View all', targetLanguage)} ${data.allergies.length} ${translate('allergies', targetLanguage)} →
+                  </a>
+                ` : ''}
+              </div>
+            ` : ''}
+
+            ${data.insurance ? `
+              <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: var(--radius-lg); padding: 1.25rem; border: 1px solid rgba(255, 255, 255, 0.2);">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M3 11h3m12 0h3m-15-7l2-2m12 2l-2-2M7 21l-3-3m13 3l3-3"/>
+                    <circle cx="12" cy="12" r="7"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <h4 style="margin: 0; font-size: 1rem; color: white;">${translate('Emergency Contact', targetLanguage)}</h4>
+                </div>
+                <div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
+                  <div style="font-weight: 500; color: white; margin-bottom: 0.25rem;">${data.insurance.company_name}</div>
+                  <div style="font-size: 0.813rem; color: rgba(255, 255, 255, 0.85);">
+                    📞 <a href="tel:${data.insurance.emergency_phone}" style="color: white; text-decoration: none; font-weight: 500;">${data.insurance.emergency_phone}</a>
+                  </div>
+                </div>
+                <div style="margin-bottom: 0.75rem;">
+                  <div style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.75); margin-bottom: 0.25rem;">Policy #</div>
+                  <div style="font-weight: 500; color: white; font-size: 0.875rem;">${data.insurance.policy_number}</div>
+                </div>
+                ${data.insurance.international_coverage ? `
+                  <div style="display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; background: rgba(16, 185, 129, 0.3); border-radius: var(--radius-sm); font-size: 0.75rem; color: white; font-weight: 500;">
+                    ✓ International Coverage
+                  </div>
+                ` : ''}
+                <div style="margin-top: 0.75rem;">
+                  <a href="/wellness.html" style="font-size: 0.813rem; color: white; text-decoration: none; font-weight: 500; opacity: 0.9;">
+                    View full insurance details →
+                  </a>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function displayEmptyWellness() {
+      const container = document.getElementById('wellness-summary-container');
+      container.innerHTML = `
+        <div class="card" style="text-align: center; padding: 2rem; background: var(--bg-secondary); border: 2px dashed var(--border);">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin: 0 auto 1rem;">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>
+          </svg>
+          <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">No wellness information yet</h3>
+          <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Add your health info for safer, personalized travel</p>
+          <a href="/wellness.html" class="btn btn-primary">Add Health Information</a>
+        </div>
+      `;
+    }
+
+    // Translation and Localization Functions
+    const translations = {
+      'Health Information': { es: 'Información de Salud', fr: 'Informations de Santé', de: 'Gesundheitsinformationen', it: 'Informazioni sulla Salute', pt: 'Informações de Saúde', ja: '健康情報', zh: '健康信息', ko: '건강 정보', ar: 'معلومات صحية' },
+      'Translated for your trip': { es: 'Traducido para tu viaje', fr: 'Traduit pour votre voyage', de: 'Für Ihre Reise übersetzt', it: 'Tradotto per il tuo viaggio', pt: 'Traduzido para sua viagem', ja: '旅行用に翻訳', zh: '为您的旅行翻译', ko: '여행을 위해 번역됨', ar: 'مترجم لرحلتك' },
+      'Medications': { es: 'Medicamentos', fr: 'Médicaments', de: 'Medikamente', it: 'Medicinali', pt: 'Medicamentos', ja: '薬', zh: '药物', ko: '약물', ar: 'الأدوية' },
+      'Medical Conditions': { es: 'Condiciones Médicas', fr: 'Conditions Médicales', de: 'Medizinische Bedingungen', it: 'Condizioni Mediche', pt: 'Condições Médicas', ja: '医療状態', zh: '医疗状况', ko: '의학적 상태', ar: 'الحالات الطبية' },
+      'Allergies & Dietary': { es: 'Alergias y Dieta', fr: 'Allergies et Régime', de: 'Allergien und Ernährung', it: 'Allergie e Dieta', pt: 'Alergias e Dieta', ja: 'アレルギーと食事', zh: '过敏和饮食', ko: '알레르기 및 식이', ar: 'الحساسية والنظام الغذائي' },
+      'Emergency Contact': { es: 'Contacto de Emergencia', fr: 'Contact d\'Urgence', de: 'Notfallkontakt', it: 'Contatto di Emergenza', pt: 'Contato de Emergência', ja: '緊急連絡先', zh: '紧急联系人', ko: '긴급 연락처', ar: 'جهة الاتصال في حالات الطوارئ' },
+      'View all': { es: 'Ver todos', fr: 'Voir tout', de: 'Alle anzeigen', it: 'Vedi tutto', pt: 'Ver tudo', ja: 'すべて表示', zh: '查看全部', ko: '모두 보기', ar: 'عرض الكل' },
+      'medications': { es: 'medicamentos', fr: 'médicaments', de: 'Medikamente', it: 'medicinali', pt: 'medicamentos', ja: '薬', zh: '药物', ko: '약물', ar: 'الأدوية' },
+      'conditions': { es: 'condiciones', fr: 'conditions', de: 'Bedingungen', it: 'condizioni', pt: 'condições', ja: '状態', zh: '状况', ko: '상태', ar: 'الحالات' },
+      'allergies': { es: 'alergias', fr: 'allergies', de: 'Allergien', it: 'allergie', pt: 'alergias', ja: 'アレルギー', zh: '过敏', ko: '알레르기', ar: 'الحساسية' },
+
+      // Severity levels
+      'mild': { es: 'leve', fr: 'léger', de: 'leicht', it: 'lieve', pt: 'leve', ja: '軽度', zh: '轻度', ko: '경증', ar: 'خفيف' },
+      'moderate': { es: 'moderado', fr: 'modéré', de: 'mäßig', it: 'moderato', pt: 'moderado', ja: '中等度', zh: '中度', ko: '중등도', ar: 'معتدل' },
+      'severe': { es: 'severo', fr: 'sévère', de: 'schwer', it: 'grave', pt: 'severo', ja: '重度', zh: '重度', ko: '중증', ar: 'شديد' },
+      'Severe': { es: 'Severo', fr: 'Sévère', de: 'Schwer', it: 'Grave', pt: 'Severo', ja: '重度', zh: '重度', ko: '중증', ar: 'شديد' },
+      'high': { es: 'alto', fr: 'élevé', de: 'hoch', it: 'alto', pt: 'alto', ja: '高', zh: '高', ko: '높음', ar: 'عالي' },
+      'life-threatening': { es: 'potencialmente mortal', fr: 'potentiellement mortel', de: 'lebensbedrohlich', it: 'pericoloso per la vita', pt: 'risco de vida', ja: '生命を脅かす', zh: '危及生命', ko: '생명을 위협하는', ar: 'مهدد للحياة' },
+
+      // Categories
+      'food': { es: 'comida', fr: 'nourriture', de: 'Essen', it: 'cibo', pt: 'comida', ja: '食べ物', zh: '食物', ko: '음식', ar: 'طعام' },
+      'dietary': { es: 'dietético', fr: 'diététique', de: 'diätetisch', it: 'dietetico', pt: 'dietético', ja: '食事', zh: '饮食', ko: '식이요법', ar: 'غذائي' },
+      'medication': { es: 'medicación', fr: 'médicament', de: 'Medikation', it: 'farmaco', pt: 'medicação', ja: '薬物', zh: '药物', ko: '약물', ar: 'دواء' },
+
+      // Frequencies
+      'once daily': { es: 'una vez al día', fr: 'une fois par jour', de: 'einmal täglich', it: 'una volta al giorno', pt: 'uma vez ao dia', ja: '1日1回', zh: '每天一次', ko: '하루 한번', ar: 'مرة واحدة يوميا' },
+      'twice daily': { es: 'dos veces al día', fr: 'deux fois par jour', de: 'zweimal täglich', it: 'due volte al giorno', pt: 'duas vezes ao dia', ja: '1日2回', zh: '每天两次', ko: '하루 두번', ar: 'مرتين يوميا' },
+      'three times daily': { es: 'tres veces al día', fr: 'trois fois par jour', de: 'dreimal täglich', it: 'tre volte al giorno', pt: 'três vezes ao dia', ja: '1日3回', zh: '每天三次', ko: '하루 세번', ar: 'ثلاث مرات يوميا' },
+      'four times daily': { es: 'cuatro veces al día', fr: 'quatre fois par jour', de: 'viermal täglich', it: 'quattro volte al giorno', pt: 'quatro vezes ao dia', ja: '1日4回', zh: '每天四次', ko: '하루 네번', ar: 'أربع مرات يوميا' },
+
+      // Common medications
+      'Insulin': { es: 'Insulina', fr: 'Insuline', de: 'Insulin', it: 'Insulina', pt: 'Insulina', ja: 'インスリン', zh: '胰岛素', ko: '인슐린', ar: 'الأنسولين' },
+      'Metformin': { es: 'Metformina', fr: 'Metformine', de: 'Metformin', it: 'Metformina', pt: 'Metformina', ja: 'メトホルミン', zh: '二甲双胍', ko: '메트포르민', ar: 'ميتفورمين' },
+
+      // Common conditions
+      'Type 1 Diabetes': { es: 'Diabetes Tipo 1', fr: 'Diabète de Type 1', de: 'Typ-1-Diabetes', it: 'Diabete di Tipo 1', pt: 'Diabetes Tipo 1', ja: '1型糖尿病', zh: '1型糖尿病', ko: '제1형 당뇨병', ar: 'مرض السكري من النوع 1' },
+      'Type 2 Diabetes': { es: 'Diabetes Tipo 2', fr: 'Diabète de Type 2', de: 'Typ-2-Diabetes', it: 'Diabete di Tipo 2', pt: 'Diabetes Tipo 2', ja: '2型糖尿病', zh: '2型糖尿病', ko: '제2형 당뇨병', ar: 'مرض السكري من النوع 2' },
+      'Incomplete Spinal Cord Injury (T12)': { es: 'Lesión Incompleta de Médula Espinal (T12)', fr: 'Lésion Incomplète de la Moelle Épinière (T12)', de: 'Unvollständige Rückenmarksverletzung (T12)', it: 'Lesione Incompleta del Midollo Spinale (T12)', pt: 'Lesão Incompleta da Medula Espinal (T12)', ja: '不完全脊髄損傷（T12）', zh: '不完全脊髓损伤（T12）', ko: '불완전 척수 손상 (T12)', ar: 'إصابة غير كاملة في النخاع الشوكي (T12)' },
+      'Hypertension': { es: 'Hipertensión', fr: 'Hypertension', de: 'Bluthochdruck', it: 'Ipertensione', pt: 'Hipertensão', ja: '高血圧', zh: '高血压', ko: '고혈압', ar: 'ارتفاع ضغط الدم' },
+      'Asthma': { es: 'Asma', fr: 'Asthme', de: 'Asthma', it: 'Asma', pt: 'Asma', ja: '喘息', zh: '哮喘', ko: '천식', ar: 'الربو' },
+
+      // Common allergens
+      'Peanuts': { es: 'Cacahuetes', fr: 'Arachides', de: 'Erdnüsse', it: 'Arachidi', pt: 'Amendoins', ja: 'ピーナッツ', zh: '花生', ko: '땅콩', ar: 'الفول السوداني' },
+      'Penicillin': { es: 'Penicilina', fr: 'Pénicilline', de: 'Penicillin', it: 'Penicillina', pt: 'Penicilina', ja: 'ペニシリン', zh: '青霉素', ko: '페니실린', ar: 'البنسلين' },
+      'Gluten': { es: 'Gluten', fr: 'Gluten', de: 'Gluten', it: 'Glutine', pt: 'Glúten', ja: 'グルテン', zh: '麸质', ko: '글루텐', ar: 'الغلوتين' },
+      'Tree Nuts': { es: 'Frutos Secos', fr: 'Noix', de: 'Baumnüsse', it: 'Noci', pt: 'Nozes', ar: 'المكسرات' },
+      'Shellfish': { es: 'Mariscos', fr: 'Fruits de Mer', de: 'Schalentiere', it: 'Crostacei', pt: 'Frutos do Mar', ja: '甲殻類', zh: '贝类', ko: '갑각류', ar: 'المحار' },
+      'Eggs': { es: 'Huevos', fr: 'Œufs', de: 'Eier', it: 'Uova', pt: 'Ovos', ja: '卵', zh: '鸡蛋', ko: '계란', ar: 'البيض' },
+      'Milk': { es: 'Leche', fr: 'Lait', de: 'Milch', it: 'Latte', pt: 'Leite', ja: '牛乳', zh: '牛奶', ko: '우유', ar: 'الحليب' },
+      'Soy': { es: 'Soja', fr: 'Soja', de: 'Soja', it: 'Soia', pt: 'Soja', ja: '大豆', zh: '大豆', ko: '콩', ar: 'الصويا' },
+      'Wheat': { es: 'Trigo', fr: 'Blé', de: 'Weizen', it: 'Grano', pt: 'Trigo', ja: '小麦', zh: '小麦', ko: '밀', ar: 'القمح' },
+
+      // Units
+      'units': { es: 'unidades', fr: 'unités', de: 'Einheiten', it: 'unità', pt: 'unidades', ja: '単位', zh: '单位', ko: '단위', ar: 'وحدات' }
+    };
+
+    function translate(text, targetLang) {
+      if (targetLang === 'en' || !targetLang) return text;
+      const lowerText = text.toLowerCase();
+      return translations[text]?.[targetLang] || translations[lowerText]?.[targetLang] || text;
+    }
+
+    function detectLanguageFromDestination(destination) {
+      const dest = destination.toLowerCase();
+
+      // Spanish-speaking countries
+      if (dest.includes('spain') || dest.includes('madrid') || dest.includes('barcelona') ||
+          dest.includes('mexico') || dest.includes('argentina') || dest.includes('colombia')) {
+        return 'es';
+      }
+      // French-speaking countries
+      if (dest.includes('france') || dest.includes('paris') || dest.includes('belgium') ||
+          dest.includes('switzerland') || dest.includes('quebec')) {
+        return 'fr';
+      }
+      // German-speaking countries
+      if (dest.includes('germany') || dest.includes('berlin') || dest.includes('munich') ||
+          dest.includes('austria') || dest.includes('vienna')) {
+        return 'de';
+      }
+      // Italian
+      if (dest.includes('italy') || dest.includes('rome') || dest.includes('milan') ||
+          dest.includes('venice') || dest.includes('florence')) {
+        return 'it';
+      }
+      // Portuguese
+      if (dest.includes('portugal') || dest.includes('lisbon') || dest.includes('brazil') ||
+          dest.includes('rio')) {
+        return 'pt';
+      }
+      // Japanese
+      if (dest.includes('japan') || dest.includes('tokyo') || dest.includes('kyoto') ||
+          dest.includes('osaka')) {
+        return 'ja';
+      }
+      // Chinese
+      if (dest.includes('china') || dest.includes('beijing') || dest.includes('shanghai') ||
+          dest.includes('hong kong')) {
+        return 'zh';
+      }
+      // Korean
+      if (dest.includes('korea') || dest.includes('seoul') || dest.includes('busan')) {
+        return 'ko';
+      }
+      // Arabic
+      if (dest.includes('dubai') || dest.includes('saudi') || dest.includes('egypt') ||
+          dest.includes('morocco') || dest.includes('uae')) {
+        return 'ar';
+      }
+
+      return 'en'; // Default to English
+    }
+
+    function getFlagEmoji(langCode) {
+      const flags = {
+        'es': '🇪🇸', 'fr': '🇫🇷', 'de': '🇩🇪', 'it': '🇮🇹',
+        'pt': '🇵🇹', 'ja': '🇯🇵', 'zh': '🇨🇳', 'ko': '🇰🇷', 'ar': '🇸🇦'
+      };
+      return flags[langCode] || '🌍';
+    }
+
+    function getLanguageName(langCode) {
+      const names = {
+        'es': 'Spanish', 'fr': 'French', 'de': 'German', 'it': 'Italian',
+        'pt': 'Portuguese', 'ja': 'Japanese', 'zh': 'Chinese', 'ko': 'Korean', 'ar': 'Arabic'
+      };
+      return names[langCode] || 'English';
+    }
+
+    function formatFrequency(freq) {
+      return freq.replace(/-/g, ' ');
+    }
+
+    function getSeverityColor(severity) {
+      const colors = {
+        'mild': '#dcfce7',
+        'moderate': '#fef3c7',
+        'severe': '#fed7aa',
+        'life-threatening': '#fee2e2'
+      };
+      return colors[severity] || '#f3f4f6';
     }
 
     function showMyTrips() {

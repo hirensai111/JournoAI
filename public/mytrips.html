@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Current Trip - Journey AI</title>
+  <title>My Current Trip - JournoAI</title>
   <link rel="stylesheet" href="/css/style.css">
   <style>
     :root {
@@ -349,7 +349,7 @@
   <!-- Navigation -->
   <nav class="navbar">
     <div class="navbar-container">
-      <a href="/" class="navbar-brand">
+      <a href="/dashboard.html" class="navbar-brand">
         <div class="navbar-logo">
           <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="20" cy="20" r="18" stroke="#8B1538" stroke-width="2.5" fill="white"/>
@@ -368,7 +368,7 @@
             </defs>
           </svg>
         </div>
-        <span>Journey AI</span>
+        <span>JournoAI</span>
       </a>
 
       <ul class="navbar-nav">
@@ -568,6 +568,11 @@
     window.currentUser = null;
     window.currentTrip = null;
     window.checklistState = {};
+    window.wellnessData = {
+      medications: [],
+      conditions: [],
+      allergies: []
+    };
 
     // Auth State
     onAuthStateChanged(auth, async (user) => {
@@ -578,7 +583,27 @@
         document.getElementById('user-info').style.display = 'block';
         document.getElementById('signout-btn').style.display = 'block';
 
-        // Load user's current trip
+        // Fetch user profile for full name
+        try {
+          const token = await user.getIdToken();
+          const response = await fetch(`/api/user/profile/${user.uid}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            const userProfile = await response.json();
+            if (userProfile.full_name) {
+              document.getElementById('user-name').textContent = userProfile.full_name;
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+
+        // Load wellness data first, then load current trip
+        await loadWellnessData(user);
         await loadCurrentTrip(user.uid);
       } else {
         window.location.href = '/signin.html';
@@ -590,6 +615,37 @@
       await signOut(auth);
       window.location.href = '/signin.html';
     });
+
+    // Load wellness data
+    async function loadWellnessData(user) {
+      try {
+        console.log('Loading wellness data for personalized checklist...');
+        const token = await user.getIdToken();
+
+        const [medicationsRes, conditionsRes, allergiesRes] = await Promise.all([
+          fetch(`/api/wellness/medications`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }).catch(() => ({ ok: false })),
+          fetch(`/api/wellness/conditions`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }).catch(() => ({ ok: false })),
+          fetch(`/api/wellness/allergies`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }).catch(() => ({ ok: false }))
+        ]);
+
+        window.wellnessData = {
+          medications: medicationsRes.ok ? await medicationsRes.json() : [],
+          conditions: conditionsRes.ok ? await conditionsRes.json() : [],
+          allergies: allergiesRes.ok ? await allergiesRes.json() : []
+        };
+
+        console.log('✅ Wellness data loaded:', window.wellnessData);
+      } catch (error) {
+        console.error('Error loading wellness data:', error);
+        // Continue with empty wellness data
+      }
+    }
 
     // Load current/upcoming trip
     async function loadCurrentTrip(userId) {
@@ -701,8 +757,11 @@
       if (!trip || !trip.id) return;
 
       const now = new Date();
-      const startDate = new Date(trip.start_date);
-      const endDate = new Date(trip.end_date);
+      // Parse dates in local timezone to avoid timezone shift
+      const [startYear, startMonth, startDay] = trip.start_date.split('-').map(Number);
+      const [endYear, endMonth, endDay] = trip.end_date.split('-').map(Number);
+      const startDate = new Date(startYear, startMonth - 1, startDay);
+      const endDate = new Date(endYear, endMonth - 1, endDay);
 
       let newStatus = trip.status;
 
@@ -869,7 +928,9 @@
 
     // Update countdown
     function updateCountdown(startDate) {
-      const start = new Date(startDate);
+      // Parse date in local timezone to avoid timezone shift
+      const [year, month, day] = startDate.split('-').map(Number);
+      const start = new Date(year, month - 1, day);
       const now = new Date();
       const diff = start - now;
       const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
@@ -894,7 +955,9 @@
 
     // Generate dynamic checklist based on days until departure
     function generateDynamicChecklist(trip) {
-      const startDate = new Date(trip.start_date);
+      // Parse date in local timezone to avoid timezone shift
+      const [year, month, day] = trip.start_date.split('-').map(Number);
+      const startDate = new Date(year, month - 1, day);
       const now = new Date();
       const daysUntil = Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
 
@@ -1011,8 +1074,10 @@
 
     // Update overall progress
     function updateProgress() {
-      const totalItems = Object.keys(window.checklistState).length;
-      const completedItems = Object.values(window.checklistState).filter(Boolean).length;
+      // Count all checklist items from all phases in the DOM
+      const allCheckboxes = document.querySelectorAll('#checklist-phases .checklist-checkbox');
+      const totalItems = allCheckboxes.length;
+      const completedItems = document.querySelectorAll('#checklist-phases .checklist-checkbox.checked').length;
       const percentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
       document.getElementById('progress-percentage').textContent = `${percentage}%`;
@@ -1023,53 +1088,152 @@
     // Generate phase-specific items
     function generateMedicalPreparationItems(trip, daysUntil) {
       const items = [];
+      const { medications, conditions, allergies } = window.wellnessData;
 
-      if (trip.conditions?.includes('type_1_diabetes') || trip.conditions?.includes('type_2_diabetes')) {
-        items.push(
-          {
-            id: 'med-insulin',
-            task: `Refill insulin prescription (${trip.duration * 2}-day supply)`,
+      // Medication-specific items
+      medications.forEach(med => {
+        // Calculate how many doses needed for trip
+        let dailyDoses = 0;
+        switch (med.frequency) {
+          case 'once-daily': dailyDoses = 1; break;
+          case 'twice-daily': dailyDoses = 2; break;
+          case 'three-times-daily': dailyDoses = 3; break;
+          case 'four-times-daily': dailyDoses = 4; break;
+          case 'as-needed': dailyDoses = 2; break;
+          case 'weekly': dailyDoses = 1/7; break;
+          case 'monthly': dailyDoses = 1/30; break;
+        }
+        const totalDoses = Math.ceil(dailyDoses * trip.duration);
+        const extraBuffer = Math.ceil(totalDoses * 0.2);
+        const totalNeeded = totalDoses + extraBuffer;
+
+        // Refill prescription
+        if (med.prescription_required || med.current_quantity < totalNeeded) {
+          items.push({
+            id: `med-refill-${med.id}`,
+            task: `Refill ${med.name} prescription (need ${totalNeeded} doses, have ${med.current_quantity || 0})`,
             priority: 'CRITICAL',
-            notes: 'Always bring double the insulin you think you\'ll need',
+            notes: `${med.dosage} - ${med.frequency.replace('-', ' ')}. Pack ${totalNeeded} doses for ${trip.duration} days + 20% buffer`,
             action_button: 'Schedule Pharmacy Refill'
-          },
-          {
-            id: 'med-doctor-letter',
-            task: 'Get doctor\'s letter for traveling with insulin',
+          });
+        }
+
+        // Refrigeration check
+        if (med.refrigeration_required) {
+          items.push({
+            id: `med-cooling-${med.id}`,
+            task: `Get cooling case for ${med.name}`,
             priority: 'CRITICAL',
+            notes: 'Required for temperature-sensitive medication',
+            action_button: 'Shop for Cooling Case'
+          });
+        }
+
+        // Doctor's letter for prescription medications
+        if (med.prescription_required) {
+          items.push({
+            id: `med-letter-${med.id}`,
+            task: `Get doctor's letter for traveling with ${med.name}`,
+            priority: 'HIGH',
+            notes: 'Needed for customs and airport security',
             action_button: 'Download Template'
-          },
-          {
-            id: 'med-insurance',
+          });
+        }
+      });
+
+      // Condition-specific items
+      conditions.forEach(condition => {
+        const conditionLower = condition.name.toLowerCase();
+
+        // Diabetes-specific
+        if (conditionLower.includes('diabetes')) {
+          items.push({
+            id: `cond-insurance-diabetes`,
             task: `Verify travel insurance covers diabetic emergencies in ${trip.destination}`,
             priority: 'CRITICAL',
             action_button: 'Compare Insurance Plans'
-          }
-        );
-      }
+          });
+        }
 
-      if (trip.conditions?.includes('wheelchair_user')) {
-        items.push(
-          {
-            id: 'med-wheelchair-doc',
-            task: 'Get medical documentation for wheelchair travel',
+        // Mobility/wheelchair conditions
+        if (conditionLower.includes('wheelchair') || conditionLower.includes('spinal') || conditionLower.includes('mobility')) {
+          items.push({
+            id: `cond-wheelchair-doc`,
+            task: 'Get medical documentation for mobility assistance',
             priority: 'CRITICAL',
             action_button: 'Download Form'
-          },
-          {
-            id: 'med-wheelchair-check',
-            task: 'Schedule wheelchair maintenance check',
+          });
+          items.push({
+            id: `cond-wheelchair-check`,
+            task: 'Schedule mobility equipment maintenance check',
             priority: 'HIGH',
-            action_button: 'Find Repair Shop'
-          }
-        );
-      }
+            action_button: 'Find Service Provider'
+          });
+        }
 
+        // Heart conditions
+        if (conditionLower.includes('heart') || conditionLower.includes('cardiac')) {
+          items.push({
+            id: `cond-heart-clearance`,
+            task: 'Get travel clearance from cardiologist',
+            priority: 'CRITICAL',
+            notes: `For ${condition.name}`,
+            action_button: 'Book Appointment'
+          });
+        }
+
+        // Respiratory conditions
+        if (conditionLower.includes('asthma') || conditionLower.includes('respiratory') || conditionLower.includes('copd')) {
+          items.push({
+            id: `cond-respiratory-check`,
+            task: `Check air quality and altitude at ${trip.destination}`,
+            priority: 'HIGH',
+            notes: `Important for ${condition.name}`,
+            action_button: 'Research Destination'
+          });
+        }
+
+        // Severe conditions requiring medical clearance
+        if (condition.severity === 'severe') {
+          items.push({
+            id: `cond-clearance-${condition.id}`,
+            task: `Get travel medical clearance for ${condition.name}`,
+            priority: 'CRITICAL',
+            notes: 'Required for severe medical conditions',
+            action_button: 'Book Doctor Appointment'
+          });
+        }
+      });
+
+      // Allergy-specific items
+      allergies.forEach(allergy => {
+        if (allergy.epipen_required) {
+          items.push({
+            id: `allergy-epipen-${allergy.id}`,
+            task: `Ensure you have 2 EpiPens for ${allergy.allergen_name} allergy`,
+            priority: 'CRITICAL',
+            notes: 'Always carry at least 2 EpiPens',
+            action_button: 'Check Expiration Date'
+          });
+        }
+
+        if (allergy.severity === 'life-threatening' || allergy.severity === 'severe') {
+          items.push({
+            id: `allergy-translation-${allergy.id}`,
+            task: `Get "${allergy.allergen_name}" translated to local language`,
+            priority: 'HIGH',
+            notes: `For communicating ${allergy.allergen_name} allergy abroad`,
+            action_button: 'Generate Translation Card'
+          });
+        }
+      });
+
+      // General health consultation (always include)
       items.push({
         id: 'med-general',
         task: 'Schedule pre-trip health consultation',
-        priority: 'HIGH',
-        notes: 'Discuss travel plans with your doctor',
+        priority: medications.length > 0 || conditions.length > 0 ? 'HIGH' : 'MEDIUM',
+        notes: 'Discuss travel plans, medications, and health conditions with your doctor',
         action_button: 'Book Appointment'
       });
 
@@ -1077,138 +1241,381 @@
     }
 
     function generateDocumentationItems(trip, daysUntil) {
-      const items = [
-        {
-          id: 'doc-maps',
-          task: `Download offline ${trip.destination} accessibility maps`,
-          priority: 'CRITICAL',
-          action_button: 'Download Now'
-        },
-        {
-          id: 'doc-hospitals',
-          task: 'Save hospital locations near hotel',
-          priority: 'CRITICAL',
-          notes: 'Include phone numbers and directions'
+      const items = [];
+      const { medications, conditions, allergies } = window.wellnessData;
+
+      // Always important - accessibility maps
+      items.push({
+        id: 'doc-maps',
+        task: `Download offline ${trip.destination} accessibility maps`,
+        priority: conditions.length > 0 ? 'CRITICAL' : 'HIGH',
+        action_button: 'Download Now'
+      });
+
+      // Always important - hospital locations
+      items.push({
+        id: 'doc-hospitals',
+        task: `Save hospital and pharmacy locations near hotel in ${trip.destination}`,
+        priority: medications.length > 0 || conditions.length > 0 ? 'CRITICAL' : 'HIGH',
+        notes: 'Include phone numbers, addresses, and directions'
+      });
+
+      // Condition-specific documentation
+      conditions.forEach(condition => {
+        const conditionLower = condition.name.toLowerCase();
+
+        // Mobility assistance
+        if (conditionLower.includes('wheelchair') || conditionLower.includes('spinal') || conditionLower.includes('mobility')) {
+          items.push({
+            id: 'doc-airport-wheelchair',
+            task: 'Pre-book wheelchair/mobility assistance at airports',
+            priority: 'CRITICAL',
+            action_button: 'Request with Airline'
+          });
+          items.push({
+            id: 'doc-hotel-accessibility',
+            task: 'Confirm hotel accessibility features',
+            priority: 'CRITICAL',
+            notes: 'Verify room accessibility, elevators, ramps'
+          });
         }
-      ];
 
-      if (trip.conditions?.includes('wheelchair_user')) {
+        // Diabetes
+        if (conditionLower.includes('diabetes')) {
+          items.push({
+            id: 'doc-diabetes-translation',
+            task: 'Print diabetes medical translation cards',
+            priority: 'HIGH',
+            notes: '"I have diabetes" in local language'
+          });
+        }
+
+        // General medical translation for all conditions
         items.push({
-          id: 'doc-airport',
-          task: 'Pre-book wheelchair assistance at airports',
+          id: `doc-condition-translation-${condition.id}`,
+          task: `Get "${condition.name}" translated to local language`,
+          priority: condition.severity === 'severe' ? 'HIGH' : 'MEDIUM',
+          notes: 'For communicating with local medical professionals'
+        });
+      });
+
+      // Medication-specific documentation
+      if (medications.length > 0) {
+        items.push({
+          id: 'doc-medication-list',
+          task: 'Print complete medication list with dosages',
           priority: 'CRITICAL',
-          action_button: 'Request with Airline'
+          notes: 'Include generic names and dosages for each medication'
         });
+
+        // Check if any medication requires refrigeration
+        const needsRefrigeration = medications.some(m => m.refrigeration_required);
+        if (needsRefrigeration) {
+          items.push({
+            id: 'doc-hotel-fridge',
+            task: 'Confirm hotel room has refrigerator',
+            priority: 'CRITICAL',
+            notes: 'Required for temperature-sensitive medications',
+            action_button: 'Contact Hotel'
+          });
+        }
       }
 
-      if (trip.conditions?.includes('type_1_diabetes') || trip.conditions?.includes('type_2_diabetes')) {
-        items.push({
-          id: 'doc-translation',
-          task: 'Print medical translation cards',
-          priority: 'HIGH',
-          notes: '"I am diabetic" in local language'
-        });
-      }
+      // Allergy-specific documentation
+      allergies.forEach(allergy => {
+        if (allergy.severity === 'life-threatening' || allergy.severity === 'severe') {
+          items.push({
+            id: `doc-allergy-card-${allergy.id}`,
+            task: `Print allergy card for ${allergy.allergen_name}`,
+            priority: allergy.epipen_required ? 'CRITICAL' : 'HIGH',
+            notes: `Include symptoms: ${allergy.symptoms || 'severe reaction'}`
+          });
+        }
+      });
+
+      // Emergency contacts
+      items.push({
+        id: 'doc-emergency-contacts',
+        task: 'Save emergency contacts in phone',
+        priority: 'CRITICAL',
+        notes: `Local emergency number for ${trip.destination}, embassy, insurance`
+      });
 
       return items;
     }
 
     function generatePackingItems(trip, daysUntil) {
       const items = [];
+      const { medications, conditions, allergies } = window.wellnessData;
 
-      if (trip.conditions?.includes('type_1_diabetes') || trip.conditions?.includes('type_2_diabetes')) {
-        items.push(
-          {
-            id: 'pack-cooling',
-            task: 'Pack insulin cooling case',
-            priority: 'CRITICAL',
-            notes: 'FRIO wallet recommended for warm climates'
-          },
-          {
-            id: 'pack-insulin',
-            task: 'Pack backup insulin supplies',
-            priority: 'CRITICAL',
-            notes: 'Verify you have double the amount needed'
-          },
-          {
-            id: 'pack-glucose',
-            task: 'Pack glucose tablets & emergency snacks',
-            priority: 'CRITICAL'
-          },
-          {
-            id: 'pack-monitor',
-            task: 'Pack blood glucose monitor & strips',
-            priority: 'CRITICAL'
-          }
-        );
-      }
-
-      if (trip.conditions?.includes('wheelchair_user')) {
-        items.push(
-          {
-            id: 'pack-repair',
-            task: 'Pack wheelchair repair kit',
-            priority: 'CRITICAL',
-            notes: 'Allen wrench, pump, spare tube, duct tape'
-          },
-          {
-            id: 'pack-cushion',
-            task: 'Pack wheelchair cushion',
-            priority: 'HIGH'
-          }
-        );
-      }
-
-      items.push(
-        {
-          id: 'pack-meds',
-          task: 'Pack all medications (carry-on only)',
-          priority: 'CRITICAL',
-          notes: 'Keep in original labeled containers'
-        },
-        {
-          id: 'pack-docs',
-          task: 'Pack medical documentation copies',
-          priority: 'HIGH'
+      // Pack each medication specifically
+      medications.forEach(med => {
+        // Calculate doses needed
+        let dailyDoses = 0;
+        switch (med.frequency) {
+          case 'once-daily': dailyDoses = 1; break;
+          case 'twice-daily': dailyDoses = 2; break;
+          case 'three-times-daily': dailyDoses = 3; break;
+          case 'four-times-daily': dailyDoses = 4; break;
+          case 'as-needed': dailyDoses = 2; break;
+          case 'weekly': dailyDoses = 1/7; break;
+          case 'monthly': dailyDoses = 1/30; break;
         }
-      );
+        const totalDoses = Math.ceil(dailyDoses * trip.duration);
+        const extraBuffer = Math.ceil(totalDoses * 0.2);
+        const totalNeeded = totalDoses + extraBuffer;
+
+        items.push({
+          id: `pack-med-${med.id}`,
+          task: `Pack ${med.name} (${totalNeeded} doses)`,
+          priority: 'CRITICAL',
+          notes: `${med.dosage} - ${totalNeeded} doses in original labeled container. Carry-on only!`
+        });
+
+        // Cooling case if needed
+        if (med.refrigeration_required) {
+          items.push({
+            id: `pack-cooling-${med.id}`,
+            task: `Pack cooling case for ${med.name}`,
+            priority: 'CRITICAL',
+            notes: 'FRIO wallet or similar temperature-controlled case'
+          });
+        }
+      });
+
+      // Condition-specific packing
+      conditions.forEach(condition => {
+        const conditionLower = condition.name.toLowerCase();
+
+        // Diabetes-specific
+        if (conditionLower.includes('diabetes')) {
+          items.push({
+            id: 'pack-glucose-monitor',
+            task: 'Pack blood glucose monitor & extra strips',
+            priority: 'CRITICAL',
+            notes: 'Include backup batteries'
+          });
+          items.push({
+            id: 'pack-glucose-tablets',
+            task: 'Pack glucose tablets & emergency snacks',
+            priority: 'CRITICAL',
+            notes: 'For managing low blood sugar'
+          });
+        }
+
+        // Mobility equipment
+        if (conditionLower.includes('wheelchair') || conditionLower.includes('mobility')) {
+          items.push({
+            id: 'pack-mobility-repair',
+            task: 'Pack mobility equipment repair kit',
+            priority: 'CRITICAL',
+            notes: 'Allen wrench, pump, spare tube, duct tape, zip ties'
+          });
+          items.push({
+            id: 'pack-mobility-cushion',
+            task: 'Pack wheelchair cushion/mobility aids',
+            priority: 'HIGH'
+          });
+        }
+
+        // Respiratory conditions
+        if (conditionLower.includes('asthma') || conditionLower.includes('respiratory')) {
+          items.push({
+            id: 'pack-inhaler-backup',
+            task: 'Pack backup inhaler/respiratory medication',
+            priority: 'CRITICAL',
+            notes: 'Always have at least one backup'
+          });
+        }
+
+        // Heart conditions
+        if (conditionLower.includes('heart') || conditionLower.includes('cardiac')) {
+          items.push({
+            id: 'pack-heart-monitor',
+            task: 'Pack heart rate monitor/medical device',
+            priority: 'HIGH',
+            notes: 'Include chargers and batteries'
+          });
+        }
+      });
+
+      // Allergy-specific packing
+      allergies.forEach(allergy => {
+        if (allergy.epipen_required) {
+          items.push({
+            id: `pack-epipen-${allergy.id}`,
+            task: `Pack 2 EpiPens for ${allergy.allergen_name}`,
+            priority: 'CRITICAL',
+            notes: 'Check expiration dates. Carry one with you at all times'
+          });
+        }
+
+        if (allergy.severity === 'severe' || allergy.severity === 'life-threatening') {
+          items.push({
+            id: `pack-antihistamine-${allergy.id}`,
+            task: `Pack antihistamines for ${allergy.allergen_name} allergy`,
+            priority: 'HIGH',
+            notes: 'Over-the-counter and prescription if available'
+          });
+        }
+      });
+
+      // General medical packing
+      items.push({
+        id: 'pack-docs',
+        task: 'Pack all medical documentation',
+        priority: 'CRITICAL',
+        notes: 'Prescriptions, doctor letters, insurance cards, medical history'
+      });
+
+      items.push({
+        id: 'pack-first-aid',
+        task: 'Pack travel first aid kit',
+        priority: 'HIGH',
+        notes: 'Bandages, antiseptic, pain relievers, thermometer'
+      });
+
+      // Add medication organizer if multiple medications
+      if (medications.length > 2) {
+        items.push({
+          id: 'pack-pill-organizer',
+          task: 'Pack pill organizer/medication tracker',
+          priority: 'HIGH',
+          notes: `Pre-sort ${medications.length} medications by day and time`
+        });
+      }
 
       return items;
     }
 
     function generateDepartureDayItems(trip, daysUntil) {
-      return [
-        {
+      const items = [];
+      const { medications, conditions, allergies } = window.wellnessData;
+
+      // Final medication check
+      if (medications.length > 0) {
+        items.push({
           id: 'dep-meds-check',
-          task: 'Double-check all medications are packed',
+          task: `Double-check all ${medications.length} medications are packed in carry-on`,
           priority: 'CRITICAL',
-          notes: 'Verify nothing left in refrigerator'
-        },
-        {
-          id: 'dep-emergency',
-          task: 'Save all emergency contacts in phone',
-          priority: 'CRITICAL',
-          notes: 'Local emergency number, embassy, insurance'
-        },
-        {
-          id: 'dep-insulin-temp',
-          task: 'Check insulin storage during flight',
-          priority: 'CRITICAL',
-          notes: 'Keep in carry-on, use cooling case if needed'
-        },
-        {
-          id: 'dep-airport-time',
-          task: 'Arrive at airport 3 hours early',
-          priority: 'HIGH',
-          notes: 'Extra time for accessibility assistance'
-        },
-        {
-          id: 'dep-snacks',
-          task: 'Pack extra snacks for travel day',
-          priority: 'HIGH',
-          notes: 'Blood sugar can fluctuate during travel'
+          notes: `Verify: ${medications.map(m => m.name).join(', ')}`
+        });
+
+        // Check refrigerated medications
+        const refrigMeds = medications.filter(m => m.refrigeration_required);
+        if (refrigMeds.length > 0) {
+          items.push({
+            id: 'dep-refrig-check',
+            task: `Check ${refrigMeds.map(m => m.name).join(', ')} cooling case`,
+            priority: 'CRITICAL',
+            notes: 'Ensure cooling case is activated and medications are stored properly'
+          });
         }
-      ];
+      }
+
+      // Condition-specific departure checks
+      conditions.forEach(condition => {
+        const conditionLower = condition.name.toLowerCase();
+
+        // Diabetes
+        if (conditionLower.includes('diabetes')) {
+          items.push({
+            id: 'dep-glucose-check',
+            task: 'Check blood sugar before leaving for airport',
+            priority: 'CRITICAL',
+            notes: 'Ensure stable levels before travel'
+          });
+          items.push({
+            id: 'dep-diabetes-snacks',
+            task: 'Pack diabetic-friendly snacks for flight',
+            priority: 'CRITICAL',
+            notes: 'Blood sugar can fluctuate during travel'
+          });
+        }
+
+        // Mobility assistance
+        if (conditionLower.includes('wheelchair') || conditionLower.includes('mobility')) {
+          items.push({
+            id: 'dep-mobility-confirm',
+            task: 'Call airline to confirm wheelchair/mobility assistance',
+            priority: 'CRITICAL',
+            notes: 'Confirm 24 hours before departure',
+            action_button: 'Call Airline'
+          });
+        }
+
+        // Respiratory
+        if (conditionLower.includes('asthma') || conditionLower.includes('respiratory')) {
+          items.push({
+            id: 'dep-inhaler-accessible',
+            task: 'Keep rescue inhaler easily accessible',
+            priority: 'CRITICAL',
+            notes: 'Store in personal item, not overhead bin'
+          });
+        }
+      });
+
+      // Allergy-specific departure checks
+      allergies.forEach(allergy => {
+        if (allergy.epipen_required) {
+          items.push({
+            id: `dep-epipen-${allergy.id}`,
+            task: `Keep EpiPen for ${allergy.allergen_name} accessible at all times`,
+            priority: 'CRITICAL',
+            notes: 'Store in personal item within easy reach'
+          });
+        }
+
+        // Food allergies - in-flight meal check
+        if (allergy.category === 'food' && (allergy.severity === 'severe' || allergy.severity === 'life-threatening')) {
+          items.push({
+            id: `dep-meal-${allergy.id}`,
+            task: `Inform flight attendant about ${allergy.allergen_name} allergy`,
+            priority: 'HIGH',
+            notes: 'Do this immediately upon boarding'
+          });
+        }
+      });
+
+      // Emergency contacts
+      items.push({
+        id: 'dep-emergency',
+        task: 'Verify all emergency contacts are saved in phone',
+        priority: 'CRITICAL',
+        notes: `Local emergency number for ${trip.destination}, embassy, insurance, doctor`
+      });
+
+      // Arrival time adjustment based on conditions
+      const needsExtraTime = conditions.some(c =>
+        c.name.toLowerCase().includes('wheelchair') ||
+        c.name.toLowerCase().includes('mobility') ||
+        medications.length > 3
+      );
+
+      items.push({
+        id: 'dep-airport-time',
+        task: `Arrive at airport ${needsExtraTime ? '3-4' : '2-3'} hours early`,
+        priority: 'HIGH',
+        notes: needsExtraTime ? 'Extra time for medical screening and accessibility assistance' : 'Standard international flight buffer'
+      });
+
+      // Travel day snacks
+      items.push({
+        id: 'dep-snacks',
+        task: 'Pack safe snacks and water for travel day',
+        priority: 'HIGH',
+        notes: allergies.length > 0 ? `Avoid: ${allergies.map(a => a.allergen_name).slice(0, 3).join(', ')}` : 'Stay hydrated during travel'
+      });
+
+      // Medical documentation check
+      items.push({
+        id: 'dep-docs-accessible',
+        task: 'Keep medical documents accessible (not in checked luggage)',
+        priority: 'CRITICAL',
+        notes: 'Prescriptions, doctor letters, insurance cards'
+      });
+
+      return items;
     }
 
     // Helper function to get place images using Google Custom Search API
@@ -1251,6 +1658,121 @@
       return fallbackUrl;
     }
 
+    // Generate health reminders integrated into timeline
+    function generateHealthRemindersForTimeline(dayIndex, medications, conditions, allergies) {
+      const reminders = [];
+
+      // Helper to convert time string to minutes for sorting
+      const timeToMinutes = (timeStr) => {
+        const match = timeStr.match(/(\d+):(\d+)/);
+        if (!match) return 0;
+        return parseInt(match[1]) * 60 + parseInt(match[2]);
+      };
+
+      // Medication reminders at specific times (24-hour format, will be converted to 12-hour in display)
+      medications.forEach(med => {
+        const times = [];
+
+        switch (med.frequency) {
+          case 'once-daily':
+            times.push('08:00'); // 8:00 AM
+            break;
+          case 'twice-daily':
+            times.push('08:00', '20:00'); // 8:00 AM, 8:00 PM
+            break;
+          case 'three-times-daily':
+            times.push('08:00', '14:00', '20:00'); // 8:00 AM, 2:00 PM, 8:00 PM
+            break;
+          case 'four-times-daily':
+            times.push('08:00', '12:00', '16:00', '20:00'); // 8:00 AM, 12:00 PM, 4:00 PM, 8:00 PM
+            break;
+          case 'weekly':
+            if (dayIndex % 7 === 0) times.push('08:00');
+            break;
+          case 'monthly':
+            if (dayIndex === 0) times.push('08:00');
+            break;
+        }
+
+        times.forEach(time => {
+          reminders.push({
+            time: time,
+            type: 'medication',
+            icon: '💊',
+            title: `Take ${med.name}`,
+            details: med.dosage,
+            priority: 'high',
+            id: `med-${med.id}-${time}`
+          });
+        });
+
+        // Refrigeration reminder (once per day at morning)
+        if (med.refrigeration_required && dayIndex === 0) {
+          reminders.push({
+            time: '08:00',
+            type: 'reminder',
+            icon: '❄️',
+            title: `Store ${med.name} in fridge`,
+            details: 'Keep refrigerated throughout trip',
+            priority: 'medium',
+            id: `refrig-${med.id}`
+          });
+        }
+      });
+
+      // Condition-specific reminders
+      conditions.forEach(condition => {
+        const conditionLower = condition.name.toLowerCase();
+
+        if (conditionLower.includes('diabetes')) {
+          // Blood sugar checks before meals
+          reminders.push({
+            time: '07:30',
+            type: 'health-check',
+            icon: '🩸',
+            title: 'Check blood sugar',
+            details: 'Before breakfast',
+            priority: 'high',
+            id: `glucose-morning-${dayIndex}`
+          });
+        }
+
+        if (conditionLower.includes('heart') || conditionLower.includes('cardiac')) {
+          reminders.push({
+            time: '08:00',
+            type: 'health-check',
+            icon: '❤️',
+            title: 'Check vitals',
+            details: 'Blood pressure and heart rate',
+            priority: 'medium',
+            id: `vitals-morning-${dayIndex}`
+          });
+        }
+      });
+
+      // First day reminders
+      if (dayIndex === 0) {
+        reminders.push({
+          time: '—',
+          type: 'reminder',
+          icon: '🏨',
+          title: 'Upon arrival',
+          details: 'Locate hotel medical facilities and nearby pharmacy',
+          priority: 'medium',
+          id: 'arrival-check'
+        });
+      }
+
+      // Sort by time
+      reminders.sort((a, b) => {
+        if (a.time === '—') return 1;
+        if (b.time === '—') return -1;
+        return timeToMinutes(a.time) - timeToMinutes(b.time);
+      });
+
+      return reminders;
+    }
+
     // Display itinerary
     function displayItinerary(itinerary) {
       console.log('Displaying itinerary:', itinerary);
@@ -1266,21 +1788,94 @@
       const container = document.getElementById('itinerary-container');
       const destination = window.currentTrip?.destination || 'travel';
 
+      // Generate daily health reminders for each day
+      const { medications, conditions, allergies } = window.wellnessData;
+
       container.innerHTML = days.map((day, index) => {
         const isRestDay = day.day_type === 'rest';
 
         // Calculate date based on trip start date
-        const tripStartDate = new Date(window.currentTrip.start_date);
+        // Parse date in local timezone to avoid timezone shift
+        const [startYear, startMonth, startDay] = window.currentTrip.start_date.split('-').map(Number);
+        const tripStartDate = new Date(startYear, startMonth - 1, startDay);
         const dayDate = new Date(tripStartDate);
         dayDate.setDate(dayDate.getDate() + index);
         const dayName = dayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
+        // Generate health reminders for timeline
+        const healthReminders = generateHealthRemindersForTimeline(index, medications, conditions, allergies);
+
+        // Helper function to convert time to minutes for proper sorting
+        const timeToMinutes = (timeStr) => {
+          if (!timeStr || timeStr === '—' || timeStr === '') return 99999; // Put items without time at end
+
+          // Handle various time formats
+          // "08:00", "8:00 AM", "08:00 AM", "8:00 PM", etc.
+          let cleanTime = timeStr.trim().toLowerCase();
+
+          // Extract hour and minute
+          const timeMatch = cleanTime.match(/(\d{1,2}):(\d{2})/);
+          if (!timeMatch) return 99999;
+
+          let hours = parseInt(timeMatch[1]);
+          const minutes = parseInt(timeMatch[2]);
+
+          // Handle AM/PM
+          if (cleanTime.includes('pm') && hours !== 12) {
+            hours += 12;
+          } else if (cleanTime.includes('am') && hours === 12) {
+            hours = 0;
+          }
+
+          return hours * 60 + minutes;
+        };
+
+        // Helper function to format time with AM/PM
+        const formatTimeWithAMPM = (timeStr) => {
+          if (!timeStr || timeStr === '—' || timeStr === '') return '—';
+
+          // If already has AM/PM, return as is
+          if (timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm')) {
+            return timeStr;
+          }
+
+          // Parse 24-hour format
+          const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})/);
+          if (!timeMatch) return timeStr;
+
+          let hours = parseInt(timeMatch[1]);
+          const minutes = timeMatch[2];
+
+          // Convert to 12-hour format
+          const period = hours >= 12 ? 'PM' : 'AM';
+          hours = hours % 12;
+          if (hours === 0) hours = 12;
+
+          return `${hours}:${minutes} ${period}`;
+        };
+
+        // Merge health reminders with activities based on time
+        const allTimelineItems = [
+          ...(day.activities || []).map(act => ({ ...act, itemType: 'activity' })),
+          ...healthReminders.map(rem => ({ ...rem, itemType: 'health' }))
+        ];
+
+        // Sort all items by time chronologically
+        allTimelineItems.sort((a, b) => {
+          const timeA = timeToMinutes(a.time);
+          const timeB = timeToMinutes(b.time);
+          return timeA - timeB;
+        });
+
         return `
-          <div class="day-card ${isRestDay ? 'rest-day' : ''}">
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+          <div class="day-card ${isRestDay ? 'rest-day' : ''}" id="day-card-${index}" data-day-index="${index}">
+            <div class="day-header" onclick="toggleDayCard(${index})" style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; cursor: pointer; user-select: none;">
               <div style="flex: 1;">
                 <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-                  <h3 style="margin: 0;">Day ${index + 1}</h3>
+                  <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="collapse-icon" id="collapse-icon-${index}" style="transition: transform 0.3s ease;">▼</span>
+                    Day ${index + 1}
+                  </h3>
                   ${isRestDay ? '<span class="priority-badge" style="background: #d1fae5; color: #059669;">Rest Day</span>' : ''}
                 </div>
                 <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">${dayName}</p>
@@ -1296,6 +1891,7 @@
               ` : ''}
             </div>
 
+            <div class="day-content" id="day-content-${index}" style="transition: all 0.3s ease; overflow: hidden;">
             ${day.highlight && day.highlightImage ? `
               <div style="position: relative; width: 100%; height: 180px; border-radius: 8px; overflow: hidden; margin-bottom: 1rem; background: url('${day.highlightImage}') center/cover no-repeat;">
                 <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 1rem; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); color: white;">
@@ -1304,51 +1900,74 @@
               </div>
             ` : ''}
 
-            ${day.activities && day.activities.length > 0 ? `
+            ${allTimelineItems && allTimelineItems.length > 0 ? `
               <div class="timeline-container">
                 <div class="timeline-line"></div>
-                ${day.activities.map(activity => {
-                  // Get activity icon
-                  const activityName = activity.title || activity.name || 'activity';
-                  const activityIcon = activity.icon || '🎯';
+                ${allTimelineItems.map(item => {
+                  if (item.itemType === 'activity') {
+                    // Render activity
+                    const activityName = item.title || item.name || 'activity';
+                    const activityIcon = item.icon || '🎯';
+                    const accessibilityTags = Array.isArray(item.accessibility) ? item.accessibility.slice(0, 3) : [];
 
-                  // Handle accessibility - ensure it's an array
-                  const accessibilityTags = Array.isArray(activity.accessibility)
-                    ? activity.accessibility.slice(0, 3)
-                    : [];
-
-                  return `
-                  <div class="timeline-item">
-                    <div class="timeline-dot"></div>
-                    <div class="activity-item" style="display: flex; gap: 1rem; align-items: start;">
-                      <div class="activity-time" style="min-width: 60px;">${activity.time || '—'}</div>
-                      <div style="font-size: 1.5rem; line-height: 1;">${activityIcon}</div>
-                      <div style="flex: 1;">
-                        <div style="font-weight: 600; margin-bottom: 0.25rem;">${activityName}</div>
-                        ${activity.description ? `<p style="margin: 0.25rem 0 0.5rem 0; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;">${activity.description}</p>` : ''}
-                        ${activity.mapsLink ? `
-                          <a href="${activity.mapsLink}" target="_blank" rel="noopener"
-                             style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.375rem 0.75rem;
-                                    background: var(--primary); color: white; text-decoration: none; border-radius: 6px;
-                                    font-size: 0.813rem; font-weight: 500; transition: all 0.2s;"
-                             onmouseover="this.style.background='#6d1f3b'"
-                             onmouseout="this.style.background='var(--primary)'">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                              <circle cx="12" cy="10" r="3"/>
-                            </svg>
-                            Navigate
-                          </a>
-                        ` : ''}
-                        ${accessibilityTags.length > 0 ? `<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
-                          ${accessibilityTags.map(tag =>
-                            `<span style="padding: 0.25rem 0.5rem; background: #e0f2fe; color: #0369a1; border-radius: var(--radius-sm); font-size: 0.75rem;">♿ ${tag}</span>`
-                          ).join('')}
-                        </div>` : ''}
+                    return `
+                    <div class="timeline-item">
+                      <div class="timeline-dot"></div>
+                      <div class="activity-item" style="display: flex; gap: 1rem; align-items: center; padding: 1rem;">
+                        <div class="activity-time" style="min-width: 80px; font-weight: 600; font-size: 0.875rem;">${formatTimeWithAMPM(item.time)}</div>
+                        <div style="font-size: 1.25rem; line-height: 1;">${activityIcon}</div>
+                        <div style="flex: 1; min-width: 0;">
+                          <div style="font-weight: 600; margin-bottom: 0.25rem; font-size: 0.875rem;">${activityName}</div>
+                          ${item.description ? `<p style="margin: 0.25rem 0 0.5rem 0; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;">${item.description}</p>` : ''}
+                          ${item.mapsLink ? `
+                            <a href="${item.mapsLink}" target="_blank" rel="noopener"
+                               style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.375rem 0.75rem;
+                                      background: var(--primary); color: white; text-decoration: none; border-radius: 6px;
+                                      font-size: 0.813rem; font-weight: 500; transition: all 0.2s;"
+                               onmouseover="this.style.background='#6d1f3b'"
+                               onmouseout="this.style.background='var(--primary)'">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                              </svg>
+                              Navigate
+                            </a>
+                          ` : ''}
+                          ${accessibilityTags.length > 0 ? `<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
+                            ${accessibilityTags.map(tag =>
+                              `<span style="padding: 0.25rem 0.5rem; background: #e0f2fe; color: #0369a1; border-radius: var(--radius-sm); font-size: 0.75rem;">♿ ${tag}</span>`
+                            ).join('')}
+                          </div>` : ''}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                `}).join('')}
+                    `;
+                  } else {
+                    // Render health reminder
+                    const priorityColor = item.priority === 'high' ? '#dc2626' : item.priority === 'medium' ? '#0284c7' : '#059669';
+                    const bgColor = item.priority === 'high' ? '#fef2f2' : item.priority === 'medium' ? '#eff6ff' : '#f0fdf4';
+
+                    return `
+                    <div class="timeline-item health-reminder-item" id="item-${item.id}">
+                      <div class="timeline-dot" style="background: ${priorityColor}; box-shadow: 0 0 0 4px ${bgColor};"></div>
+                      <div class="activity-item" style="display: flex; gap: 1rem; align-items: center; background: ${bgColor}; border-left: 3px solid ${priorityColor}; transition: all 0.3s ease;">
+                        <div class="activity-time" style="min-width: 80px; color: ${priorityColor}; font-weight: 600; font-size: 0.875rem;">${formatTimeWithAMPM(item.time)}</div>
+                        <div style="font-size: 1.25rem; line-height: 1;">${item.icon}</div>
+                        <div style="flex: 1; min-width: 0;">
+                          <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" id="check-${item.id}" style="width: 18px; height: 18px; cursor: pointer; flex-shrink: 0;"
+                                   onchange="toggleHealthReminder('${item.id}', this.checked)" />
+                            <div class="reminder-content" style="flex: 1; min-width: 0;">
+                              <div class="reminder-title" style="font-weight: 600; color: ${priorityColor}; font-size: 0.875rem;">${item.title}</div>
+                              <p class="reminder-details" style="margin: 0.25rem 0 0 0; font-size: 0.813rem; color: var(--text-secondary); line-height: 1.4;">${item.details}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    `;
+                  }
+                }).join('')}
               </div>
             ` : '<p style="color: var(--text-secondary); font-style: italic;">No activities scheduled</p>'}
 
@@ -1358,9 +1977,73 @@
                 <div style="font-size: 0.875rem; color: #78350f;">${day.medical_notes}</div>
               </div>
             ` : ''}
+            </div>
           </div>
         `;
       }).join('');
+
+      // Initialize day cards after rendering
+      setTimeout(() => {
+        initializeDayCards();
+        loadHealthReminderStates();
+      }, 100);
+    }
+
+    // Load health reminder completion states from database
+    async function loadHealthReminderStates() {
+      if (!window.currentTrip || !window.currentTrip.id) return;
+
+      try {
+        const response = await fetch(`/api/health-reminders/${window.currentTrip.id}`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (!data.success || !data.health_reminders) return;
+
+        const healthReminders = data.health_reminders;
+
+        // Apply completion states to checkboxes
+        Object.keys(healthReminders).forEach(reminderId => {
+          const reminderData = healthReminders[reminderId];
+          if (!reminderData.completed) return;
+
+          const checkbox = document.getElementById(`check-${reminderId}`);
+          if (checkbox) {
+            checkbox.checked = true;
+            // Trigger the visual update without saving again
+            applyReminderCompletedStyle(reminderId);
+          }
+        });
+
+        console.log('✅ Loaded health reminder states from database');
+      } catch (error) {
+        console.error('Error loading health reminder states:', error);
+      }
+    }
+
+    // Apply completed styling to a reminder (without saving)
+    function applyReminderCompletedStyle(itemId) {
+      const itemElement = document.getElementById(`item-${itemId}`);
+      if (!itemElement) return;
+
+      const activityItem = itemElement.querySelector('.activity-item');
+      const reminderDetails = itemElement.querySelector('.reminder-details');
+      const timelineItem = itemElement;
+
+      // Minimize the item
+      activityItem.style.opacity = '0.6';
+      activityItem.style.padding = '0.5rem 1rem';
+      if (reminderDetails) {
+        reminderDetails.style.display = 'none';
+      }
+      timelineItem.style.maxHeight = '60px';
+      timelineItem.style.overflow = 'hidden';
+
+      // Add checkmark to title
+      const titleElement = itemElement.querySelector('.reminder-title');
+      if (titleElement && !titleElement.textContent.includes('✓')) {
+        titleElement.innerHTML = '<span style="color: #059669;">✓</span> ' + titleElement.innerHTML;
+      }
     }
 
     // Display trip details
@@ -1490,8 +2173,11 @@
 
     // Format dates
     function formatTripDates(start, end) {
-      const startDate = new Date(start);
-      const endDate = new Date(end);
+      // Parse dates in local timezone to avoid timezone shift
+      const [startYear, startMonth, startDay] = start.split('-').map(Number);
+      const [endYear, endMonth, endDay] = end.split('-').map(Number);
+      const startDate = new Date(startYear, startMonth - 1, startDay);
+      const endDate = new Date(endYear, endMonth - 1, endDay);
       const options = { month: 'short', day: 'numeric', year: 'numeric' };
       return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
     }
@@ -1518,11 +2204,304 @@
       document.getElementById(`tab-${tabName}`).classList.add('active');
     };
 
+    // Toggle activity details
+    window.toggleActivityDetails = function(activityId) {
+      const detailsElement = document.getElementById(activityId);
+      if (detailsElement) {
+        if (detailsElement.style.display === 'none' || detailsElement.style.display === '') {
+          detailsElement.style.display = 'block';
+        } else {
+          detailsElement.style.display = 'none';
+        }
+      }
+    };
+
+    // Toggle health reminder (minimize when checked)
+    window.toggleHealthReminder = async function(itemId, isChecked) {
+      const itemElement = document.getElementById(`item-${itemId}`);
+      if (!itemElement) return;
+
+      // Extract day index from the item
+      const dayCard = itemElement.closest('.day-card');
+      const dayIndex = dayCard ? parseInt(dayCard.getAttribute('data-day-index')) : 0;
+
+      const activityItem = itemElement.querySelector('.activity-item');
+      const reminderDetails = itemElement.querySelector('.reminder-details');
+      const timelineItem = itemElement;
+
+      if (isChecked) {
+        // Minimize the item
+        activityItem.style.opacity = '0.6';
+        activityItem.style.padding = '0.5rem 1rem';
+        if (reminderDetails) {
+          reminderDetails.style.display = 'none';
+        }
+        timelineItem.style.maxHeight = '60px';
+        timelineItem.style.overflow = 'hidden';
+
+        // Add checkmark to title
+        const titleElement = itemElement.querySelector('.reminder-title');
+        if (titleElement && !titleElement.textContent.includes('✓')) {
+          titleElement.innerHTML = '<span style="color: #059669;">✓</span> ' + titleElement.innerHTML;
+        }
+      } else {
+        // Expand the item
+        activityItem.style.opacity = '1';
+        activityItem.style.padding = '1rem';
+        if (reminderDetails) {
+          reminderDetails.style.display = 'block';
+        }
+        timelineItem.style.maxHeight = 'none';
+        timelineItem.style.overflow = 'visible';
+
+        // Remove checkmark from title
+        const titleElement = itemElement.querySelector('.reminder-title');
+        if (titleElement) {
+          titleElement.innerHTML = titleElement.innerHTML.replace(/<span[^>]*>✓<\/span>\s*/g, '');
+        }
+      }
+
+      // Save to database
+      if (window.currentTrip && window.currentTrip.id) {
+        try {
+          const response = await fetch('/api/health-reminders/complete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              trip_id: window.currentTrip.id,
+              reminder_id: itemId,
+              completed: isChecked,
+              day_index: dayIndex
+            })
+          });
+
+          if (!response.ok) {
+            console.error('Failed to save reminder state');
+            // Fallback to localStorage
+            const stateKey = `health_reminder_${itemId}`;
+            if (isChecked) {
+              localStorage.setItem(stateKey, 'completed');
+            } else {
+              localStorage.removeItem(stateKey);
+            }
+          }
+        } catch (error) {
+          console.error('Error saving reminder state:', error);
+          // Fallback to localStorage
+          const stateKey = `health_reminder_${itemId}`;
+          if (isChecked) {
+            localStorage.setItem(stateKey, 'completed');
+          } else {
+            localStorage.removeItem(stateKey);
+          }
+        }
+      }
+
+      // Check if all items in the day are completed and auto-advance
+      checkDayCompletion();
+    };
+
+    // Toggle day card collapse/expand
+    window.toggleDayCard = function(dayIndex) {
+      const dayContent = document.getElementById(`day-content-${dayIndex}`);
+      const collapseIcon = document.getElementById(`collapse-icon-${dayIndex}`);
+
+      if (!dayContent || !collapseIcon) return;
+
+      const isCollapsed = dayContent.style.maxHeight === '0px' || dayContent.style.display === 'none';
+
+      if (isCollapsed) {
+        // Expand
+        dayContent.style.display = 'block';
+        dayContent.style.maxHeight = 'none';
+        dayContent.style.opacity = '1';
+        collapseIcon.style.transform = 'rotate(0deg)';
+        localStorage.setItem(`day_${dayIndex}_collapsed`, 'false');
+      } else {
+        // Collapse
+        dayContent.style.maxHeight = '0px';
+        dayContent.style.opacity = '0';
+        collapseIcon.style.transform = 'rotate(-90deg)';
+        localStorage.setItem(`day_${dayIndex}_collapsed`, 'true');
+      }
+    };
+
+    // Check if day is complete and auto-advance to next day
+    window.checkDayCompletion = function() {
+      const dayCards = document.querySelectorAll('.day-card');
+
+      dayCards.forEach((dayCard, index) => {
+        const dayContent = document.getElementById(`day-content-${index}`);
+        if (!dayContent) return;
+
+        // Count ALL checkable items in this day (health reminders + regular timeline items)
+        const allCheckboxes = dayCard.querySelectorAll('input[type="checkbox"]');
+        let totalItems = 0;
+        let completedItems = 0;
+
+        allCheckboxes.forEach(checkbox => {
+          totalItems++;
+          if (checkbox.checked) {
+            completedItems++;
+          }
+        });
+
+        // If all items are completed and day is currently open, collapse it and open next
+        if (totalItems > 0 && completedItems === totalItems) {
+          const isExpanded = dayContent.style.maxHeight !== '0px' && dayContent.style.display !== 'none';
+
+          if (isExpanded) {
+            // Collapse current day
+            setTimeout(() => {
+              toggleDayCard(index);
+
+              // Open next day
+              const nextDayIndex = index + 1;
+              const nextDayContent = document.getElementById(`day-content-${nextDayIndex}`);
+              if (nextDayContent) {
+                const isNextCollapsed = nextDayContent.style.maxHeight === '0px' || nextDayContent.style.display === 'none';
+                if (isNextCollapsed) {
+                  toggleDayCard(nextDayIndex);
+
+                  // Scroll to next day
+                  const nextDayCard = document.getElementById(`day-card-${nextDayIndex}`);
+                  if (nextDayCard) {
+                    nextDayCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }
+              }
+            }, 500);
+          }
+        }
+      });
+    };
+
+    // Initialize day cards on page load (only Day 1 open)
+    window.initializeDayCards = function() {
+      const dayCards = document.querySelectorAll('.day-card');
+
+      dayCards.forEach((dayCard, index) => {
+        const dayContent = document.getElementById(`day-content-${index}`);
+        const collapseIcon = document.getElementById(`collapse-icon-${index}`);
+
+        if (!dayContent || !collapseIcon) return;
+
+        // Check localStorage for saved state
+        const savedState = localStorage.getItem(`day_${index}_collapsed`);
+
+        if (index === 0 && savedState === null) {
+          // Day 1: Open by default (first time)
+          dayContent.style.display = 'block';
+          dayContent.style.maxHeight = 'none';
+          dayContent.style.opacity = '1';
+          collapseIcon.style.transform = 'rotate(0deg)';
+        } else if (savedState === 'false') {
+          // Restore expanded state
+          dayContent.style.display = 'block';
+          dayContent.style.maxHeight = 'none';
+          dayContent.style.opacity = '1';
+          collapseIcon.style.transform = 'rotate(0deg)';
+        } else {
+          // Collapse all others
+          dayContent.style.display = 'none';
+          dayContent.style.maxHeight = '0px';
+          dayContent.style.opacity = '0';
+          collapseIcon.style.transform = 'rotate(-90deg)';
+        }
+      });
+    };
+
   </script>
 
   <style>
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+
+    /* Health reminder animations and styles */
+    .health-reminder-item {
+      transition: all 0.3s ease;
+    }
+
+    .health-reminder-item .activity-item {
+      transition: all 0.3s ease;
+      padding: 1rem;
+    }
+
+    .health-reminder-item .reminder-details {
+      transition: all 0.3s ease;
+    }
+
+    /* Timeline dot consistency */
+    .timeline-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Activity item hover effect */
+    .activity-item:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Checkbox styling */
+    input[type="checkbox"] {
+      accent-color: #059669;
+      border-radius: 4px;
+    }
+
+    input[type="checkbox"]:checked {
+      background-color: #059669;
+    }
+
+    /* Timeline line consistency */
+    .timeline-line {
+      background: linear-gradient(to bottom,
+        #e5e7eb 0%,
+        #d1d5db 50%,
+        #e5e7eb 100%
+      );
+    }
+
+    /* Smooth transitions for all timeline items */
+    .timeline-item {
+      transition: all 0.3s ease;
+    }
+
+    /* Day card collapsible styles */
+    .day-card {
+      transition: all 0.3s ease;
+    }
+
+    .day-header:hover {
+      background: rgba(0, 0, 0, 0.02);
+      border-radius: var(--radius-md);
+      padding: 0.5rem;
+      margin: -0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .collapse-icon {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      display: inline-block;
+    }
+
+    .day-content {
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+    }
+
+    /* Collapsed day card styling */
+    .day-card.collapsed {
+      opacity: 0.7;
+    }
+
+    /* Day card hover effect */
+    .day-card:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
     }
   </style>
 </body>

@@ -56,10 +56,38 @@ class ItineraryGenerator {
     preferences = [],
     accessibility_needs = [],
     dietary = [],
-    soloTravel = false
+    soloTravel = false,
+    userId = null,
+    wellnessData = null
   }) {
     try {
       console.log(`📅 Generating ${tripDuration}-day itinerary for ${city || destination}`);
+
+      // Fetch wellness data if userId provided and no wellness data passed
+      let medications = [];
+      let allergies = [];
+      let medicalConditions = [];
+
+      if (wellnessData) {
+        medications = wellnessData.medications || [];
+        allergies = wellnessData.allergies || [];
+        medicalConditions = wellnessData.conditions || [];
+        console.log(`💊 Loaded wellness data: ${medications.length} medications, ${allergies.length} allergies, ${medicalConditions.length} conditions`);
+      }
+
+      // Merge wellness conditions with passed conditions
+      const allConditions = [
+        ...conditions,
+        ...medicalConditions.map(c => this.normalizeConditionName(c.name))
+      ].filter((v, i, a) => a.indexOf(v) === i); // Remove duplicates
+
+      // Merge dietary restrictions from allergies
+      const allDietary = [
+        ...dietary,
+        ...allergies.filter(a => a.category === 'Food').map(a => a.allergen_name)
+      ].filter((v, i, a) => a.indexOf(v) === i);
+
+      console.log(`🏥 Health profile: ${allConditions.length} conditions, ${allDietary.length} dietary restrictions`);
 
       // Get relevant experiences from destination
       const experiences = await this.getDestinationExperiences({
@@ -67,7 +95,7 @@ class ItineraryGenerator {
         city,
         preferences,
         accessibility_needs,
-        dietary
+        dietary: allDietary
       });
 
       if (experiences.length === 0) {
@@ -76,20 +104,22 @@ class ItineraryGenerator {
 
       console.log(`✅ Found ${experiences.length} suitable experiences`);
 
-      // Generate day-by-day itinerary
+      // Generate day-by-day itinerary with wellness integration
       const itinerary = this.buildItinerary({
         experiences,
         tripDuration,
         startDate,
-        conditions,
+        conditions: allConditions,
         preferences,
-        soloTravel
+        soloTravel,
+        medications,
+        allergies
       });
 
       // Add medical safety and fatigue tracking
-      const enrichedItinerary = this.addHealthTracking(itinerary, conditions);
+      const enrichedItinerary = this.addHealthTracking(itinerary, allConditions, medications);
 
-      console.log(`✅ Generated ${enrichedItinerary.days.length}-day itinerary`);
+      console.log(`✅ Generated ${enrichedItinerary.days.length}-day itinerary with wellness integration`);
 
       return enrichedItinerary;
 
@@ -97,6 +127,20 @@ class ItineraryGenerator {
       console.error('Error generating itinerary:', error);
       throw error;
     }
+  }
+
+  /**
+   * Normalize condition name for consistency
+   */
+  normalizeConditionName(conditionName) {
+    const normalized = conditionName.toLowerCase();
+    if (normalized.includes('diabetes') && normalized.includes('type 1')) return 'type_1_diabetes';
+    if (normalized.includes('diabetes') && normalized.includes('type 2')) return 'type_2_diabetes';
+    if (normalized.includes('wheelchair')) return 'wheelchair_user';
+    if (normalized.includes('mobility')) return 'mobility_impaired';
+    if (normalized.includes('heart')) return 'heart_condition';
+    if (normalized.includes('asthma')) return 'asthma';
+    return conditionName.toLowerCase().replace(/\s+/g, '_');
   }
 
   /**
@@ -131,7 +175,7 @@ class ItineraryGenerator {
   /**
    * Build day-by-day itinerary with smart pacing
    */
-  buildItinerary({ experiences, tripDuration, startDate, conditions, preferences, soloTravel }) {
+  buildItinerary({ experiences, tripDuration, startDate, conditions, preferences, soloTravel, medications = [], allergies = [] }) {
     const days = [];
     let cumulativeFatigue = 0;
     const experiencesUsed = new Set();
@@ -139,7 +183,7 @@ class ItineraryGenerator {
     // Day 1 is always arrival/rest day
     const arrivalDate = startDate ? new Date(startDate) : new Date();
 
-    days.push(this.createArrivalDay(arrivalDate, conditions));
+    days.push(this.createArrivalDay(arrivalDate, conditions, medications));
     cumulativeFatigue += 20; // Arrival day baseline fatigue
 
     // Generate remaining days
@@ -151,7 +195,7 @@ class ItineraryGenerator {
       const needsRestDay = this.shouldBeRestDay(cumulativeFatigue, dayNum, tripDuration, conditions);
 
       if (needsRestDay) {
-        days.push(this.createRestDay(currentDate, dayNum, cumulativeFatigue, conditions));
+        days.push(this.createRestDay(currentDate, dayNum, cumulativeFatigue, conditions, medications));
         cumulativeFatigue = Math.max(20, cumulativeFatigue - 30); // Rest reduces fatigue
       } else {
         // Create activity day
@@ -163,7 +207,9 @@ class ItineraryGenerator {
           cumulativeFatigue,
           conditions,
           preferences,
-          soloTravel
+          soloTravel,
+          medications,
+          allergies
         });
 
         // Mark experiences as used
@@ -188,34 +234,26 @@ class ItineraryGenerator {
         solo_travel: soloTravel
       },
       days,
-      summary: this.generateSummary(days, conditions)
+      summary: this.generateSummary(days, conditions),
+      wellness_considerations: this.generateWellnessConsiderations(medications, allergies)
     };
   }
 
   /**
    * Create arrival day (Day 1)
    */
-  createArrivalDay(date, conditions) {
-    return {
-      day_number: 1,
-      date: date.toISOString().split('T')[0],
-      title: 'Arrival & Rest',
-      theme: 'Recovery from travel',
-      fatigue_risk: 20,
-      fatigue_level: 'Low (20/100) ✓',
-      medical_safety_score: 5,
-      medical_safety_display: '⭐⭐⭐⭐⭐',
-      activities: [
-        {
-          time: '09:00',
-          type: 'arrival',
-          title: 'Arrive at Airport',
-          description: 'Wheelchair assistance pre-booked, accessible transportation confirmed',
-          duration_hours: '2',
-          accessibility: ['wheelchair_accessible', 'medical_assistance_available'],
-          estimated_steps: 500,
-          medical_notes: 'Take time with customs, don\'t rush'
-        },
+  createArrivalDay(date, conditions, medications = []) {
+    const activities = [
+      {
+        time: '09:00',
+        type: 'arrival',
+        title: 'Arrive at Airport',
+        description: 'Wheelchair assistance pre-booked, accessible transportation confirmed',
+        duration_hours: '2',
+        accessibility: ['wheelchair_accessible', 'medical_assistance_available'],
+        estimated_steps: 500,
+        medical_notes: 'Take time with customs, don\'t rush'
+      },
         {
           time: '11:00',
           type: 'accommodation',
@@ -256,7 +294,21 @@ class ItineraryGenerator {
           duration_hours: '1.5',
           estimated_steps: 300
         }
-      ],
+      ];
+
+    // Add medication reminders to arrival day
+    const activitiesWithMeds = this.addMedicationRemindersToDay(activities, medications);
+
+    return {
+      day_number: 1,
+      date: date.toISOString().split('T')[0],
+      title: 'Arrival & Rest',
+      theme: 'Recovery from travel',
+      fatigue_risk: 20,
+      fatigue_level: 'Low (20/100) ✓',
+      medical_safety_score: 5,
+      medical_safety_display: '⭐⭐⭐⭐⭐',
+      activities: activitiesWithMeds,
       daily_steps_estimate: 800,
       fatigue_added: 20,
       rest_periods: 1,
@@ -321,7 +373,7 @@ class ItineraryGenerator {
   /**
    * Create activity day
    */
-  createActivityDay({ currentDate, dayNum, availableExperiences, cumulativeFatigue, conditions, preferences, soloTravel }) {
+  createActivityDay({ currentDate, dayNum, availableExperiences, cumulativeFatigue, conditions, preferences, soloTravel, medications = [], allergies = [] }) {
     const maxFatigueForDay = 45; // Conservative limit
     let dayFatigue = 0;
     const activities = [];
@@ -334,7 +386,7 @@ class ItineraryGenerator {
         type: 'experience',
         experience_id: morningExp.id,
         title: morningExp.name,
-        description: morningExp.description,
+        description: this.generateDetailedDescription(morningExp),
         duration_hours: morningExp.duration_hours || '2',
         activity_level: morningExp.activity_level,
         accessibility: morningExp.inclusion_tags || [],
@@ -342,7 +394,12 @@ class ItineraryGenerator {
         estimated_steps: this.estimateSteps(morningExp.activity_level, morningExp.duration_hours),
         medical_safety_features: this.extractMedicalFeatures(morningExp),
         dietary_accommodations: morningExp.dietary_accommodations || [],
-        local_tip: morningExp.local_tip
+        local_tip: morningExp.local_tip,
+        // NEW: Enhanced details
+        practical_info: this.generatePracticalInfo(morningExp),
+        insider_tips: this.generateInsiderTips(morningExp),
+        transportation: this.generateTransportationInfo(morningExp),
+        booking_info: this.generateBookingInfo(morningExp)
       });
 
       dayFatigue += this.activityIntensity[morningExp.activity_level] || 20;
@@ -369,10 +426,15 @@ class ItineraryGenerator {
         type: 'meal',
         experience_id: lunchExp.id,
         title: `Lunch at ${lunchExp.name}`,
-        description: lunchExp.description,
+        description: this.generateDetailedDescription(lunchExp),
         duration_hours: '1.5',
         dietary_accommodations: lunchExp.dietary_accommodations || [],
-        accessibility: lunchExp.inclusion_tags || []
+        accessibility: lunchExp.inclusion_tags || [],
+        // NEW: Enhanced details
+        practical_info: this.generatePracticalInfo(lunchExp),
+        insider_tips: this.generateInsiderTips(lunchExp),
+        transportation: this.generateTransportationInfo(lunchExp),
+        booking_info: this.generateBookingInfo(lunchExp)
       });
     }
 
@@ -400,6 +462,12 @@ class ItineraryGenerator {
       });
     }
 
+    // Add medication reminders to activity day
+    const activitiesWithMeds = this.addMedicationRemindersToDay(activities, medications);
+
+    // Add allergy warnings if restaurants are included
+    const allergyNotes = this.generateAllergyNotes(allergies);
+
     return {
       day_number: dayNum,
       date: currentDate.toISOString().split('T')[0],
@@ -407,15 +475,32 @@ class ItineraryGenerator {
       theme: morningExp?.type || 'Cultural exploration',
       fatigue_risk: Math.min(100, cumulativeFatigue + dayFatigue),
       fatigue_level: this.getFatigueLevel(cumulativeFatigue + dayFatigue),
-      medical_safety_score: this.calculateMedicalSafetyScore(activities),
-      medical_safety_display: this.getStarRating(this.calculateMedicalSafetyScore(activities)),
-      activities,
-      daily_steps_estimate: activities.reduce((sum, act) => sum + (act.estimated_steps || 0), 0),
+      medical_safety_score: this.calculateMedicalSafetyScore(activitiesWithMeds),
+      medical_safety_display: this.getStarRating(this.calculateMedicalSafetyScore(activitiesWithMeds)),
+      activities: activitiesWithMeds,
+      daily_steps_estimate: activitiesWithMeds.reduce((sum, act) => sum + (act.estimated_steps || 0), 0),
       fatigue_added: dayFatigue,
-      rest_periods: activities.filter(a => a.type === 'rest').length,
+      rest_periods: activitiesWithMeds.filter(a => a.type === 'rest').length,
       medical_notes: this.generateMedicalNotes(conditions, dayFatigue),
+      allergy_warnings: allergyNotes.length > 0 ? allergyNotes : null,
       fatigue_warning: dayFatigue > 40 ? 'If fatigue score >60 by noon, skip evening activity' : null
     };
+  }
+
+  /**
+   * Generate allergy warnings for meals
+   */
+  generateAllergyNotes(allergies) {
+    if (!allergies || allergies.length === 0) return [];
+
+    return allergies
+      .filter(a => a.category === 'Food' && (a.severity === 'Severe' || a.severity === 'Life-threatening'))
+      .map(a => ({
+        allergen: a.allergen_name,
+        severity: a.severity,
+        epipen_required: a.epipen_required,
+        warning: `Avoid ${a.allergen_name} - ${a.severity} allergy${a.epipen_required ? '. EpiPen required.' : ''}`
+      }));
   }
 
   /**
@@ -601,6 +686,252 @@ class ItineraryGenerator {
   }
 
   /**
+   * Generate detailed description for an experience
+   */
+  generateDetailedDescription(experience) {
+    const baseDesc = experience.description || '';
+    const type = experience.type || 'attraction';
+
+    // Add context based on type
+    let enhancedDesc = baseDesc;
+
+    // Add what to expect
+    const expectations = this.getExpectations(type, experience);
+    if (expectations) {
+      enhancedDesc += `\n\n${expectations}`;
+    }
+
+    // Add historical or cultural context if available
+    if (experience.historical_context) {
+      enhancedDesc += `\n\nHistorical Context: ${experience.historical_context}`;
+    }
+
+    return enhancedDesc;
+  }
+
+  /**
+   * Get expectations based on experience type
+   */
+  getExpectations(type, experience) {
+    const expectations = {
+      museum: 'You\'ll explore curated exhibits featuring art, artifacts, and interactive displays. Plan for 2-3 hours to fully appreciate the collection. Audio guides are usually available in multiple languages.',
+      historic_site: 'This landmark offers a glimpse into the past with preserved architecture and historical artifacts. Guided tours provide deeper insights into the site\'s significance. Wear comfortable shoes as you\'ll be walking and standing.',
+      restaurant: `Savor authentic local cuisine prepared with traditional techniques. The menu features seasonal ingredients and regional specialties. Reservations are ${experience.reservation_required ? 'highly recommended' : 'suggested during peak hours'}.`,
+      market: 'Browse stalls filled with fresh produce, artisan goods, and local specialties. This is a perfect opportunity to interact with locals and sample regional flavors. Bring cash as many vendors don\'t accept cards.',
+      tour: 'Join a knowledgeable local guide who will share stories, hidden gems, and insider knowledge about the area. Small group sizes ensure a personalized experience. Questions are encouraged!',
+      park: 'Enjoy green spaces, gardens, and scenic views. Perfect for a leisurely stroll or a relaxing break. Benches and shaded areas are available throughout.',
+      cultural_site: 'Experience local traditions, architecture, and community life. This venue offers insight into the cultural heritage and contemporary life of the region.'
+    };
+
+    return expectations[type] || 'Discover unique aspects of local culture and create memorable experiences.';
+  }
+
+  /**
+   * Generate practical information
+   */
+  generatePracticalInfo(experience) {
+    const info = [];
+
+    // Duration
+    const duration = experience.duration_hours || '2';
+    info.push(`Duration: ${duration} hours (allow extra time for photos and exploration)`);
+
+    // Best time to visit
+    const bestTime = this.getBestTimeToVisit(experience.type);
+    if (bestTime) {
+      info.push(`Best time: ${bestTime}`);
+    }
+
+    // Pricing (if available)
+    if (experience.price_range) {
+      info.push(`Price range: ${experience.price_range}`);
+    } else {
+      info.push(this.getEstimatedPrice(experience.type));
+    }
+
+    // What to bring
+    const bringItems = this.getWhatToBring(experience.type, experience);
+    if (bringItems.length > 0) {
+      info.push(`What to bring: ${bringItems.join(', ')}`);
+    }
+
+    return info;
+  }
+
+  /**
+   * Get best time to visit based on type
+   */
+  getBestTimeToVisit(type) {
+    const times = {
+      museum: 'Weekday mornings to avoid crowds',
+      historic_site: 'Early morning or late afternoon for better lighting and fewer tourists',
+      market: 'Early morning for freshest produce and full selection',
+      restaurant: 'Make reservations 1-2 weeks in advance for popular spots',
+      park: 'Late afternoon for beautiful golden hour light',
+      tour: 'Morning tours are typically less crowded'
+    };
+
+    return times[type] || null;
+  }
+
+  /**
+   * Get estimated price based on type
+   */
+  getEstimatedPrice(type) {
+    const prices = {
+      museum: 'Admission: $10-25 per person (discounts for students/seniors)',
+      historic_site: 'Admission: $15-30 per person (may include guided tour)',
+      restaurant: 'Budget $30-60 per person (including drinks)',
+      market: 'Free entry (budget for purchases)',
+      tour: 'Tours: $40-80 per person (includes guide)',
+      park: 'Free admission',
+      cafe: 'Budget $8-15 per person'
+    };
+
+    return prices[type] || 'Check official website for current pricing';
+  }
+
+  /**
+   * Generate what to bring recommendations
+   */
+  getWhatToBring(type, experience) {
+    const items = [];
+
+    if (type === 'museum' || type === 'historic_site') {
+      items.push('comfortable walking shoes', 'camera (no flash)', 'water bottle');
+    } else if (type === 'market') {
+      items.push('reusable shopping bag', 'cash', 'hand sanitizer');
+    } else if (type === 'restaurant') {
+      items.push('appetite!', 'reservation confirmation');
+    } else if (type === 'tour') {
+      items.push('comfortable shoes', 'water', 'sunscreen', 'camera');
+    } else if (type === 'park') {
+      items.push('sunscreen', 'hat', 'water', 'comfortable clothes');
+    }
+
+    // Add medical items if health conditions present
+    if (experience.medical_considerations) {
+      items.push('medical supplies', 'emergency contact info');
+    }
+
+    return items;
+  }
+
+  /**
+   * Generate insider tips
+   */
+  generateInsiderTips(experience) {
+    const tips = [];
+
+    // Use provided local tip if available
+    if (experience.local_tip) {
+      tips.push(experience.local_tip);
+    }
+
+    // Add type-specific tips
+    const typeTips = {
+      museum: 'Many museums offer free admission on certain days. Check the website before booking. Download their app for enhanced exhibits.',
+      historic_site: 'Consider hiring a private guide for a more personalized experience. They often know hidden stories not covered in audio guides.',
+      restaurant: 'Ask your server for daily specials - they\'re often made with the freshest seasonal ingredients and represent the chef\'s creativity.',
+      market: 'Visit near closing time for potential discounts, but arrive early for the best selection. Don\'t be shy to ask for samples!',
+      tour: 'Tip your guide 10-20% if you enjoyed the experience. Arrive 10 minutes early to get a good spot.',
+      park: 'Bring a picnic! Many locals do this, and there are usually designated areas with tables.',
+      cafe: 'Order in the local language if possible - it\'s appreciated and may lead to friendly conversations.'
+    };
+
+    if (typeTips[experience.type]) {
+      tips.push(typeTips[experience.type]);
+    }
+
+    // Add accessibility tips
+    if (experience.accessibility_notes && experience.accessibility_notes.toLowerCase().includes('wheelchair')) {
+      tips.push('Wheelchair-accessible entrance and facilities available. Contact venue in advance to ensure smooth access.');
+    }
+
+    return tips;
+  }
+
+  /**
+   * Generate transportation information
+   */
+  generateTransportationInfo(experience) {
+    const info = {
+      options: [],
+      estimated_time: null,
+      cost: null,
+      accessibility_notes: null
+    };
+
+    // Add generic transportation options
+    info.options = [
+      {
+        method: 'Metro/Subway',
+        details: 'Most convenient for city attractions. Purchase a day pass for unlimited rides.',
+        accessibility: 'Check station accessibility - not all have elevators'
+      },
+      {
+        method: 'Taxi/Rideshare',
+        details: 'Door-to-door service, ideal for those with mobility needs.',
+        accessibility: 'Request accessible vehicles in advance'
+      },
+      {
+        method: 'Walking',
+        details: 'If staying nearby, walking is a great way to discover the neighborhood.',
+        accessibility: 'Sidewalks vary - check route for accessibility'
+      }
+    ];
+
+    info.estimated_time = '20-30 minutes from city center';
+    info.cost = 'Public transit: $2-5 | Taxi: $15-25';
+
+    if (experience.accessibility_notes) {
+      info.accessibility_notes = 'Accessible transportation recommended. Notify driver of any special requirements.';
+    }
+
+    return info;
+  }
+
+  /**
+   * Generate booking and reservation information
+   */
+  generateBookingInfo(experience) {
+    const info = {
+      advance_booking: null,
+      cancellation: null,
+      contact: null,
+      tips: []
+    };
+
+    // Type-specific booking recommendations
+    if (experience.type === 'restaurant') {
+      info.advance_booking = 'Book 1-2 weeks in advance, especially for dinner. Popular spots fill up quickly.';
+      info.cancellation = 'Most restaurants require 24-48 hours notice for cancellations.';
+      info.tips.push('Mention any dietary restrictions when booking');
+      info.tips.push('Request accessible seating if needed');
+    } else if (experience.type === 'tour') {
+      info.advance_booking = 'Book tours 3-5 days in advance. Small group tours sell out faster.';
+      info.cancellation = 'Usually free cancellation up to 24 hours before tour time.';
+      info.tips.push('Confirm meeting point and time via email');
+      info.tips.push('Arrive 10 minutes early');
+    } else if (experience.type === 'museum' || experience.type === 'historic_site') {
+      info.advance_booking = 'Pre-book tickets online to skip lines. Timed entry slots available.';
+      info.cancellation = 'E-tickets are usually non-refundable but can be modified.';
+      info.tips.push('Book early morning or late afternoon slots for smaller crowds');
+      info.tips.push('Check for combo tickets if visiting multiple attractions');
+    } else {
+      info.advance_booking = 'Walk-ins welcome, but booking ahead ensures availability.';
+      info.tips.push('Check operating hours before visiting');
+    }
+
+    // Add accessibility booking notes
+    if (experience.accessibility_notes) {
+      info.tips.push('Contact venue in advance to arrange accessibility accommodations');
+    }
+
+    return info;
+  }
+
+  /**
    * Generate trip summary
    */
   generateSummary(days, conditions) {
@@ -618,6 +949,119 @@ class ItineraryGenerator {
       max_fatigue_level: Math.max(...days.map(d => d.fatigue_risk)),
       pacing: 'Conservative - optimized for health conditions'
     };
+  }
+
+  /**
+   * Generate wellness considerations summary
+   */
+  generateWellnessConsiderations(medications, allergies) {
+    const considerations = {
+      medication_reminders: [],
+      dietary_restrictions: [],
+      refrigeration_needed: false,
+      epipen_required: false,
+      emergency_contacts_needed: true
+    };
+
+    // Process medications
+    if (medications && medications.length > 0) {
+      medications.forEach(med => {
+        considerations.medication_reminders.push({
+          name: med.name,
+          dosage: med.dosage,
+          frequency: med.frequency,
+          time: med.time,
+          notes: med.notes
+        });
+
+        if (med.refrigeration_required) {
+          considerations.refrigeration_needed = true;
+        }
+      });
+    }
+
+    // Process allergies
+    if (allergies && allergies.length > 0) {
+      allergies.forEach(allergy => {
+        if (allergy.category === 'Food') {
+          considerations.dietary_restrictions.push({
+            allergen: allergy.allergen_name,
+            severity: allergy.severity,
+            symptoms: allergy.symptoms
+          });
+        }
+
+        if (allergy.epipen_required) {
+          considerations.epipen_required = true;
+        }
+      });
+    }
+
+    return considerations;
+  }
+
+  /**
+   * Get medication reminders for specific time of day
+   */
+  getMedicationReminders(medications, timeOfDay) {
+    if (!medications || medications.length === 0) return [];
+
+    return medications
+      .filter(med => {
+        const medTime = (med.time || '').toLowerCase();
+        return medTime.includes(timeOfDay.toLowerCase());
+      })
+      .map(med => ({
+        icon: '💊',
+        title: `Take ${med.name}`,
+        description: `${med.dosage} - ${med.frequency}${med.notes ? `. ${med.notes}` : ''}`,
+        time: timeOfDay,
+        type: 'medication',
+        importance: 'CRITICAL'
+      }));
+  }
+
+  /**
+   * Add medication reminders to daily activities
+   */
+  addMedicationRemindersToDay(activities, medications) {
+    if (!medications || medications.length === 0) return activities;
+
+    const enhancedActivities = [...activities];
+    const medicationTimes = {
+      'morning': '08:00',
+      'afternoon': '14:00',
+      'evening': '18:00',
+      'before meals': '12:00',
+      'after meals': '13:30'
+    };
+
+    // Group medications by time
+    medications.forEach(med => {
+      const medTime = (med.time || 'morning').toLowerCase();
+      const time = medicationTimes[medTime] || '09:00';
+
+      enhancedActivities.push({
+        time,
+        type: 'medication',
+        icon: '💊',
+        title: `Medication: ${med.name}`,
+        description: `${med.dosage} - ${med.frequency}${med.notes ? `. Note: ${med.notes}` : ''}`,
+        importance: 'CRITICAL',
+        refrigeration_required: med.refrigeration_required || false,
+        medical_notes: med.refrigeration_required ?
+          'Ensure medication is stored properly. Hotel fridge confirmed.' : null
+      });
+    });
+
+    // Sort activities by time
+    enhancedActivities.sort((a, b) => {
+      const timeA = a.time.replace(/:/g, '');
+      const timeB = b.time.replace(/:/g, '');
+      return timeA.localeCompare(timeB);
+    });
+
+    return enhancedActivities;
   }
 }
 

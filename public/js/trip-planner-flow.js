@@ -81,7 +81,10 @@ async function handleChatSubmit() {
 
     // All info collected - now fetch flights
     const prefs = planningState.preferences;
-    addChatMessage(`Perfect! Planning a ${prefs.budget} trip for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} from ${prefs.origin} to ${prefs.destination}.\n\nDates: ${prefs.startDate} to ${prefs.endDate}\n\nSearching for flights...`, 'assistant');
+    addChatMessage(`Perfect! Planning a ${prefs.budget} trip for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} from ${prefs.origin} to ${prefs.destination}.\n\nDates: ${prefs.startDate} to ${prefs.endDate}`, 'assistant');
+
+    // Show loading in preview section
+    showPreviewLoading('Searching for flights...', '✈️');
     planningState.step = 'searching';
     await fetchAndDisplayFlights(prefs);
     return;
@@ -120,7 +123,10 @@ async function handleChatSubmit() {
   }
 
   // All info provided - fetch flights
-  addChatMessage(`Perfect! Planning a ${prefs.budget} trip for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} from ${prefs.origin} to ${prefs.destination}.\n\nDates: ${prefs.startDate} to ${prefs.endDate}\n\nSearching for flights...`, 'assistant');
+  addChatMessage(`Perfect! Planning a ${prefs.budget} trip for ${prefs.travelers} traveler${prefs.travelers > 1 ? 's' : ''} from ${prefs.origin} to ${prefs.destination}.\n\nDates: ${prefs.startDate} to ${prefs.endDate}`, 'assistant');
+
+  // Show loading in preview section
+  showPreviewLoading('Searching for flights...', '✈️');
   planningState.step = 'searching';
   await fetchAndDisplayFlights(prefs);
 }
@@ -522,7 +528,10 @@ window.selectFlight = async function(flightId) {
   event.target.closest('.flight-option').style.borderColor = 'var(--primary)';
   event.target.closest('.flight-option').style.background = 'var(--primary-light)';
 
-  addChatMessage(`Great choice! ${flight.carrier} flight selected. Now let's find a hotel...`, 'assistant');
+  addChatMessage(`Great choice! ${flight.carrier} flight selected.`, 'assistant');
+
+  // Show loading in preview section for hotels
+  showPreviewLoading('Finding hotels...', '🏨');
 
   // Fetch and display hotels
   await fetchAndDisplayHotels();
@@ -640,7 +649,10 @@ window.selectHotel = async function(hotelId) {
   event.target.closest('.hotel-option').style.borderColor = 'var(--primary)';
   event.target.closest('.hotel-option').style.background = 'var(--primary-light)';
 
-  addChatMessage(`Perfect! ${hotel.name} selected. Creating your detailed itinerary...`, 'assistant');
+  addChatMessage(`Perfect! ${hotel.name} selected.`, 'assistant');
+
+  // Show loading in preview section for itinerary
+  showPreviewLoading('Creating your detailed itinerary...', '📅');
 
   // Generate and display visual itinerary
   await generateAndDisplayItinerary();
@@ -738,18 +750,27 @@ async function generateAndDisplayItinerary() {
         </svg>
         Save This Trip
       </button>
+      <p style="text-align: center; font-size: 0.813rem; color: var(--text-secondary); margin-top: 0.75rem; line-height: 1.5;">
+        💡 You can edit this itinerary anytime from the <strong>My Trips</strong> tab
+      </p>
     </div>
   `;
 
   preview.innerHTML = itineraryHTML;
+
   addChatMessage('Your personalized itinerary is ready! Review it and click "Save This Trip" when you\'re happy with it.', 'assistant');
 }
+
+// Track used images globally to prevent repetition
+const usedImages = new Set();
 
 /**
  * Generate enhanced itinerary using TripAdvisor + OpenAI
  */
 async function generateEnhancedItinerary(destination, startDate, endDate, preferences) {
   try {
+    // Clear used images for new trip
+    usedImages.clear();
     console.log('🚀 Calling enhanced itinerary API...');
 
     // Extract flight arrival/departure times
@@ -809,12 +830,16 @@ async function generateEnhancedItinerary(destination, startDate, endDate, prefer
     console.log('✅ Received enhanced itinerary with', data.itinerary.length, 'days');
 
     // Transform the API response to match our UI format
-    const itinerary = data.itinerary.map((day, idx) => {
-      // Fetch image for the day's highlight - use day index to ensure variety
-      const highlightImage = getCuratedImage(day.activities[0]?.name || destination, destination, idx);
+    const itinerary = data.itinerary.map((day, dayIdx) => {
+      // Use a unique combination of day index AND first activity name to ensure variety
+      const firstActivityName = day.activities[0]?.name || destination;
+      const firstActivityType = day.activities[0]?.type || 'attraction';
+
+      // Get unique image that hasn't been used yet
+      const highlightImage = getUniqueImage(firstActivityName, firstActivityType, destination, dayIdx);
 
       return {
-        title: day.title || `Day ${idx + 1}`,
+        title: day.title || `Day ${dayIdx + 1}`,
         date: day.date || '', // Add date field
         highlight: day.highlight || day.activities[0]?.name || `Explore ${destination}`,
         highlightImage: highlightImage,
@@ -910,8 +935,15 @@ async function generateMockItinerary(destination, startDate, endDate) {
     for (let dayIdx = 0; dayIdx < tripDays; dayIdx++) {
       const dayExperiences = selectedExperiences.slice(dayIdx * activitiesPerDay, (dayIdx + 1) * activitiesPerDay);
 
-      // Fetch image for the day's highlight experience
-      const highlightImage = await fetchImageForExperience(dayExperiences[0]?.name || destination, destination);
+      // Fetch image for the day's highlight experience with unique seed per day
+      const firstExpName = dayExperiences[0]?.name || destination;
+      const firstExpType = dayExperiences[0]?.type || 'attraction';
+      // Create unique seed combining day index, experience name, and type
+      // This ensures even similar activities on different days get different images
+      const nameHash = firstExpName.split('').reduce((acc, char, i) => acc + char.charCodeAt(0) * (i + 1), 0);
+      const typeHash = firstExpType.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const uniqueSeed = (dayIdx * 7919) + (nameHash % 1000) + (typeHash * 13);
+      const highlightImage = getCuratedImage(firstExpName, destination, uniqueSeed);
 
       // Generate realistic times based on day and activity type
       const activities = dayExperiences.map((exp, idx) => {
@@ -995,14 +1027,134 @@ async function fetchImageForExperience(experienceName, destination) {
 }
 
 /**
- * Get curated high-quality images from Unsplash with variety to avoid repetition
+ * Get a unique image that hasn't been used yet in this trip
  */
-function getCuratedImage(experienceName, destination, dayIndex = 0) {
+function getUniqueImage(experienceName, experienceType, destination, dayIndex) {
   const name = experienceName.toLowerCase();
   const dest = destination.toLowerCase();
 
-  // Create a seed from the experience name AND day index for varied images
-  const seed = experienceName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) + (dayIndex * 100);
+  // Calculate initial seed
+  const nameHash = experienceName.split('').reduce((acc, char, i) => acc + char.charCodeAt(0) * (i + 1), 0);
+  const typeHash = experienceType.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  let seed = (dayIndex * 7919) + (nameHash % 1000) + (typeHash * 13);
+
+  console.log(`🖼️ Getting unique image for Day ${dayIndex + 1}: "${experienceName}" (${experienceType})`);
+
+  // Get all possible images for this destination/type
+  const possibleImages = getAllImagesForCategory(name, dest);
+
+  // Filter out already used images
+  const availableImages = possibleImages.filter(img => !usedImages.has(img));
+
+  // If all images have been used, reset the tracker (start over)
+  if (availableImages.length === 0) {
+    console.log('⚠️ All images used, resetting tracker');
+    usedImages.clear();
+    availableImages.push(...possibleImages);
+  }
+
+  // Select an image from available ones using the seed
+  const selectedImage = availableImages[seed % availableImages.length];
+
+  // Mark this image as used
+  usedImages.add(selectedImage);
+
+  console.log(`  ✅ Selected image ${usedImages.size}/${possibleImages.length} (${availableImages.length} were available)`);
+
+  return selectedImage;
+}
+
+/**
+ * Get all possible images for a given category
+ */
+function getAllImagesForCategory(name, dest) {
+  // Paris specific images
+  if (dest.includes('paris')) {
+    if (name.includes('market') || name.includes('marché')) {
+      return [
+        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&h=400&fit=crop'
+      ];
+    } else if (name.includes('food') || name.includes('culinary') || name.includes('restaurant') || name.includes('bistro') || name.includes('cafe')) {
+      return [
+        'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800&h=400&fit=crop'
+      ];
+    } else if (name.includes('museum') || name.includes('gallery') || name.includes('louvre')) {
+      return [
+        'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1564399579883-451a5d44ec08?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3?w=800&h=400&fit=crop'
+      ];
+    } else {
+      // Paris generic
+      return [
+        'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1431274172761-fca41d930114?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1549144511-f099e773c147?w=800&h=400&fit=crop'
+      ];
+    }
+  }
+
+  // Rome specific images
+  if (dest.includes('rome') || dest.includes('roma')) {
+    if (name.includes('colosseum') || name.includes('colosseo')) {
+      return [
+        'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1548585744-6e6bf2c0b1c8?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1529260830199-42c24126f198?w=800&h=400&fit=crop'
+      ];
+    } else if (name.includes('food') || name.includes('restaurant')) {
+      return [
+        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=800&h=400&fit=crop'
+      ];
+    } else {
+      // Rome generic
+      return [
+        'https://images.unsplash.com/photo-1515542622106-78bda8ba0e5b?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1525874684015-58379d421a52?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?w=800&h=400&fit=crop'
+      ];
+    }
+  }
+
+  // Generic fallback - expanded array
+  return [
+    'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&h=400&fit=crop',
+    'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&h=400&fit=crop',
+    'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&h=400&fit=crop',
+    'https://images.unsplash.com/photo-1530521954074-e64f6810b32d?w=800&h=400&fit=crop',
+    'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&h=400&fit=crop',
+    'https://images.unsplash.com/photo-1503220317375-aaad61436b1b?w=800&h=400&fit=crop',
+    'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=800&h=400&fit=crop',
+    'https://images.unsplash.com/photo-1500835556837-99ac94a94552?w=800&h=400&fit=crop',
+    'https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?w=800&h=400&fit=crop',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=400&fit=crop'
+  ];
+}
+
+/**
+ * Get curated high-quality images from Unsplash with variety to avoid repetition
+ */
+function getCuratedImage(experienceName, destination, seedValue = 0) {
+  const name = experienceName.toLowerCase();
+  const dest = destination.toLowerCase();
+
+  // Use the provided seed value directly for maximum control
+  // This seed is calculated by the caller to ensure uniqueness
+  const seed = Math.abs(seedValue);
+
+  // Log for debugging
+  console.log(`🖼️ Getting image for "${experienceName}" in ${destination}, seed: ${seed}`);
 
   // Curated collections organized by destination and activity type
   // Each category has multiple images to avoid repetition
@@ -1044,9 +1196,13 @@ function getCuratedImage(experienceName, destination, dayIndex = 0) {
     } else {
       const generic = [
         'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&h=400&fit=crop',
-        'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&h=400&fit=crop'
+        'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?w=800&h=400&fit=crop',
+        'https://images.unsplash.com/photo-1431274172761-fca41d930114?w=800&h=400&fit=crop'
       ];
-      return generic[seed % generic.length];
+      const selectedImage = generic[seed % generic.length];
+      console.log(`  → Selected Paris generic image [${seed % generic.length}/${generic.length}]: ${selectedImage.substring(0, 60)}...`);
+      return selectedImage;
     }
   }
 
@@ -1164,14 +1320,22 @@ function getCuratedImage(experienceName, destination, dayIndex = 0) {
     ];
     return tours[seed % tours.length];
   } else {
-    // Generic travel images
+    // Generic travel images - EXPANDED ARRAY to avoid repetition
     const generic = [
       'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&h=400&fit=crop',
       'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&h=400&fit=crop',
       'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&h=400&fit=crop',
-      'https://images.unsplash.com/photo-1530521954074-e64f6810b32d?w=800&h=400&fit=crop'
+      'https://images.unsplash.com/photo-1530521954074-e64f6810b32d?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1503220317375-aaad61436b1b?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1500835556837-99ac94a94552?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?w=800&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=400&fit=crop'
     ];
-    return generic[seed % generic.length];
+    const selectedImage = generic[seed % generic.length];
+    console.log(`  → Selected generic travel image [${seed % generic.length}/${generic.length}]: ${selectedImage.substring(0, 60)}...`);
+    return selectedImage;
   }
 }
 
@@ -1511,11 +1675,41 @@ window.saveTrip = async function() {
 };
 
 /**
+ * Show loading animation in the Plan Preview section
+ * @param {string} message - Loading message to display
+ * @param {string} icon - Emoji icon to show
+ */
+function showPreviewLoading(message, icon = '⏳') {
+  const preview = document.getElementById('plan-preview');
+  preview.innerHTML = `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; text-align: center;">
+      <div style="font-size: 4rem; margin-bottom: 1.5rem; animation: pulse 2s ease-in-out infinite;">
+        ${icon}
+      </div>
+      <div style="font-weight: 600; font-size: 1.125rem; color: var(--text-primary); margin-bottom: 1rem;">
+        ${message}
+      </div>
+      <div class="loader-dots" style="display: flex; gap: 0.5rem;">
+        <div class="dot" style="width: 12px; height: 12px; background: var(--primary); border-radius: 50%; animation: dotPulse 1.4s infinite ease-in-out both;"></div>
+        <div class="dot" style="width: 12px; height: 12px; background: var(--primary); border-radius: 50%; animation: dotPulse 1.4s infinite ease-in-out both; animation-delay: -0.32s;"></div>
+        <div class="dot" style="width: 12px; height: 12px; background: var(--primary); border-radius: 50%; animation: dotPulse 1.4s infinite ease-in-out both; animation-delay: -0.16s;"></div>
+      </div>
+      <div style="margin-top: 1.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+        This may take a few moments...
+      </div>
+    </div>
+  `;
+}
+
+/**
  * Helper: Add message to chat
+ * @param {string} text - Message text
+ * @param {string} role - 'user' or 'assistant'
  */
 function addChatMessage(text, role) {
   const container = document.getElementById('chat-messages');
   const bubble = document.createElement('div');
+
   bubble.style.cssText = `
     display: flex;
     justify-content: ${role === 'user' ? 'flex-start' : 'flex-end'};
@@ -1533,8 +1727,8 @@ function addChatMessage(text, role) {
       ? 'background: white; border: 1px solid var(--border); color: var(--text-primary);'
       : 'background: var(--primary); color: white;'}
   `;
-  content.textContent = text;
 
+  content.textContent = text;
   bubble.appendChild(content);
   container.appendChild(bubble);
   container.scrollTop = container.scrollHeight;

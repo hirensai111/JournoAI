@@ -149,6 +149,27 @@ const TripService = {
     }
   },
 
+  async getTrip(tripId) {
+    if (!db) {
+      return { success: false, error: 'Firestore not initialized' };
+    }
+
+    try {
+      const tripRef = doc(db, Collections.TRIPS, tripId);
+      const docSnap = await getDoc(tripRef);
+
+      if (!docSnap.exists()) {
+        return { success: false, error: 'Trip not found' };
+      }
+
+      console.log(`✅ Retrieved trip: ${tripId}`);
+      return { success: true, data: { id: docSnap.id, ...docSnap.data() } };
+    } catch (error) {
+      console.error('❌ Error getting trip:', error.message);
+      return { success: false, error: error.message };
+    }
+  },
+
   async getUserTrips(userId) {
     if (!db) {
       return { success: true, trips: [] };

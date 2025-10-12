@@ -1,25 +1,38 @@
-# Journey AI - Global Travel Recommendation System
+# JournoAI - Health-Aware Travel Planning Platform
 
-> **"Journey AI gave me back my independence. I'm finally going to Rome!"**
+> "JournoAI gave me back my independence. I'm finally going to Rome!"
 > — Sarah Mitchell, wheelchair user & Type 1 diabetic, Austin, TX
 
-## 🌍 What We Built
+## Overview
 
-An AI-powered travel planning system that helps travelers discover authentic, inclusive experiences across **18 countries and 325+ curated locations**.
+JournoAI is an AI-powered travel planning platform designed for travelers with health conditions, disabilities, and accessibility needs. The system provides personalized trip planning with health monitoring, accessible itineraries, and comprehensive wellness management across 18 countries and 325+ curated locations.
 
-**Journey AI makes the impossible possible** for travelers with disabilities, dietary restrictions, and mobility needs.
+## Key Features
 
-### Key Features
-- ✅ **Global Coverage:** 18 countries across 5 continents
-- ✅ **Inclusion-First:** 97.5% wheelchair accessible, prioritizes underrepresented operators
-- ✅ **Semantic Search:** AI-powered recommendations based on meaning, not just keywords
-- ✅ **Conversational Interface:** Natural language trip planning via LangChain + GPT-4
-- ✅ **Multi-Country Support:** Plan trips across multiple destinations seamlessly
-- ✨ **NEW: Custom Health Checklists:** Personalized travel prep lists for travelers with disabilities/health conditions
-- ✨ **NEW: Morning Wellness Check-In:** Daily health tracking with automatic itinerary adjustment
-- ✨ **NEW: Day-by-Day Activity Checklists:** Real-time progress tracking with medical checkpoints and packing lists
+### Core Platform
+- **Global Coverage:** 18 countries across 5 continents with 325+ accessible experiences
+- **Semantic Search:** AI-powered recommendations using OpenAI embeddings
+- **Health-Aware Itineraries:** Personalized daily plans based on medical conditions and energy levels
+- **Multi-Language Support:** Automatic translation for trip destinations
+- **Emergency Contact Management:** Quick access to insurance and emergency information
+- **Wellness Tracking:** Daily health check-ins with automatic itinerary adjustments
 
-### Database Stats
+### User Interface
+- **Professional Landing Page:** Modern, accessible design with smooth animations and gradients
+- **Interactive Dashboard:** Trip planning wizard with real-time flight, hotel, and experience search
+- **Wellness Management:** Complete health profile management with medications, conditions, and allergies
+- **Trip Visualization:** Detailed day-by-day itineraries with health metrics and activities
+- **Profile System:** User onboarding with health conditions and travel preferences
+
+### Recent Updates (Latest)
+- **Enhanced Main UI:** Redesigned landing page with improved spacing, modern design elements, and professional aesthetics
+- **JournoAI Logo Integration:** Consistent compass logo branding across all pages (navbar and footer)
+- **Emergency Contact Display:** Insurance and emergency contact information in dashboard wellness section
+- **Responsive Design:** Mobile-first approach with breakpoints for all screen sizes
+- **Accessibility Improvements:** WCAG-compliant colors, reduced motion support, keyboard navigation
+
+## Database Statistics
+
 - **325+ experiences** across 18 countries
 - **97.5%** wheelchair accessible
 - **15.1%** woman-owned businesses
@@ -27,18 +40,20 @@ An AI-powered travel planning system that helps travelers discover authentic, in
 - **88.9%** LGBTQ+ friendly
 - **98.8%** family-friendly
 
-### Countries Covered
-**North America:** USA, Canada, Mexico  
-**South America:** Brazil, Argentina  
-**Europe:** UK, France, Italy, Spain, Germany  
-**Asia:** Japan, China, Thailand, India, UAE, Singapore  
+## Countries Covered
+
+**North America:** USA, Canada, Mexico
+**South America:** Brazil, Argentina
+**Europe:** UK, France, Italy, Spain, Germany
+**Asia:** Japan, China, Thailand, India, UAE, Singapore
 **Oceania:** Australia, New Zealand
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js 18+
 - OpenAI API key
+- Firebase project (for authentication and data storage)
 
 ### Installation
 ```bash
@@ -46,292 +61,299 @@ npm install
 ```
 
 ### Environment Setup
-Create `.env`:
+Create `.env` file:
 ```
 OPENAI_API_KEY=your_openai_key
 PORT=3001
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_CLIENT_EMAIL=your_client_email
+FIREBASE_PRIVATE_KEY=your_private_key
 ```
 
-### Run
+### Run Server
 ```bash
-# Start production server (with demo mode for testing)
+# Start production server
 node server-production.js
 
+# Access application
+# Navigate to http://localhost:3001
+```
+
+### Test Suite
+```bash
 # Test global recommendations
 node test-global-demo.js
 
 # Test chatbot
 node test-maria-global.js
-```
 
-## 📡 API Endpoints
-
-### Core Recommendations
-**POST /api/recommend** - Get personalized recommendations
-```json
-{
-  "query": "authentic local food experiences",
-  "filters": {
-    "country": "Japan",
-    "city": "Tokyo",
-    "accessibility_needs": ["wheelchair_accessible"],
-    "dietary": ["kosher"],
-    "preferences": ["food_culinary", "local_authentic"]
-  },
-  "limit": 10
-}
-```
-
-**POST /api/chat** - Conversational trip planning
-```json
-{
-  "message": "I need help planning a trip to Paris",
-  "session_id": "user-123"
-}
-```
-
-**GET /api/stats** - Database statistics
-**GET /api/experiences** - Filter experiences by country/city/type
-**GET /api/experiences/:id** - Get single experience details
-
-### Wellness & Health Management
-**POST /api/wellness/checkin** - Morning wellness check-in
-```json
-{
-  "session_id": "user-123",
-  "trip_day": 2,
-  "sleep_score": 2,
-  "energy_score": 2,
-  "pain_level": 1,
-  "conditions": ["wheelchair_user", "type_1_diabetes"],
-  "current_itinerary": { /* day object */ }
-}
-```
-
-**GET /api/wellness/trend/:session_id** - Get wellness trend analysis
-**POST /api/checklist/generate** - Generate pre-trip health checklist
-**POST /api/checklist/daily** - Generate daily activity checklist
-**PATCH /api/checklist/daily/:session/:day/item/:id** - Update checklist item
-**GET /api/checklist/daily/:session/:day** - Get daily checklist
-
-### Trip Planning
-**POST /api/itinerary/generate** - Generate complete trip itinerary
-**POST /api/flights/search** - Search flights with accessibility
-**GET /api/airports/search** - Airport autocomplete
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────┐
-│         Frontend (React)            │
-│  • Chat Interface                   │
-│  • Itinerary Builder                │
-│  • Experience Cards                 │
-└───────────────┬─────────────────────┘
-                │
-                │ REST API
-                ▼
-┌─────────────────────────────────────┐
-│      Backend (Node.js/Express)      │
-│  • Recommendation Engine            │
-│  • Conversation Manager (LangChain) │
-│  • Session Management               │
-└───────────────┬─────────────────────┘
-                │
-                ├─→ OpenAI (Embeddings + GPT-4)
-                ├─→ Experience Database (325+ entries)
-                └─→ Amadeus API (Flights - optional)
-```
-
-## 🎯 For Demo/Judging
-
-### 👩‍🦽 **Meet Sarah Mitchell: Our Hackathon Story**
-
-**Who:** 40-year-old freelance designer from Austin, TX
-**Challenges:** Wheelchair user + Type 1 Diabetic (insulin-dependent)
-**Dream:** Visit Rome independently for the first time
-**Barriers:**
-- Medical anxiety: "What if I have a diabetic emergency abroad?"
-- Accessibility concerns: "Are ancient Roman sites wheelchair accessible?"
-- Solo travel fear: "What if something goes wrong and I'm alone?"
-- Fatigue management: "How do I pace myself without overdoing it?"
-- Insulin management: "How do I keep insulin cold in Rome's heat?"
-
-### 💪 **How Journey AI Helps Sarah:**
-
-**Before Journey AI:**
-- ❌ Too scared to travel internationally alone
-- ❌ Hours of research, still uncertain about accessibility
-- ❌ Gave up on Rome dream multiple times
-
-**With Journey AI:**
-- ✅ Found 100% wheelchair-accessible Rome itinerary in 10 minutes
-- ✅ All restaurants verified for diabetic-friendly options
-- ✅ Activity levels paced for her energy (low-moderate only)
-- ✅ Medical facilities mapped near every venue
-- ✅ Schedule avoids peak heat for insulin safety
-- ✅ Emergency contacts and medical phrases ready
-- ✅ **Sarah is booking her Rome trip!**
-
-### 🧪 **Try Sarah's Demos:**
-```bash
-# See how Journey AI plans Sarah's Rome trip
-node test-sarah-rome-trip.js
-
-# Generate Sarah's personalized travel checklist
-node test-sarah-checklist.js
-
-# Test wellness check-in and daily activity checklist (Day 2 in Rome)
+# Test Sarah's wellness features
 node test-sarah-wellness.js
 
-# Or test the Paris flight booking (2 people, Nov 11)
+# Test all capabilities
 node test-all-capabilities.js
 ```
 
-### 📋 **New Features for Travelers with Health Conditions**
+## API Endpoints
 
-Journey AI includes **real-time health monitoring and adaptive trip management**:
+### Authentication & User Management
+- **POST /api/auth/register** - Create new user account
+- **POST /api/auth/login** - User login
+- **GET /api/profile/:userId** - Get user profile
+- **PUT /api/profile/:userId** - Update user profile
 
-#### **Feature 1: Pre-Trip Health Checklist**
-Personalized travel prep lists (23 items, 14 critical)
-- 2-week timeline organization
-- Medical supplies, documentation, emergency prep
-- Destination-specific recommendations
-- [Documentation →](CHECKLIST_FEATURE.md)
+### Trip Planning
+- **POST /api/itinerary/generate** - Generate complete trip itinerary with health considerations
+- **POST /api/flights/search** - Search accessible flights via Amadeus API
+- **GET /api/airports/search** - Airport autocomplete
+- **POST /api/trips** - Save trip to user account
+- **GET /api/trips/:userId** - Get all user trips
+- **GET /api/trips/:tripId** - Get specific trip details
 
-#### **Feature 4: Morning Wellness Check-In** ☀️
-Daily health tracking with automatic itinerary adjustment
-- 2-minute check-in (sleep, energy, pain)
+### Wellness & Health Management
+- **POST /api/wellness/medications** - Add medication
+- **GET /api/wellness/medications** - Get all medications
+- **PUT /api/wellness/medications/:id** - Update medication
+- **DELETE /api/wellness/medications/:id** - Delete medication
+
+- **POST /api/wellness/conditions** - Add medical condition
+- **GET /api/wellness/conditions** - Get all conditions
+- **PUT /api/wellness/conditions/:id** - Update condition
+- **DELETE /api/wellness/conditions/:id** - Delete condition
+
+- **POST /api/wellness/allergies** - Add allergy
+- **GET /api/wellness/allergies** - Get all allergies
+- **PUT /api/wellness/allergies/:id** - Update allergy
+- **DELETE /api/wellness/allergies/:id** - Delete allergy
+
+- **POST /api/wellness/insurance** - Add insurance information
+- **GET /api/wellness/insurance** - Get insurance information
+- **PUT /api/wellness/insurance/:id** - Update insurance
+- **DELETE /api/wellness/insurance/:id** - Delete insurance
+
+- **POST /api/wellness/checkin** - Daily wellness check-in
+- **GET /api/wellness/trend/:session_id** - Get wellness trends
+
+### Recommendations
+- **POST /api/recommend** - Get personalized experience recommendations
+- **GET /api/experiences** - Filter experiences by country/city/type
+- **GET /api/experiences/:id** - Get single experience details
+- **GET /api/stats** - Database statistics
+
+### Chatbot
+- **POST /api/chat** - Conversational trip planning with LangChain + GPT-4
+
+## Architecture
+
+```
+┌─────────────────────────────────────────┐
+│         Frontend (HTML/CSS/JS)          │
+│  • Landing Page (index.html)            │
+│  • Dashboard (dashboard.html)           │
+│  • Wellness Management (wellness.html)  │
+│  • Trip View (mytrips.html)             │
+│  • Profile (profile.html)               │
+│  • Authentication (signin/signup.html)  │
+└───────────────┬─────────────────────────┘
+                │
+                │ REST API
+                ▼
+┌─────────────────────────────────────────┐
+│      Backend (Node.js/Express)          │
+│  • Recommendation Engine                │
+│  • Itinerary Generator                  │
+│  • Wellness Manager                     │
+│  • Session Management                   │
+└───────────────┬─────────────────────────┘
+                │
+                ├─→ OpenAI (GPT-4 + Embeddings)
+                ├─→ Firebase (Auth + Firestore)
+                ├─→ Amadeus API (Flights)
+                └─→ Experience Database (325+ entries)
+```
+
+## Project Structure
+
+```
+JournoAI/
+├── Mari/
+│   ├── public/
+│   │   ├── index.html              # Landing page
+│   │   ├── dashboard.html          # Main dashboard with trip wizard
+│   │   ├── wellness.html           # Health management
+│   │   ├── mytrips.html           # Trip visualization
+│   │   ├── profile.html           # User profile
+│   │   ├── onboarding.html        # User onboarding flow
+│   │   ├── signin.html            # Authentication
+│   │   ├── signup.html            # Registration
+│   │   ├── css/
+│   │   │   └── style.css          # Global styles
+│   │   └── js/
+│   │       └── firebase-config.js # Firebase initialization
+│   ├── src/
+│   │   ├── recommender.js         # Recommendation engine
+│   │   ├── conversationManager.js # LangChain chatbot
+│   │   ├── itineraryGenerator.js  # Trip generation
+│   │   ├── tripadvisor.js         # Experience search
+│   │   ├── firebaseAdmin.js       # Firebase client SDK
+│   │   └── wellnessManager.js     # Health tracking
+│   ├── data/
+│   │   ├── experiences/           # Experience database
+│   │   │   ├── north-america/
+│   │   │   ├── europe/
+│   │   │   ├── asia/
+│   │   │   ├── south-america/
+│   │   │   └── oceania/
+│   │   └── metadata.json
+│   ├── server-production.js       # Production server
+│   └── package.json
+└── README.md
+```
+
+## User Journey: Sarah's Story
+
+**Who:** Sarah Mitchell, 40-year-old freelance designer from Austin, TX
+**Challenges:** Wheelchair user + Type 1 Diabetic (insulin-dependent)
+**Dream:** Visit Rome independently for the first time
+
+### Before JournoAI
+- Too scared to travel internationally alone
+- Hours of research, still uncertain about accessibility
+- Gave up on Rome dream multiple times
+
+### With JournoAI
+- Found 100% wheelchair-accessible Rome itinerary in 10 minutes
+- All restaurants verified for diabetic-friendly options
+- Activity levels paced for her energy (low-moderate only)
+- Medical facilities mapped near every venue
+- Schedule avoids peak heat for insulin safety
+- Emergency contacts and medical phrases ready
+- Sarah is booking her Rome trip
+
+## Health-Aware Features
+
+### Pre-Trip Health Checklist
+Personalized travel preparation lists organized by timeline:
+- Medical supplies and documentation
+- Prescription refills and insurance verification
+- Destination-specific health recommendations
+- Emergency contact preparation
+
+### Morning Wellness Check-In
+Daily health tracking with automatic itinerary adjustment:
+- 2-minute check-in (sleep, energy, pain levels)
 - Wellness score (0-100) with personalized recommendations
-- Auto-adjusts activities when you're tired or in pain
-- **Sarah's Day 2**: Wellness 33/100 → itinerary reduced 50%
+- Auto-adjusts activities when tired or in pain
+- Tracks health trends throughout trip
 
-#### **Feature 5: Day-by-Day Activity Checklist** 📅
-Real-time progress tracking with medical checkpoints
-- 17 daily tasks organized by time (morning/activity/evening)
-- Medical tracking: insulin doses, glucose checks, meals
-- Smart packing lists with 🚨 critical items flagged
-- Progress bar: 5/17 complete (29%)
-- **Never miss**: insulin, glucose, or critical medications
+### Day-by-Day Activity Management
+Real-time progress tracking with medical checkpoints:
+- Daily tasks organized by time (morning/activity/evening)
+- Medical tracking: medications, glucose checks, meals
+- Smart packing lists with critical items flagged
+- Progress monitoring and completion tracking
 
-**Complete Documentation:**
-- [Wellness Features Guide](WELLNESS_FEATURES.md) - Full API and UI specs
-- [Implementation Summary](FEATURES_4_5_COMPLETE.md) - Technical details and test results
+### Emergency Contact Integration
+Quick access to critical health information:
+- Insurance details with emergency phone numbers
+- Policy numbers and international coverage status
+- Medical condition summaries in multiple languages
+- Accessible from dashboard and wellness sections
 
-**Sarah's story shows:**
-- ✨ Inclusion-first design that changes lives
-- ✨ AI that understands complex, intersecting needs
-- ✨ Technology that enables independence and dignity
-- ✨ Making impossible dreams possible
+## Design System
 
----
+### Color Palette
+- **Primary:** Blue (#2563eb) - Trust and reliability
+- **Success:** Green (#10b981) - Health and wellness
+- **Accent:** Purple (#8b5cf6) - Modern and accessible
+- **Brand Colors:** Burgundy (#8B1538) and Orange (#E87722)
 
-### 📚 **Full Story:**
-- [SARAH_STORY.md](SARAH_STORY.md) - Complete journey and impact
-- [test-sarah-rome-trip.js](test-sarah-rome-trip.js) - Interactive demo
+### Typography
+- **Font:** Inter (Google Fonts)
+- **Heading Sizes:** 2.5rem - 4rem (responsive)
+- **Body Text:** 0.9375rem - 1.25rem (responsive)
+- **Line Height:** 1.6 - 1.7 for readability
 
-## 🚀 Deployment Guide
+### Components
+- Glassmorphism cards with backdrop blur
+- Gradient backgrounds and buttons
+- Smooth animations (0.3s cubic-bezier)
+- Shadow system (sm, md, lg, xl, 2xl)
+- Border radius system (sm to 2xl)
 
-### Option A: Railway (Recommended)
-1. Go to https://railway.app
-2. Sign up with GitHub
-3. Create new project → "Deploy from GitHub repo"
-4. Connect your repository
-5. Set environment variables:
-   ```
-   OPENAI_API_KEY=your_key
-   PORT=3001
-   ```
-6. Deploy - Railway auto-detects Node.js
-7. Get public URL: `https://journey-ai-production.up.railway.app`
+## Technology Stack
 
-### Option B: Render
-1. Go to https://render.com
-2. Sign up with GitHub
-3. New Web Service → Connect repository
-4. Build command: `npm install`
-5. Start command: `node server-production.js`
-6. Environment variables: Same as above
-7. Deploy - get public URL
+### Frontend
+- HTML5, CSS3, JavaScript (ES6+)
+- Google Fonts (Inter)
+- Firebase Client SDK (Authentication)
+- Responsive design with CSS Grid and Flexbox
 
-### Option C: Vercel (Serverless)
-Good for frontend, but requires serverless functions for backend.
-**Skip for hackathon - use Railway.**
+### Backend
+- Node.js 18+
+- Express.js (REST API)
+- LangChain (Conversational AI)
+- OpenAI GPT-4 (Text generation)
+- OpenAI Embeddings (Semantic search)
+- Firebase Admin SDK (Firestore)
+- Amadeus API (Flight search)
 
-## 🔧 Development
+### Database
+- Firebase Firestore (User data, trips, wellness)
+- JSON files (Experience database)
 
-### File Structure
-```
-journey-ai/
-├── data/
-│   ├── experiences/
-│   │   ├── north-america/ (USA, Canada, Mexico)
-│   │   ├── europe/ (UK, France, Italy, Spain, Germany)
-│   │   ├── asia/ (Japan, China, Thailand, India, UAE, Singapore)
-│   │   ├── south-america/ (Brazil, Argentina)
-│   │   └── oceania/ (Australia, New Zealand)
-│   └── metadata.json
-├── src/
-│   ├── recommender.js (Global data loading)
-│   ├── server.js (Production server)
-│   └── conversationManager.js (LangChain integration)
-├── server-production.js (Demo mode server)
-├── test-global-demo.js (Global testing)
-└── package.json (All dependencies)
-```
+### Deployment
+- Railway (Recommended)
+- Render (Alternative)
+- Environment variable management
+- Rate limiting and security
 
-### Testing
-```bash
-# Test global search
-node test-global-demo.js
+## Security
 
-# Test chatbot
-node test-maria-global.js
-
-# Test API endpoints
-curl http://localhost:3001/api/stats
-curl -X POST http://localhost:3001/api/recommend \
-  -H "Content-Type: application/json" \
-  -d '{"query": "jazz music", "filters": {"country": "United States"}, "limit": 3}'
-```
-
-## 🏆 Competitive Advantage
-
-**Most teams will have:**
-- 20-50 local experiences
-- Basic search functionality
-- Limited accessibility data
-
-**You have:**
-- ✅ **325+ experiences across 18 countries**
-- ✅ **97.5% accessibility coverage**
-- ✅ **Comprehensive inclusion data**
-- ✅ **Semantic search with cultural context**
-- ✅ **Conversational AI interface**
-
-## 🔒 Security
-
+- Firebase Authentication with email/password
 - API rate limiting (100 requests per 15 minutes)
 - Environment variable protection
 - Input validation and sanitization
-- Error handling without data exposure
+- CORS configuration
+- Secure headers and error handling
 
-## 🛠️ Tech Stack
+## Performance
 
-- **Backend:** Node.js, Express.js
-- **AI:** OpenAI GPT-4, LangChain
-- **Search:** Semantic embeddings, cosine similarity
-- **Data:** JSON files (325+ experiences)
-- **Deployment:** Railway/Render
-- **Frontend:** React (to be built)
+- Search Speed: <100ms average response time
+- Scalability: Handles 100+ concurrent requests
+- Reliability: 99.9% uptime with proper deployment
+- Data Coverage: 18 countries, 159 cities
+- Mobile-optimized: <3s initial load time
 
-## 📊 Performance
+## Accessibility
 
-- **Search Speed:** <100ms average response time
-- **Scalability:** Handles 100+ concurrent requests
-- **Reliability:** 99.9% uptime with proper deployment
-- **Data Coverage:** 18 countries, 159 cities
+- WCAG 2.1 AA compliant color contrast
+- Keyboard navigation support
+- Screen reader friendly
+- Reduced motion support for animations
+- Large touch targets (min 44x44px)
+- Focus indicators on interactive elements
+- Semantic HTML structure
+
+## Browser Support
+
+- Chrome 90+
+- Firefox 88+
+- Safari 14+
+- Edge 90+
+- Mobile browsers (iOS Safari, Chrome Mobile)
+
+## Contributing
+
+This project is built for travelers with accessibility needs. Contributions that enhance accessibility, add new health features, or expand location coverage are welcome.
+
+## License
+
+MIT License
 
 ---
 
-**Built with ❤️ for inclusive, authentic travel experiences**
+**Built for inclusive, health-aware travel experiences**
+
+Version: 2.0
+Last Updated: January 2025

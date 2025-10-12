@@ -10,6 +10,7 @@ import { searchHotels } from '../../lib/trips/adapters/booking.js';
 import { searchHotelsHotelbeds } from '../../lib/trips/adapters/hotelbeds.js';
 import { searchExperiences } from '../../lib/trips/adapters/experiences.js';
 import { generateEnhancedItinerary } from '../../lib/trips/adapters/tripadvisor.js';
+import ItineraryGenerator from '../itineraryGenerator.js';
 import { TripService } from '../firebaseAdmin.js';
 
 const router = express.Router();
@@ -152,7 +153,7 @@ router.post('/experiences', async (req, res) => {
  */
 router.post('/itinerary/enhanced', async (req, res) => {
   try {
-    const { destination, startDate, endDate, preferences, flightInfo } = req.body;
+    const { destination, startDate, endDate, preferences, flightInfo, userId } = req.body;
 
     if (!destination || !startDate || !endDate) {
       return res.status(400).json({
@@ -167,18 +168,38 @@ router.post('/itinerary/enhanced', async (req, res) => {
       console.log('Flight info:', flightInfo);
     }
 
-    const itinerary = await generateEnhancedItinerary(
-      destination,
-      startDate,
-      endDate,
-      preferences || {},
-      flightInfo || null
-    );
+    // Calculate trip duration
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const tripDuration = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+    // Create itinerary generator instance
+    const generator = new ItineraryGenerator();
+
+    // Generate detailed itinerary with all the extra fields
+    const itineraryData = await generator.generateItinerary({
+      destination: destination,
+      city: destination,
+      tripDuration: tripDuration,
+      startDate: startDate,
+      conditions: preferences?.accessibility || [],
+      preferences: preferences?.vibe || [],
+      accessibility_needs: preferences?.accessibility || [],
+      dietary: [],
+      soloTravel: false,
+      userId: userId || null,
+      wellnessData: null,
+      flightInfo: flightInfo || null
+    });
+
+    // Transform the response to match frontend expectations
+    // The generator returns { itinerary: [...days] }
+    const days = itineraryData.itinerary || [];
 
     res.json({
       success: true,
-      itinerary,
-      count: itinerary.length
+      itinerary: days,
+      count: days.length
     });
   } catch (error) {
     console.error('Error generating enhanced itinerary:', error);

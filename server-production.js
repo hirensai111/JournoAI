@@ -878,6 +878,75 @@ app.post('/api/trip-assistant/update', async (req, res) => {
   }
 });
 
+// Health Reminder Completion Endpoints
+app.post('/api/health-reminders/complete', async (req, res) => {
+  try {
+    const { trip_id, reminder_id, completed, day_index } = req.body;
+
+    if (!trip_id || !reminder_id) {
+      return res.status(400).json({ error: 'trip_id and reminder_id are required' });
+    }
+
+    // Get the trip
+    const tripResult = await TripService.getTrip(trip_id);
+    if (!tripResult.success) {
+      return res.status(404).json({ error: 'Trip not found' });
+    }
+
+    const trip = tripResult.data;
+
+    // Initialize health_reminders if not exists
+    if (!trip.health_reminders) {
+      trip.health_reminders = {};
+    }
+
+    // Store completion state
+    trip.health_reminders[reminder_id] = {
+      completed,
+      day_index,
+      completed_at: completed ? new Date().toISOString() : null
+    };
+
+    // Update trip in database
+    const updateResult = await TripService.updateTrip(trip_id, trip);
+
+    if (updateResult.success) {
+      res.json({
+        success: true,
+        reminder_id,
+        completed
+      });
+    } else {
+      res.status(500).json({ error: updateResult.error });
+    }
+  } catch (error) {
+    console.error('Health reminder completion error:', error);
+    res.status(500).json({ error: 'Failed to update reminder', message: error.message });
+  }
+});
+
+app.get('/api/health-reminders/:trip_id', async (req, res) => {
+  try {
+    const { trip_id } = req.params;
+
+    // Get the trip
+    const tripResult = await TripService.getTrip(trip_id);
+    if (!tripResult.success) {
+      return res.status(404).json({ error: 'Trip not found' });
+    }
+
+    const trip = tripResult.data;
+
+    res.json({
+      success: true,
+      health_reminders: trip.health_reminders || {}
+    });
+  } catch (error) {
+    console.error('Get health reminders error:', error);
+    res.status(500).json({ error: 'Failed to get reminders', message: error.message });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
@@ -1016,6 +1085,8 @@ async function startServer() {
       console.log(`   POST /api/bookingcom/hotels/search - Booking.com hotel search`);
       console.log(`   POST /api/trip/plan - Complete trip planning (flights+hotels+itinerary)`);
       console.log(`   GET  /api/user/:user_id/trips - Get user's trips`);
+      console.log(`   POST /api/health-reminders/complete - Save health reminder completion`);
+      console.log(`   GET  /api/health-reminders/:trip_id - Get health reminder states`);
       console.log(`   GET  /api/health - Health check`);
     });
   } catch (error) {

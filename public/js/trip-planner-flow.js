@@ -353,6 +353,9 @@ function generateFlightOptions(baseFlight, prefs) {
   // Base duration varies by route
   const baseDuration = 660; // 11 hours as default
 
+  // Generate departure times (morning, afternoon, evening, red-eye)
+  const departureHours = [8, 11, 16, 22]; // 8am, 11am, 4pm, 10pm
+
   for (let i = 0; i < 5; i++) {
     const price = baseFlight.priceTotal + (Math.random() * 400 - 200);
     const stops = i % 3 === 0 ? 0 : i % 3 === 1 ? 1 : 2;
@@ -368,6 +371,19 @@ function generateFlightOptions(baseFlight, prefs) {
       duration += 300 + (Math.random() * 60); // Add 5-6 hours
     }
 
+    // Generate departure and arrival times
+    const departureHour = departureHours[i % departureHours.length];
+    const departureMinute = Math.floor(Math.random() * 60);
+    const departureTime = `${departureHour.toString().padStart(2, '0')}:${departureMinute.toString().padStart(2, '0')}`;
+
+    // Calculate arrival time (departure + duration + timezone difference)
+    const durationInMinutes = Math.round(duration); // Ensure integer
+    const timezoneOffset = 360; // +6 hours for Boston to Paris
+    const arrivalTotalMinutes = (departureHour * 60 + departureMinute + durationInMinutes + timezoneOffset) % (24 * 60);
+    const arrivalHour = Math.floor(arrivalTotalMinutes / 60);
+    const arrivalMinute = Math.floor(arrivalTotalMinutes % 60); // Ensure integer
+    const arrivalTime = `${arrivalHour.toString().padStart(2, '0')}:${arrivalMinute.toString().padStart(2, '0')}`;
+
     flights.push({
       id: `flight-${i}`,
       carrier: carriers[i % carriers.length],
@@ -377,7 +393,9 @@ function generateFlightOptions(baseFlight, prefs) {
       currency: 'USD',
       departureAirport,
       arrivalAirport,
-      duration: Math.round(duration)
+      duration: Math.round(duration),
+      departureTime,
+      arrivalTime
     });
   }
 
@@ -395,17 +413,19 @@ function displayFlightSelection(flights) {
       <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
         <div>
           <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">${flight.carrier}</div>
-          <div style="font-size: 0.875rem; color: var(--text-secondary);">${flight.departureAirport} → ${flight.arrivalAirport}</div>
+          <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+            ${flight.departureAirport} ${flight.departureTime || ''} → ${flight.arrivalAirport} ${flight.arrivalTime || ''}
+          </div>
+          <div style="display: flex; gap: 1rem; font-size: 0.75rem; color: var(--text-muted);">
+            <span>✈️ ${flight.cabin}</span>
+            <span>⏱️ ${Math.floor(flight.duration / 60)}h ${flight.duration % 60}m</span>
+            <span>${flight.stops === 0 ? '🎯 Direct' : `🔄 ${flight.stops} stop${flight.stops > 1 ? 's' : ''}`}</span>
+          </div>
         </div>
         <div style="text-align: right;">
           <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary);">$${flight.priceTotal}</div>
           <div style="font-size: 0.75rem; color: var(--text-muted);">per person</div>
         </div>
-      </div>
-      <div style="display: flex; gap: 1rem; font-size: 0.813rem; color: var(--text-secondary);">
-        <span>✈️ ${flight.cabin}</span>
-        <span>⏱️ ${Math.floor(flight.duration / 60)}h ${flight.duration % 60}m</span>
-        <span>${flight.stops === 0 ? '🎯 Direct' : `🔄 ${flight.stops} stop${flight.stops > 1 ? 's' : ''}`}</span>
       </div>
     </div>
   `).join('');
@@ -565,12 +585,16 @@ async function generateAndDisplayItinerary() {
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
         <div style="border: 1px solid var(--border); border-radius: 8px; padding: 1rem; background: var(--bg-secondary);">
           <div style="font-weight: 600; margin-bottom: 0.5rem;">✈️ ${flight.carrier}</div>
-          <div style="font-size: 0.875rem; color: var(--text-secondary);">${flight.departureAirport} → ${flight.arrivalAirport}</div>
+          <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+            ${prefs.startDate} • ${flight.departureAirport} ${flight.departureTime} → ${flight.arrivalAirport} ${flight.arrivalTime}
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">⏱️ ${Math.floor(flight.duration / 60)}h ${flight.duration % 60}m • ${flight.stops === 0 ? 'Direct' : `${flight.stops} stop${flight.stops > 1 ? 's' : ''}`}</div>
           <div style="font-size: 0.875rem; color: var(--primary); font-weight: 600; margin-top: 0.25rem;">$${flight.priceTotal}</div>
         </div>
         <div style="border: 1px solid var(--border); border-radius: 8px; padding: 1rem; background: var(--bg-secondary);">
           <div style="font-weight: 600; margin-bottom: 0.5rem;">🏨 ${hotel.name}</div>
           <div style="font-size: 0.875rem; color: var(--text-secondary);">${hotel.neighborhood} • ${hotel.rating}/10</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">${prefs.startDate} to ${prefs.endDate} • ${tripDays} nights</div>
           <div style="font-size: 0.875rem; color: var(--primary); font-weight: 600; margin-top: 0.25rem;">$${hotel.pricePerNight}/night</div>
         </div>
       </div>
@@ -631,11 +655,16 @@ async function generateMockItinerary(destination, startDate, endDate) {
     const end = new Date(endDate || planningState.preferences?.endDate);
     const tripDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
 
+    console.log(`Generating itinerary for ${destination}: ${tripDays} days (${startDate} to ${endDate})`);
+
     // Fetch experiences for the destination
-    const experiences = await fetchExperiencesForDestination(destination);
+    let experiences = await fetchExperiencesForDestination(destination);
+
+    console.log(`Fetched ${experiences?.length || 0} experiences for ${destination}`);
 
     if (!experiences || experiences.length === 0) {
       // Fallback to generic itinerary if no experiences found
+      console.warn(`No experiences found for ${destination}, using fallback with ${tripDays} days`);
       return generateFallbackItinerary(destination, tripDays);
     }
 
@@ -658,31 +687,86 @@ async function generateMockItinerary(destination, startDate, endDate) {
       'historic_site': '🏺'
     };
 
-    const timeSlots = ['9:00 AM', '12:00 PM', '3:00 PM', '7:00 PM'];
+    // Get flight arrival time to adjust Day 1 schedule
+    const flight = planningState.selectedFlight;
+    const flightArrivalHour = flight?.arrivalTime ? parseInt(flight.arrivalTime.split(':')[0]) : 15;
 
     // Calculate activities per day (3 activities per day)
     const activitiesPerDay = 3;
     const totalActivities = tripDays * activitiesPerDay;
 
+    // If we don't have enough experiences, generate more generic ones
+    if (experiences.length < totalActivities) {
+      console.log(`Only ${experiences.length} experiences available, need ${totalActivities}. Adding generic experiences...`);
+
+      const additionalExperiences = generateGenericExperiences(
+        destination,
+        totalActivities - experiences.length
+      );
+
+      experiences = [...experiences, ...additionalExperiences];
+      console.log(`Total experiences after adding generics: ${experiences.length}`);
+    }
+
     // Select diverse experiences for the full trip
     const selectedExperiences = selectDiverseExperiences(experiences, totalActivities);
 
-    // Group into days
+    // Group into days with smart timing
     const days = [];
     for (let dayIdx = 0; dayIdx < tripDays; dayIdx++) {
       const dayExperiences = selectedExperiences.slice(dayIdx * activitiesPerDay, (dayIdx + 1) * activitiesPerDay);
 
-      days.push({
-        title: getDayTitle(dayIdx, tripDays),
-        highlight: dayExperiences[0]?.name || `Explore ${destination}`,
-        activities: dayExperiences.map((exp, idx) => ({
+      // Generate realistic times based on day and activity type
+      const activities = dayExperiences.map((exp, idx) => {
+        let time;
+
+        if (dayIdx === 0) {
+          // Day 1: Adjust for flight arrival
+          if (flightArrivalHour <= 12) {
+            // Morning arrival: Start activities at 2 PM
+            time = ['2:00 PM', '5:00 PM', '7:30 PM'][idx];
+          } else if (flightArrivalHour <= 16) {
+            // Afternoon arrival: Evening activities only
+            time = ['6:00 PM', '8:00 PM', '9:30 PM'][idx];
+          } else {
+            // Evening arrival: Just dinner
+            time = ['8:00 PM', '9:00 PM', '10:00 PM'][idx];
+          }
+        } else if (dayIdx === tripDays - 1) {
+          // Last day: End by noon for checkout/departure
+          time = ['8:00 AM', '10:00 AM', '11:30 AM'][idx];
+        } else {
+          // Regular days: Varied timing based on activity type
+          if (exp.type === 'market') {
+            time = ['8:30 AM', '9:00 AM', '9:30 AM'][idx];
+          } else if (exp.type === 'restaurant' || exp.type === 'cafe') {
+            time = ['12:30 PM', '7:00 PM', '8:00 PM'][idx];
+          } else if (exp.type === 'museum' || exp.type === 'cultural_site') {
+            time = ['10:00 AM', '2:00 PM', '3:30 PM'][idx];
+          } else if (exp.type === 'tour') {
+            time = ['9:00 AM', '2:30 PM', '4:00 PM'][idx];
+          } else if (exp.type === 'park') {
+            time = ['4:00 PM', '5:00 PM', '5:30 PM'][idx];
+          } else {
+            // Default times for other types
+            time = ['10:00 AM', '2:00 PM', '6:00 PM'][idx];
+          }
+        }
+
+        return {
           icon: typeIcons[exp.type] || '🎯',
           name: exp.name,
-          time: timeSlots[idx],
+          time: time || '10:00 AM',
           description: exp.description.substring(0, 100) + '...',
           type: exp.type,
           accessibility: exp.accessibility_notes
-        }))
+        };
+      });
+
+      days.push({
+        title: getDayTitle(dayIdx, tripDays),
+        highlight: dayExperiences[0]?.name || `Explore ${destination}`,
+        activities
       });
     }
 
@@ -691,6 +775,106 @@ async function generateMockItinerary(destination, startDate, endDate) {
     console.error('Error generating itinerary:', error);
     return generateFallbackItinerary(destination, 3);
   }
+}
+
+/**
+ * Generate additional experiences using AI when database doesn't have enough
+ */
+async function generateAIExperiences(destination, count, preferences) {
+  try {
+    // Call backend API to generate experiences using AI
+    const response = await fetch('/api/itinerary/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        destination: destination,
+        days: Math.ceil(count / 3), // Convert activity count to days
+        preferences: {
+          interests: ['museums', 'food'], // From user message "love museums and food"
+          budget: preferences.budget || 'mid',
+          accessibility_needs: []
+        },
+        travelers: preferences.travelers || 2
+      })
+    });
+
+    if (!response.ok) {
+      console.error('AI experience generation failed:', response.status);
+      return generateGenericExperiences(destination, count);
+    }
+
+    const data = await response.json();
+
+    // Transform API response to experience format
+    const aiExperiences = [];
+    if (data.itinerary && data.itinerary.days) {
+      for (const day of data.itinerary.days) {
+        for (const activity of day.activities) {
+          aiExperiences.push({
+            name: activity.title || activity.name,
+            description: activity.description,
+            type: inferTypeFromActivity(activity),
+            city: destination,
+            accessibility_notes: activity.accessibility_info || 'Please check with venue'
+          });
+        }
+      }
+    }
+
+    return aiExperiences.slice(0, count);
+  } catch (error) {
+    console.error('Error generating AI experiences:', error);
+    return generateGenericExperiences(destination, count);
+  }
+}
+
+/**
+ * Infer experience type from activity details
+ */
+function inferTypeFromActivity(activity) {
+  const title = (activity.title || activity.name || '').toLowerCase();
+
+  if (title.includes('museum') || title.includes('gallery')) return 'museum';
+  if (title.includes('market')) return 'market';
+  if (title.includes('restaurant') || title.includes('dining')) return 'restaurant';
+  if (title.includes('cafe') || title.includes('coffee')) return 'cafe';
+  if (title.includes('tour') || title.includes('walk')) return 'tour';
+  if (title.includes('park') || title.includes('garden')) return 'park';
+  if (title.includes('church') || title.includes('cathedral')) return 'church';
+
+  return 'cultural_site';
+}
+
+/**
+ * Generate generic experiences when AI fails
+ */
+function generateGenericExperiences(destination, count) {
+  const genericTypes = [
+    { name: `${destination} City Museum`, type: 'museum', description: 'Explore the city\'s rich history and culture through fascinating exhibits' },
+    { name: `Local Food Market`, type: 'market', description: 'Browse fresh local produce and artisanal goods at the neighborhood market' },
+    { name: `Traditional Restaurant`, type: 'restaurant', description: 'Enjoy authentic local cuisine at a family-owned restaurant' },
+    { name: `Historic Walking Tour`, type: 'tour', description: 'Discover the city\'s historic landmarks with a knowledgeable local guide' },
+    { name: `Art Gallery Visit`, type: 'cultural_site', description: 'Admire contemporary and classical art at the city\'s premier gallery' },
+    { name: `City Park`, type: 'park', description: 'Relax in beautiful green spaces and gardens in the heart of the city' },
+    { name: `Local Cafe`, type: 'cafe', description: 'Experience local coffee culture at a charming neighborhood cafe' },
+    { name: `Cathedral Visit`, type: 'church', description: 'Marvel at stunning architecture at the city\'s historic cathedral' },
+    { name: `Culinary Tour`, type: 'tour', description: 'Sample local specialties and learn about the city\'s food culture' },
+    { name: `Contemporary Art Museum`, type: 'museum', description: 'Discover modern and contemporary art from local and international artists' },
+    { name: `Botanical Garden`, type: 'park', description: 'Stroll through beautifully landscaped gardens featuring diverse plant collections' },
+    { name: `Street Food Experience`, type: 'restaurant', description: 'Taste authentic street food and local snacks from popular vendors' }
+  ];
+
+  const experiences = [];
+  for (let i = 0; i < count; i++) {
+    const template = genericTypes[i % genericTypes.length];
+    experiences.push({
+      ...template,
+      city: destination,
+      accessibility_notes: 'Wheelchair accessible, please confirm with venue'
+    });
+  }
+
+  return experiences;
 }
 
 /**

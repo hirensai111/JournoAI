@@ -122,11 +122,19 @@ const TripService = {
       const tripId = `trip_${Date.now()}_${userId.substring(0, 8)}`;
       const tripRef = doc(db, Collections.TRIPS, tripId);
 
+      // Filter out undefined values (Firestore doesn't allow them)
+      const cleanedTripData = Object.entries(tripData).reduce((acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {});
+
       const trip = {
-        ...tripData,
+        ...cleanedTripData,
         user_id: userId,
         created_at: serverTimestamp(),
-        status: 'planning' // planning, booked, completed
+        status: tripData.status || 'planning' // planning, confirmed, in_progress, completed
       };
 
       await setDoc(tripRef, trip);
@@ -186,6 +194,84 @@ const TripService = {
       return { success: true };
     } catch (error) {
       console.error('❌ Error updating trip:', error.message);
+      return { success: false, error: error.message };
+    }
+  },
+
+  /**
+   * Update trip status based on dates and bookings
+   * Planning → Confirmed → In Progress → Completed
+   */
+  async updateTripStatus(tripId) {
+    if (!db) {
+      return { success: true, status: 'planning' };
+    }
+
+    try {
+      const tripRef = doc(db, Collections.TRIPS, tripId);
+      const tripSnap = await getDoc(tripRef);
+
+      if (!tripSnap.exists()) {
+        return { success: false, error: 'Trip not found' };
+      }
+
+      const trip = tripSnap.data();
+      const now = new Date();
+      const startDate = new Date(trip.start_date);
+      const endDate = new Date(trip.end_date);
+
+      let newStatus = trip.status;
+
+      // Determine new status
+      if (now > endDate) {
+        // Trip has ended
+        newStatus = 'completed';
+      } else if (now >= startDate && now <= endDate) {
+        // Trip is happening now
+        newStatus = 'in_progress';
+      } else if (trip.status === 'planning' && trip.hotels?.length > 0 && trip.flights?.outbound?.length > 0) {
+        // User has selected hotels and flights
+        newStatus = 'confirmed';
+      }
+
+      // Update if status changed
+      if (newStatus !== trip.status) {
+        await setDoc(tripRef, {
+          status: newStatus,
+          status_updated_at: serverTimestamp()
+        }, { merge: true });
+
+        console.log(`✅ Trip status updated: ${trip.status} → ${newStatus}`);
+        return { success: true, status: newStatus, changed: true };
+      }
+
+      return { success: true, status: newStatus, changed: false };
+    } catch (error) {
+      console.error('❌ Error updating trip status:', error.message);
+      return { success: false, error: error.message };
+    }
+  },
+
+  /**
+   * Confirm trip (user manually confirms bookings)
+   */
+  async confirmTrip(tripId) {
+    if (!db) {
+      return { success: true };
+    }
+
+    try {
+      const tripRef = doc(db, Collections.TRIPS, tripId);
+      await setDoc(tripRef, {
+        status: 'confirmed',
+        confirmed_at: serverTimestamp(),
+        updated_at: serverTimestamp()
+      }, { merge: true });
+
+      console.log(`✅ Trip confirmed: ${tripId}`);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error confirming trip:', error.message);
       return { success: false, error: error.message };
     }
   }

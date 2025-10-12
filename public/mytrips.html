@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Current Trip - Journey AI</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    :root {
+      --trip-hero-height: 280px;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .trip-hero {
+      margin-bottom: 2rem;
+      padding: 3rem 2rem;
+      border-radius: var(--radius-xl);
+      background: linear-gradient(135deg, rgba(139, 21, 56, 0.95), rgba(232, 119, 34, 0.95));
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .trip-hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg width="60" height="60" xmlns="http://www.w3.org/2000/svg"><path d="M0 0h60v60H0z" fill="none"/><path d="M30 10l5 15h16l-13 10 5 15-13-10-13 10 5-15-13-10h16z" fill="rgba(255,255,255,0.05)"/></svg>');
+      opacity: 0.3;
+    }
+
+    .countdown-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: var(--radius-full);
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+
+    .timeline-container {
+      position: relative;
+      padding-left: 2rem;
+    }
+
+    .timeline-line {
+      position: absolute;
+      left: 0.75rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--primary), var(--primary-light));
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 2rem;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -1.375rem;
+      top: 0.5rem;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--primary);
+      border: 3px solid white;
+      box-shadow: 0 0 0 4px var(--primary-light);
+    }
+
+    .timeline-dot.completed {
+      background: var(--success);
+      box-shadow: 0 0 0 4px #d1fae5;
+    }
+
+    .timeline-dot.current {
+      background: var(--warning);
+      box-shadow: 0 0 0 4px #fef3c7;
+      animation: pulse 2s infinite;
+    }
+
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.875rem;
+      border-radius: var(--radius-md);
+      background: var(--bg-primary);
+      transition: all 0.2s;
+      margin-bottom: 0.5rem;
+    }
+
+    .checklist-item:hover {
+      background: var(--bg-secondary);
+      transform: translateX(4px);
+    }
+
+    .checklist-item.completed {
+      opacity: 0.6;
+    }
+
+    .checklist-item.completed .checklist-text {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .checklist-checkbox {
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      flex-shrink: 0;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .checklist-checkbox.checked {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .checklist-checkbox.checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .priority-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .priority-critical {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .priority-high {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .priority-medium {
+      background: #e0e7ff;
+      color: #4f46e5;
+    }
+
+    .day-card {
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    .day-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .day-card.rest-day {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      border-left: 4px solid var(--success);
+    }
+
+    .activity-item {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem;
+      border-left: 3px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+      margin-bottom: 0.75rem;
+      transition: all 0.2s;
+    }
+
+    .activity-item:hover {
+      border-left-color: var(--primary);
+      background: var(--bg-primary);
+    }
+
+    .activity-time {
+      font-weight: 600;
+      color: var(--primary);
+      min-width: 60px;
+    }
+
+    .section-phase {
+      position: relative;
+      padding: 1.5rem;
+      border-radius: var(--radius-lg);
+      margin-bottom: 2rem;
+      background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05) 0%, rgba(var(--primary-rgb), 0.02) 100%);
+      border: 2px solid var(--border);
+    }
+
+    .section-phase.active {
+      border-color: var(--primary);
+      background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.05) 100%);
+      box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.15);
+    }
+
+    .section-phase.completed {
+      opacity: 0.7;
+    }
+
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .phase-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-lg);
+      display: grid;
+      place-items: center;
+      font-size: 1.5rem;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--border);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary) 0%, #8b5cf6 100%);
+      border-radius: var(--radius-full);
+      transition: width 0.5s ease;
+    }
+
+    .tab-container {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 2rem;
+    }
+
+    .tab {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      background: none;
+      color: var(--text-secondary);
+      font-weight: 500;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+
+    .tab:hover {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .tab.active {
+      color: var(--primary);
+      background: var(--bg-secondary);
+    }
+
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+      .trip-hero {
+        padding: 2rem 0;
+      }
+
+      .timeline-container {
+        padding-left: 1.5rem;
+      }
+
+      .day-card {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/" class="navbar-brand">
+        <div class="navbar-logo">
+          <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="18" stroke="#8B1538" stroke-width="2.5" fill="white"/>
+            <path d="M20 3V7M20 33V37M3 20H7M33 20H37" stroke="#8B1538" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="20" cy="20" r="14" stroke="#E5E7EB" stroke-width="1"/>
+            <g transform="rotate(45 20 20)">
+              <path d="M20 6L21 20L20 34L19 20L20 6Z" fill="url(#g1)" stroke="#8B1538" stroke-width="1.2"/>
+            </g>
+            <circle cx="20" cy="20" r="3.5" fill="#8B1538"/>
+            <circle cx="20" cy="20" r="2" fill="white"/>
+            <defs>
+              <linearGradient id="g1" x1="20" y1="6" x2="20" y2="34">
+                <stop offset="0%" stop-color="#E87722"/>
+                <stop offset="100%" stop-color="#8B1538"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span>Journey AI</span>
+      </a>
+
+      <ul class="navbar-nav">
+        <li><a href="/dashboard.html" class="navbar-link">Dashboard</a></li>
+        <li><a href="/mytrips.html" class="navbar-link" style="color: var(--primary);">My Trips</a></li>
+        <li><a href="/profile.html" class="navbar-link">Profile</a></li>
+      </ul>
+
+      <div class="navbar-actions">
+        <div id="user-menu" style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="text-align: right; display: none;" id="user-info">
+            <p style="font-size: 0.875rem; font-weight: 500;" id="user-name">Loading...</p>
+            <p style="font-size: 0.75rem; color: var(--text-muted);" id="user-email"></p>
+          </div>
+          <button id="signout-btn" class="btn btn-ghost" style="display: none;">Sign out</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Loading State -->
+  <div id="loading-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 80px); background: var(--bg-secondary);">
+    <div style="width: 48px; height: 48px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    <p style="margin-top: 1rem; color: var(--text-secondary);">Loading your trip...</p>
+  </div>
+
+  <!-- No Trip State -->
+  <div id="no-trip-state" style="display: none; min-height: calc(100vh - 80px); background: var(--bg-secondary); padding: 3rem 0;">
+    <div class="container" style="max-width: 600px; text-align: center;">
+      <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 2rem; color: var(--text-muted);">
+        <path d="M9 6 3 9v9l6-3 6 3 6-3V6l-6 3-6-3z" />
+        <path d="M9 6v9m6-6v9" />
+      </svg>
+      <h1 style="margin-bottom: 1rem;">No Current Trip</h1>
+      <p style="color: var(--text-secondary); margin-bottom: 2rem;">You don't have any upcoming trips planned. Start your journey by creating your first accessible trip!</p>
+      <button class="btn btn-primary btn-lg" onclick="window.location.href='/dashboard.html'">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Plan Your First Trip
+      </button>
+    </div>
+  </div>
+
+  <!-- Trip Content -->
+  <div id="trip-content" style="display: none;">
+    <div style="background: var(--bg-secondary); padding: 2rem 0;">
+      <div class="container">
+        <!-- Trip Hero Section -->
+        <div class="trip-hero" style="position: relative; z-index: 1;">
+          <div class="countdown-badge" id="countdown-badge">
+            ⏰ Loading...
+          </div>
+          <h1 id="trip-destination" style="font-size: 2.5rem; margin: 1rem 0 0.5rem; color: white;">Loading...</h1>
+          <p id="trip-dates" style="font-size: 1.125rem; color: rgba(255,255,255,0.9); margin-bottom: 1.5rem;">Loading...</p>
+
+          <div style="display: flex; gap: 2rem; flex-wrap: wrap; align-items: flex-end;">
+            <div>
+              <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8);">Duration</div>
+              <div style="font-size: 1.25rem; font-weight: 600; color: white;" id="trip-duration">- days</div>
+            </div>
+            <div>
+              <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8);">Status</div>
+              <div style="font-size: 1.25rem; font-weight: 600; color: white;" id="trip-status">Planning</div>
+            </div>
+            <div>
+              <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8);">Health Conditions</div>
+              <div style="font-size: 1.25rem; font-weight: 600; color: white;" id="trip-conditions">Loading...</div>
+            </div>
+            <div id="confirm-btn-container" style="display: none;">
+              <button onclick="confirmTrip()" class="btn" style="background: white; color: var(--primary); border: 2px solid white; font-weight: 600; padding: 0.75rem 1.5rem;">
+                ✓ Confirm Trip
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div style="background: var(--bg-secondary); padding: 2rem 0; min-height: calc(100vh - var(--trip-hero-height) - 80px);">
+      <div class="container">
+
+        <!-- Tabs -->
+        <div class="tab-container">
+          <button class="tab active" onclick="switchTab('pre-trip')">
+            📋 Pre-Trip Checklist
+          </button>
+          <button class="tab" onclick="switchTab('itinerary')">
+            📅 Day-by-Day Itinerary
+          </button>
+          <button class="tab" onclick="switchTab('details')">
+            ℹ️ Trip Details
+          </button>
+        </div>
+
+        <!-- Tab: Pre-Trip Checklist -->
+        <div id="tab-pre-trip" class="tab-content active">
+
+          <!-- Progress Overview -->
+          <div class="card" style="margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <div>
+                <h3 style="margin: 0 0 0.25rem;">Preparation Progress</h3>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">Complete all items before your departure</p>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 2rem; font-weight: 700; color: var(--primary);" id="progress-percentage">0%</div>
+                <div style="font-size: 0.875rem; color: var(--text-secondary);" id="progress-text">0 of 0 completed</div>
+              </div>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- Current Phase Alert -->
+          <div id="current-phase-alert" class="card" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 4px solid #f59e0b; margin-bottom: 2rem; display: none;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div style="font-size: 2rem;">⚠️</div>
+              <div>
+                <h4 style="margin: 0 0 0.25rem; color: #92400e;">Action Required</h4>
+                <p id="phase-alert-text" style="margin: 0; color: #78350f;">Complete these tasks now!</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Checklist Phases -->
+          <div id="checklist-phases">
+            <!-- Phases will be dynamically inserted here -->
+          </div>
+
+        </div>
+
+        <!-- Tab: Itinerary -->
+        <div id="tab-itinerary" class="tab-content">
+
+          <div style="margin-bottom: 2rem;">
+            <h2>Your Day-by-Day Itinerary</h2>
+            <p style="color: var(--text-secondary);">Personalized schedule with accessibility considerations</p>
+          </div>
+
+          <div id="itinerary-container">
+            <!-- Itinerary days will be dynamically inserted here -->
+          </div>
+
+        </div>
+
+        <!-- Tab: Trip Details -->
+        <div id="tab-details" class="tab-content">
+
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <h3 style="margin-bottom: 1rem;">✈️ Flight Information</h3>
+            <div id="flight-details">Loading...</div>
+          </div>
+
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <h3 style="margin-bottom: 1rem;">🏨 Hotel Information</h3>
+            <div id="hotel-details">Loading...</div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-bottom: 1rem;">♿ Accessibility Features</h3>
+            <div id="accessibility-details">Loading...</div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+    import { getFirestore, collection, query, where, getDocs, doc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAdYbPam_LOUGIDv8BBgLJpFBv-0mCt51E",
+      authDomain: "journiai.firebaseapp.com",
+      projectId: "journiai",
+      storageBucket: "journiai.firebasestorage.app",
+      messagingSenderId: "804188518563",
+      appId: "1:804188518563:web:85a6e06304ac0c366de716",
+      measurementId: "G-1T30VZSCMP"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    window.db = db;
+    window.auth = auth;
+    window.currentUser = null;
+    window.currentTrip = null;
+    window.checklistState = {};
+
+    // Auth State
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        window.currentUser = user;
+        document.getElementById('user-name').textContent = user.displayName || 'User';
+        document.getElementById('user-email').textContent = user.email;
+        document.getElementById('user-info').style.display = 'block';
+        document.getElementById('signout-btn').style.display = 'block';
+
+        // Load user's current trip
+        await loadCurrentTrip(user.uid);
+      } else {
+        window.location.href = '/signin.html';
+      }
+    });
+
+    // Sign Out
+    document.getElementById('signout-btn').addEventListener('click', async () => {
+      await signOut(auth);
+      window.location.href = '/signin.html';
+    });
+
+    // Load current/upcoming trip
+    async function loadCurrentTrip(userId) {
+      try {
+        console.log('Loading trips for user:', userId);
+        const tripsRef = collection(db, 'trips');
+
+        // Try to get all trips first (no status filter) for debugging
+        const q = query(
+          tripsRef,
+          where('user_id', '==', userId)
+        );
+
+        const querySnapshot = await getDocs(q);
+        console.log('Found trips:', querySnapshot.size);
+
+        if (querySnapshot.empty) {
+          console.log('No trips found for user');
+          showNoTripState();
+          return;
+        }
+
+        // Filter for active trips
+        const activeTrips = [];
+        querySnapshot.forEach((tripDoc) => {
+          const data = tripDoc.data();
+          console.log('Trip:', tripDoc.id, 'Status:', data.status);
+          if (['planning', 'confirmed', 'in_progress'].includes(data.status) || data.status === 'planned') {
+            // Explicitly create trip object to avoid spread operator issues
+            const tripObj = {
+              id: tripDoc.id,
+              origin: data.origin || '',
+              destination: data.destination || '',
+              start_date: data.start_date || '',
+              end_date: data.end_date || '',
+              duration: data.duration || 0,
+              conditions: data.conditions || [],
+              preferences: data.preferences || [],
+              solo_travel: data.solo_travel || false,
+
+              // Old format (for backward compatibility)
+              flights: data.flights || null,
+              hotels: data.hotels || [],
+
+              // New format (selected flight/hotel and itinerary)
+              selected_flight: data.selected_flight || null,
+              selected_hotel: data.selected_hotel || null,
+              itinerary: data.itinerary || null,
+
+              status: data.status || 'planning',
+              user_id: data.user_id || '',
+              created_at: data.created_at || null
+            };
+            activeTrips.push(tripObj);
+          }
+        });
+
+        if (activeTrips.length === 0) {
+          console.log('No active trips found');
+          showNoTripState();
+          return;
+        }
+
+        // Get the first active trip
+        const tripData = activeTrips[0];
+        console.log('Loading trip:', tripData.id);
+        console.log('Trip data:', tripData);
+
+        // Itinerary is now stored directly in the trip document (no separate collection)
+        if (tripData.itinerary) {
+          console.log('Itinerary found in trip document, days:', tripData.itinerary.length);
+        } else {
+          console.log('No itinerary found in trip');
+        }
+
+        window.currentTrip = tripData;
+
+        // Load checklist state first
+        await loadChecklistState(tripData.id);
+
+        // Auto-update trip status based on dates
+        await autoUpdateTripStatus(tripData);
+
+        // Display trip
+        displayTrip(tripData);
+
+      } catch (error) {
+        console.error('Error loading trip:', error);
+        alert('Error loading trip: ' + error.message);
+        showNoTripState();
+      }
+    }
+
+    // Load checklist completion state
+    async function loadChecklistState(tripId) {
+      const stateKey = `checklist_${tripId}`;
+      const saved = localStorage.getItem(stateKey);
+      window.checklistState = saved ? JSON.parse(saved) : {};
+    }
+
+    // Save checklist state
+    function saveChecklistState(tripId) {
+      const stateKey = `checklist_${tripId}`;
+      localStorage.setItem(stateKey, JSON.stringify(window.checklistState));
+    }
+
+    // Auto-update trip status based on dates and bookings
+    async function autoUpdateTripStatus(trip) {
+      if (!trip || !trip.id) return;
+
+      const now = new Date();
+      const startDate = new Date(trip.start_date);
+      const endDate = new Date(trip.end_date);
+
+      let newStatus = trip.status;
+
+      // Determine new status based on dates
+      if (now > endDate) {
+        // Trip has ended
+        newStatus = 'completed';
+      } else if (now >= startDate && now <= endDate) {
+        // Trip is happening now
+        newStatus = 'in_progress';
+      } else if (trip.status === 'planning') {
+        // Check if trip should move to confirmed
+        // Conditions: has hotels AND flights selected
+        const hasHotels = trip.hotels && trip.hotels.length > 0;
+        const hasFlights = trip.flights && trip.flights.outbound && trip.flights.outbound.length > 0;
+
+        if (hasHotels && hasFlights) {
+          newStatus = 'confirmed';
+        }
+      }
+
+      // Update Firebase if status changed
+      if (newStatus !== trip.status) {
+        try {
+          const tripRef = doc(db, 'trips', trip.id);
+          await updateDoc(tripRef, {
+            status: newStatus,
+            status_updated_at: new Date().toISOString()
+          });
+
+          trip.status = newStatus;
+          window.currentTrip.status = newStatus;
+
+          console.log(`✅ Trip status updated: ${trip.status} → ${newStatus}`);
+
+          // Update UI
+          document.getElementById('trip-status').textContent = formatStatus(newStatus);
+        } catch (error) {
+          console.error('Error updating trip status:', error);
+        }
+      }
+    }
+
+    // Manual trip confirmation (for demo)
+    window.confirmTrip = async function() {
+      if (!window.currentTrip || !window.currentTrip.id) {
+        alert('No active trip to confirm');
+        return;
+      }
+
+      if (window.currentTrip.status !== 'planning') {
+        alert(`Trip is already ${formatStatus(window.currentTrip.status)}`);
+        return;
+      }
+
+      try {
+        const tripRef = doc(db, 'trips', window.currentTrip.id);
+        await updateDoc(tripRef, {
+          status: 'confirmed',
+          confirmed_at: new Date().toISOString(),
+          status_updated_at: new Date().toISOString()
+        });
+
+        window.currentTrip.status = 'confirmed';
+        document.getElementById('trip-status').textContent = formatStatus('confirmed');
+        document.getElementById('confirm-btn-container').style.display = 'none';
+
+        alert('✅ Trip confirmed! Your bookings are ready.');
+
+      } catch (error) {
+        console.error('Error confirming trip:', error);
+        alert('Error confirming trip: ' + error.message);
+      }
+    };
+
+    // Display trip
+    function displayTrip(trip) {
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('trip-content').style.display = 'block';
+
+      // Hero section
+      document.getElementById('trip-destination').textContent = trip.destination || 'Unknown Destination';
+      document.getElementById('trip-dates').textContent = formatTripDates(trip.start_date, trip.end_date);
+      document.getElementById('trip-duration').textContent = `${trip.duration || 0} days`;
+      document.getElementById('trip-status').textContent = formatStatus(trip.status);
+
+      // Display health conditions with proper formatting
+      const conditions = trip.conditions && trip.conditions.length > 0
+        ? trip.conditions.map(c => c.replace(/_/g, ' ')).slice(0, 2).join(', ')
+        : 'None';
+      document.getElementById('trip-conditions').textContent = conditions;
+
+      // Show/hide confirm button based on status
+      const confirmBtnContainer = document.getElementById('confirm-btn-container');
+      if (trip.status === 'planning') {
+        confirmBtnContainer.style.display = 'block';
+      } else {
+        confirmBtnContainer.style.display = 'none';
+      }
+
+      // Countdown
+      updateCountdown(trip.start_date);
+
+      // Generate dynamic checklist
+      generateDynamicChecklist(trip);
+
+      // Display itinerary
+      displayItinerary(trip.itinerary);
+
+      // Display trip details
+      displayTripDetails(trip);
+    }
+
+    // Show no trip state
+    function showNoTripState() {
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('no-trip-state').style.display = 'block';
+    }
+
+    // Update countdown
+    function updateCountdown(startDate) {
+      const start = new Date(startDate);
+      const now = new Date();
+      const diff = start - now;
+      const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+      let countdownText;
+      if (days < 0) {
+        countdownText = '🎉 Trip in Progress!';
+      } else if (days === 0) {
+        countdownText = '✈️ Departure Today!';
+      } else if (days === 1) {
+        countdownText = '⏰ 1 Day Until Departure';
+      } else if (days <= 7) {
+        countdownText = `⏰ ${days} Days Until Departure`;
+      } else if (days <= 14) {
+        countdownText = `📅 ${days} Days Away`;
+      } else {
+        countdownText = `📅 ${Math.floor(days / 7)} Weeks Away`;
+      }
+
+      document.getElementById('countdown-badge').textContent = countdownText;
+    }
+
+    // Generate dynamic checklist based on days until departure
+    function generateDynamicChecklist(trip) {
+      const startDate = new Date(trip.start_date);
+      const now = new Date();
+      const daysUntil = Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
+
+      // Define phases with dynamic content
+      const phases = [
+        {
+          id: 'phase-2weeks',
+          name: '2 Weeks Before Departure',
+          icon: '📋',
+          activeRange: [14, Infinity],
+          items: generateMedicalPreparationItems(trip, daysUntil)
+        },
+        {
+          id: 'phase-1week',
+          name: '1 Week Before Departure',
+          icon: '📄',
+          activeRange: [7, 13],
+          items: generateDocumentationItems(trip, daysUntil)
+        },
+        {
+          id: 'phase-3days',
+          name: '3 Days Before Departure',
+          icon: '🎒',
+          activeRange: [3, 6],
+          items: generatePackingItems(trip, daysUntil)
+        },
+        {
+          id: 'phase-departure',
+          name: 'Departure Day',
+          icon: '✈️',
+          activeRange: [0, 2],
+          items: generateDepartureDayItems(trip, daysUntil)
+        }
+      ];
+
+      // Determine current phase
+      let currentPhaseIndex = phases.findIndex(p => daysUntil >= p.activeRange[0] && daysUntil <= p.activeRange[1]);
+      if (currentPhaseIndex === -1) currentPhaseIndex = daysUntil < 0 ? 3 : 0;
+
+      // Show alert for current phase
+      if (daysUntil >= 0) {
+        const currentPhase = phases[currentPhaseIndex];
+        const incompleteCount = currentPhase.items.filter(item => !window.checklistState[item.id]).length;
+
+        if (incompleteCount > 0) {
+          document.getElementById('current-phase-alert').style.display = 'flex';
+          document.getElementById('phase-alert-text').textContent =
+            `${currentPhase.name}: ${incompleteCount} task${incompleteCount > 1 ? 's' : ''} remaining`;
+        }
+      }
+
+      // Render phases
+      const container = document.getElementById('checklist-phases');
+      container.innerHTML = phases.map((phase, index) => {
+        const isActive = index === currentPhaseIndex;
+        const isCompleted = index < currentPhaseIndex;
+        const completedCount = phase.items.filter(item => window.checklistState[item.id]).length;
+        const totalCount = phase.items.length;
+        const progressPercent = Math.round((completedCount / totalCount) * 100);
+
+        return `
+          <div class="section-phase ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}">
+            <div class="phase-header">
+              <div class="phase-icon">${phase.icon}</div>
+              <div style="flex: 1;">
+                <h3 style="margin: 0 0 0.25rem;">${phase.name}</h3>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">
+                  ${completedCount} of ${totalCount} tasks completed
+                  ${isCompleted ? ' ✅' : isActive ? ' 🔔' : ''}
+                </p>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: ${progressPercent === 100 ? 'var(--success)' : 'var(--primary)'};">
+                  ${progressPercent}%
+                </div>
+              </div>
+            </div>
+
+            <div class="progress-bar" style="margin-bottom: 1rem;">
+              <div class="progress-fill" style="width: ${progressPercent}%;"></div>
+            </div>
+
+            ${phase.items.map(item => {
+              const isChecked = window.checklistState[item.id] || false;
+              return `
+                <div class="checklist-item ${isChecked ? 'completed' : ''}">
+                  <div class="checklist-checkbox ${isChecked ? 'checked' : ''}"
+                       onclick="toggleChecklistItem('${item.id}', '${trip.id}')"></div>
+                  <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                      <span class="checklist-text" style="font-weight: 500;">${item.task}</span>
+                      <span class="priority-badge priority-${item.priority.toLowerCase()}">${item.priority}</span>
+                    </div>
+                    ${item.notes ? `<p style="margin: 0.25rem 0 0; font-size: 0.875rem; color: var(--text-secondary);">${item.notes}</p>` : ''}
+                    ${item.action_button ? `<button class="btn btn-sm btn-ghost" style="margin-top: 0.5rem;" onclick="alert('Feature coming soon!')">${item.action_button}</button>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }).join('');
+
+      // Update progress
+      updateProgress();
+    }
+
+    // Toggle checklist item
+    window.toggleChecklistItem = function(itemId, tripId) {
+      window.checklistState[itemId] = !window.checklistState[itemId];
+      saveChecklistState(tripId);
+      generateDynamicChecklist(window.currentTrip);
+    };
+
+    // Update overall progress
+    function updateProgress() {
+      const totalItems = Object.keys(window.checklistState).length;
+      const completedItems = Object.values(window.checklistState).filter(Boolean).length;
+      const percentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+
+      document.getElementById('progress-percentage').textContent = `${percentage}%`;
+      document.getElementById('progress-text').textContent = `${completedItems} of ${totalItems} completed`;
+      document.getElementById('progress-fill').style.width = `${percentage}%`;
+    }
+
+    // Generate phase-specific items
+    function generateMedicalPreparationItems(trip, daysUntil) {
+      const items = [];
+
+      if (trip.conditions?.includes('type_1_diabetes') || trip.conditions?.includes('type_2_diabetes')) {
+        items.push(
+          {
+            id: 'med-insulin',
+            task: `Refill insulin prescription (${trip.duration * 2}-day supply)`,
+            priority: 'CRITICAL',
+            notes: 'Always bring double the insulin you think you\'ll need',
+            action_button: 'Schedule Pharmacy Refill'
+          },
+          {
+            id: 'med-doctor-letter',
+            task: 'Get doctor\'s letter for traveling with insulin',
+            priority: 'CRITICAL',
+            action_button: 'Download Template'
+          },
+          {
+            id: 'med-insurance',
+            task: `Verify travel insurance covers diabetic emergencies in ${trip.destination}`,
+            priority: 'CRITICAL',
+            action_button: 'Compare Insurance Plans'
+          }
+        );
+      }
+
+      if (trip.conditions?.includes('wheelchair_user')) {
+        items.push(
+          {
+            id: 'med-wheelchair-doc',
+            task: 'Get medical documentation for wheelchair travel',
+            priority: 'CRITICAL',
+            action_button: 'Download Form'
+          },
+          {
+            id: 'med-wheelchair-check',
+            task: 'Schedule wheelchair maintenance check',
+            priority: 'HIGH',
+            action_button: 'Find Repair Shop'
+          }
+        );
+      }
+
+      items.push({
+        id: 'med-general',
+        task: 'Schedule pre-trip health consultation',
+        priority: 'HIGH',
+        notes: 'Discuss travel plans with your doctor',
+        action_button: 'Book Appointment'
+      });
+
+      return items;
+    }
+
+    function generateDocumentationItems(trip, daysUntil) {
+      const items = [
+        {
+          id: 'doc-maps',
+          task: `Download offline ${trip.destination} accessibility maps`,
+          priority: 'CRITICAL',
+          action_button: 'Download Now'
+        },
+        {
+          id: 'doc-hospitals',
+          task: 'Save hospital locations near hotel',
+          priority: 'CRITICAL',
+          notes: 'Include phone numbers and directions'
+        }
+      ];
+
+      if (trip.conditions?.includes('wheelchair_user')) {
+        items.push({
+          id: 'doc-airport',
+          task: 'Pre-book wheelchair assistance at airports',
+          priority: 'CRITICAL',
+          action_button: 'Request with Airline'
+        });
+      }
+
+      if (trip.conditions?.includes('type_1_diabetes') || trip.conditions?.includes('type_2_diabetes')) {
+        items.push({
+          id: 'doc-translation',
+          task: 'Print medical translation cards',
+          priority: 'HIGH',
+          notes: '"I am diabetic" in local language'
+        });
+      }
+
+      return items;
+    }
+
+    function generatePackingItems(trip, daysUntil) {
+      const items = [];
+
+      if (trip.conditions?.includes('type_1_diabetes') || trip.conditions?.includes('type_2_diabetes')) {
+        items.push(
+          {
+            id: 'pack-cooling',
+            task: 'Pack insulin cooling case',
+            priority: 'CRITICAL',
+            notes: 'FRIO wallet recommended for warm climates'
+          },
+          {
+            id: 'pack-insulin',
+            task: 'Pack backup insulin supplies',
+            priority: 'CRITICAL',
+            notes: 'Verify you have double the amount needed'
+          },
+          {
+            id: 'pack-glucose',
+            task: 'Pack glucose tablets & emergency snacks',
+            priority: 'CRITICAL'
+          },
+          {
+            id: 'pack-monitor',
+            task: 'Pack blood glucose monitor & strips',
+            priority: 'CRITICAL'
+          }
+        );
+      }
+
+      if (trip.conditions?.includes('wheelchair_user')) {
+        items.push(
+          {
+            id: 'pack-repair',
+            task: 'Pack wheelchair repair kit',
+            priority: 'CRITICAL',
+            notes: 'Allen wrench, pump, spare tube, duct tape'
+          },
+          {
+            id: 'pack-cushion',
+            task: 'Pack wheelchair cushion',
+            priority: 'HIGH'
+          }
+        );
+      }
+
+      items.push(
+        {
+          id: 'pack-meds',
+          task: 'Pack all medications (carry-on only)',
+          priority: 'CRITICAL',
+          notes: 'Keep in original labeled containers'
+        },
+        {
+          id: 'pack-docs',
+          task: 'Pack medical documentation copies',
+          priority: 'HIGH'
+        }
+      );
+
+      return items;
+    }
+
+    function generateDepartureDayItems(trip, daysUntil) {
+      return [
+        {
+          id: 'dep-meds-check',
+          task: 'Double-check all medications are packed',
+          priority: 'CRITICAL',
+          notes: 'Verify nothing left in refrigerator'
+        },
+        {
+          id: 'dep-emergency',
+          task: 'Save all emergency contacts in phone',
+          priority: 'CRITICAL',
+          notes: 'Local emergency number, embassy, insurance'
+        },
+        {
+          id: 'dep-insulin-temp',
+          task: 'Check insulin storage during flight',
+          priority: 'CRITICAL',
+          notes: 'Keep in carry-on, use cooling case if needed'
+        },
+        {
+          id: 'dep-airport-time',
+          task: 'Arrive at airport 3 hours early',
+          priority: 'HIGH',
+          notes: 'Extra time for accessibility assistance'
+        },
+        {
+          id: 'dep-snacks',
+          task: 'Pack extra snacks for travel day',
+          priority: 'HIGH',
+          notes: 'Blood sugar can fluctuate during travel'
+        }
+      ];
+    }
+
+    // Helper function to get place images using Google Custom Search API
+    const GOOGLE_API_KEY = 'AIzaSyAu2yJBT6GXHfzc7bKzCFm4sX2gRiNToZk';
+    const GOOGLE_CX = '470371f5306a06a2d'; // Custom Search Engine ID
+    const imageCache = new Map();
+
+    async function getPlaceImageUrl(searchQuery, width = 300, height = 200) {
+      // Check cache first
+      if (imageCache.has(searchQuery)) {
+        return imageCache.get(searchQuery);
+      }
+
+      try {
+        // Use Google Custom Search API to get image
+        const response = await fetch(
+          `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CX}&q=${encodeURIComponent(searchQuery)}&searchType=image&num=1&imgSize=medium&safe=active`
+        );
+
+        if (!response.ok) {
+          console.warn('Google Images API error:', response.status);
+          throw new Error('Google API request failed');
+        }
+
+        const data = await response.json();
+
+        if (data.items && data.items.length > 0) {
+          const imageUrl = data.items[0].link;
+          imageCache.set(searchQuery, imageUrl);
+          console.log(`✅ Google Images: Found image for "${searchQuery}"`);
+          return imageUrl;
+        }
+      } catch (error) {
+        console.warn('Google Images API error, falling back to Unsplash:', error.message);
+      }
+
+      // Fallback to Unsplash if Google API fails
+      const fallbackUrl = `https://source.unsplash.com/${width}x${height}/?${encodeURIComponent(searchQuery)}`;
+      imageCache.set(searchQuery, fallbackUrl);
+      return fallbackUrl;
+    }
+
+    // Display itinerary
+    function displayItinerary(itinerary) {
+      console.log('Displaying itinerary:', itinerary);
+
+      // Check if itinerary is an array (new format) or object with days property (old format)
+      const days = Array.isArray(itinerary) ? itinerary : itinerary?.days;
+
+      if (!days || !Array.isArray(days) || days.length === 0) {
+        document.getElementById('itinerary-container').innerHTML = '<div class="card"><p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No itinerary available yet. The itinerary will be generated after you complete the trip planning.</p></div>';
+        return;
+      }
+
+      const container = document.getElementById('itinerary-container');
+      const destination = window.currentTrip?.destination || 'travel';
+
+      container.innerHTML = days.map((day, index) => {
+        const isRestDay = day.day_type === 'rest';
+
+        // Calculate date based on trip start date
+        const tripStartDate = new Date(window.currentTrip.start_date);
+        const dayDate = new Date(tripStartDate);
+        dayDate.setDate(dayDate.getDate() + index);
+        const dayName = dayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+        return `
+          <div class="day-card ${isRestDay ? 'rest-day' : ''}">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+              <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                  <h3 style="margin: 0;">Day ${index + 1}</h3>
+                  ${isRestDay ? '<span class="priority-badge" style="background: #d1fae5; color: #059669;">Rest Day</span>' : ''}
+                </div>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 0.875rem;">${dayName}</p>
+                <h4 style="margin: 0.5rem 0 0; color: var(--primary);">${day.title || 'Activities'}</h4>
+              </div>
+              ${day.cumulative_fatigue ? `
+              <div style="text-align: right;">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Fatigue Level</div>
+                <div style="font-size: 1.25rem; font-weight: 600; color: ${day.cumulative_fatigue > 70 ? 'var(--danger)' : day.cumulative_fatigue > 50 ? 'var(--warning)' : 'var(--success)'};">
+                  ${day.cumulative_fatigue}/100
+                </div>
+              </div>
+              ` : ''}
+            </div>
+
+            ${day.highlight && day.highlightImage ? `
+              <div style="position: relative; width: 100%; height: 180px; border-radius: 8px; overflow: hidden; margin-bottom: 1rem; background: url('${day.highlightImage}') center/cover no-repeat;">
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 1rem; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); color: white;">
+                  <div style="font-weight: 600;">${day.highlight}</div>
+                </div>
+              </div>
+            ` : ''}
+
+            ${day.activities && day.activities.length > 0 ? `
+              <div class="timeline-container">
+                <div class="timeline-line"></div>
+                ${day.activities.map(activity => {
+                  // Get activity icon
+                  const activityName = activity.title || activity.name || 'activity';
+                  const activityIcon = activity.icon || '🎯';
+
+                  // Handle accessibility - ensure it's an array
+                  const accessibilityTags = Array.isArray(activity.accessibility)
+                    ? activity.accessibility.slice(0, 3)
+                    : [];
+
+                  return `
+                  <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="activity-item" style="display: flex; gap: 1rem; align-items: start;">
+                      <div class="activity-time" style="min-width: 60px;">${activity.time || '—'}</div>
+                      <div style="font-size: 1.5rem; line-height: 1;">${activityIcon}</div>
+                      <div style="flex: 1;">
+                        <div style="font-weight: 600; margin-bottom: 0.25rem;">${activityName}</div>
+                        ${activity.description ? `<p style="margin: 0.25rem 0 0.5rem 0; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;">${activity.description}</p>` : ''}
+                        ${activity.mapsLink ? `
+                          <a href="${activity.mapsLink}" target="_blank" rel="noopener"
+                             style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.375rem 0.75rem;
+                                    background: var(--primary); color: white; text-decoration: none; border-radius: 6px;
+                                    font-size: 0.813rem; font-weight: 500; transition: all 0.2s;"
+                             onmouseover="this.style.background='#6d1f3b'"
+                             onmouseout="this.style.background='var(--primary)'">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                              <circle cx="12" cy="10" r="3"/>
+                            </svg>
+                            Navigate
+                          </a>
+                        ` : ''}
+                        ${accessibilityTags.length > 0 ? `<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
+                          ${accessibilityTags.map(tag =>
+                            `<span style="padding: 0.25rem 0.5rem; background: #e0f2fe; color: #0369a1; border-radius: var(--radius-sm); font-size: 0.75rem;">♿ ${tag}</span>`
+                          ).join('')}
+                        </div>` : ''}
+                      </div>
+                    </div>
+                  </div>
+                `}).join('')}
+              </div>
+            ` : '<p style="color: var(--text-secondary); font-style: italic;">No activities scheduled</p>'}
+
+            ${day.medical_notes ? `
+              <div style="margin-top: 1rem; padding: 0.75rem; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: var(--radius-md);">
+                <div style="font-size: 0.875rem; font-weight: 600; color: #92400e; margin-bottom: 0.25rem;">⚕️ Medical Note</div>
+                <div style="font-size: 0.875rem; color: #78350f;">${day.medical_notes}</div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Display trip details
+    function displayTripDetails(trip) {
+      // Flight details - handle both new format (selected_flight) and old format (flights.outbound)
+      const flight = trip.selected_flight || (trip.flights?.outbound?.[0]);
+
+      if (flight) {
+        // Get departure and arrival info from segments if available
+        const firstSegment = flight.segments?.[0];
+        const lastSegment = flight.segments?.[flight.segments?.length - 1];
+
+        const route = firstSegment && lastSegment
+          ? `${firstSegment.from} → ${lastSegment.to}`
+          : `${trip.origin || 'Origin'} → ${trip.destination || 'Destination'}`;
+
+        document.getElementById('flight-details').innerHTML = `
+          <div style="display: grid; gap: 1rem;">
+            <div>
+              <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Airline</div>
+              <div style="font-weight: 600;">${flight.carrier || flight.airline || 'TBD'}</div>
+            </div>
+            <div>
+              <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Route</div>
+              <div style="font-weight: 600;">${route}</div>
+            </div>
+            <div>
+              <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Class</div>
+              <div style="font-weight: 600;">${flight.cabin || 'Economy'}</div>
+            </div>
+            <div>
+              <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Price</div>
+              <div style="font-weight: 600;">${flight.currency || 'USD'} $${Math.round(flight.priceTotal || flight.price?.total || 0)}</div>
+            </div>
+          </div>
+        `;
+      } else {
+        document.getElementById('flight-details').innerHTML = '<p>Flight details will be added once booked.</p>';
+      }
+
+      // Hotel details - handle both new format (selected_hotel) and old format (hotels[])
+      const hotel = trip.selected_hotel || trip.hotels?.[0];
+
+      if (hotel) {
+        document.getElementById('hotel-details').innerHTML = `
+          <div style="margin-bottom: 1rem;">
+            <div style="font-weight: 600; font-size: 1.125rem; margin-bottom: 0.5rem;">${hotel.name || 'Hotel TBD'}</div>
+            <div style="color: var(--text-secondary);">${hotel.neighborhood || 'Location TBD'}</div>
+          </div>
+          <div style="display: grid; gap: 1rem;">
+            <div>
+              <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Rating</div>
+              <div style="font-weight: 600;">⭐ ${hotel.rating || 'N/A'}/10</div>
+            </div>
+            <div>
+              <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Price per Night</div>
+              <div style="font-weight: 600;">$${hotel.pricePerNight || hotel.price_per_night || hotel.price?.total || 'TBD'}</div>
+            </div>
+            ${hotel.accessibility && Array.isArray(hotel.accessibility) && hotel.accessibility.length > 0 ? `
+            <div>
+              <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Accessibility</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
+                ${hotel.accessibility.map(a => {
+                  const icons = { wheelchair_access: '♿', step_free: '🚶', elevator_required: '🛗', service_animal_friendly: '🐕‍🦺', diabetes_support: '🏥', hearing_assist: '🔊' };
+                  const labels = { wheelchair_access: 'Wheelchair', step_free: 'Step-free', elevator_required: 'Elevator', service_animal_friendly: 'Service Animals', diabetes_support: 'Fridge', hearing_assist: 'Hearing' };
+                  return `<span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #d1fae5; color: #065f46; border-radius: 4px;">${icons[a] || '✓'} ${labels[a] || a}</span>`;
+                }).join('')}
+              </div>
+            </div>
+            ` : ''}
+          </div>
+        `;
+      } else {
+        document.getElementById('hotel-details').innerHTML = '<p>Hotel details will be added once booked.</p>';
+      }
+
+      // Accessibility details - Build from REAL trip data
+      const accessibilityFeatures = [];
+
+      // Get hotel accessibility features (check both formats)
+      const hotelsList = trip.selected_hotel ? [trip.selected_hotel] : (trip.hotels || []);
+      hotelsList.forEach(hotel => {
+        if (hotel.accessibility && Array.isArray(hotel.accessibility)) {
+          hotel.accessibility.forEach(feature => {
+            if (feature && !accessibilityFeatures.includes(feature)) {
+              accessibilityFeatures.push(feature);
+            }
+          });
+        }
+      });
+
+      // Get flight accessibility features (check both formats)
+      const flightsList = trip.selected_flight ? [trip.selected_flight] : (trip.flights?.outbound || []);
+      flightsList.forEach(flight => {
+        if (flight.accessibility && Array.isArray(flight.accessibility)) {
+          flight.accessibility.forEach(feature => {
+            if (feature && !accessibilityFeatures.includes(feature)) {
+              accessibilityFeatures.push(feature);
+            }
+          });
+        }
+      });
+
+      // Add condition-based accessibility needs (only if no hotel/flight features found)
+      if (accessibilityFeatures.length === 0 && trip.conditions && trip.conditions.length > 0) {
+        trip.conditions.forEach(condition => {
+          const conditionDisplay = condition.replace(/_/g, ' ');
+          if (!accessibilityFeatures.includes(conditionDisplay)) {
+            accessibilityFeatures.push(conditionDisplay);
+          }
+        });
+      }
+
+      // Display accessibility features
+      if (accessibilityFeatures.length > 0) {
+        document.getElementById('accessibility-details').innerHTML = `
+          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+            ${accessibilityFeatures.map(feature =>
+              `<span style="padding: 0.5rem 1rem; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-md); font-size: 0.875rem;">♿ ${feature}</span>`
+            ).join('')}
+          </div>
+        `;
+      } else {
+        document.getElementById('accessibility-details').innerHTML = '<p style="color: var(--text-secondary);">Accessibility features will be added as you book flights and hotels with specific accessibility accommodations.</p>';
+      }
+    }
+
+    // Format dates
+    function formatTripDates(start, end) {
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      const options = { month: 'short', day: 'numeric', year: 'numeric' };
+      return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+    }
+
+    // Format status
+    function formatStatus(status) {
+      const statusMap = {
+        'planning': 'Planning',
+        'confirmed': 'Confirmed',
+        'in_progress': 'In Progress',
+        'completed': 'Completed'
+      };
+      return statusMap[status] || status;
+    }
+
+    // Switch tabs
+    window.switchTab = function(tabName) {
+      // Update tab buttons
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      event.target.classList.add('active');
+
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+    };
+
+  </script>
+
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</body>
+</html>

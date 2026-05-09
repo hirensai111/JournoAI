@@ -24,30 +24,53 @@ const firebaseClientConfig = {
   measurementId: "G-1T30VZSCMP"
 };
 
+function parsePrivateKey(key) {
+  if (!key) return null;
+  // Handle various newline encodings that env vars can introduce
+  return key
+    .replace(/\\n/g, '\n')     // literal \n  -> newline
+    .replace(/\\\n/g, '\n')    // escaped \n -> newline (defensive)
+    .trim();
+}
+
 async function initializeFirebase() {
   if (initialized) {
     return { db, app, isAdmin };
   }
 
-  // Try Firebase Admin SDK first (server-side, bypasses security rules)
-  const hasAdminCreds = process.env.FIREBASE_PROJECT_ID &&
-                        process.env.FIREBASE_CLIENT_EMAIL &&
-                        process.env.FIREBASE_PRIVATE_KEY;
+  // Check for Admin SDK credentials
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const privateKey = parsePrivateKey(rawPrivateKey);
+
+  const hasProjectId = !!projectId;
+  const hasClientEmail = !!clientEmail;
+  const hasPrivateKey = !!privateKey;
+
+  console.log('🔧 Firebase initialization starting...');
+  console.log(`   FIREBASE_PROJECT_ID present: ${hasProjectId} (${projectId || 'not set'})`);
+  console.log(`   FIREBASE_CLIENT_EMAIL present: ${hasClientEmail} (${clientEmail || 'not set'})`);
+  console.log(`   FIREBASE_PRIVATE_KEY present: ${hasPrivateKey} (length: ${privateKey ? privateKey.length : 0})`);
+
+  const hasAdminCreds = hasProjectId && hasClientEmail && hasPrivateKey;
 
   if (hasAdminCreds) {
     try {
-      const { initializeApp, cert } = await import('firebase-admin/app');
-      const { getFirestore, Timestamp, FieldValue } = await import('firebase-admin/firestore');
+      const { initializeApp: initAdmin, cert } = await import('firebase-admin/app');
+      const { getFirestore: getAdminDb, Timestamp, FieldValue } = await import('firebase-admin/firestore');
 
-      app = initializeApp({
+      console.log('   Attempting Firebase Admin SDK initialization...');
+
+      app = initAdmin({
         credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+          projectId,
+          clientEmail,
+          privateKey,
         }),
       });
 
-      db = getFirestore(app);
+      db = getAdminDb(app);
       isAdmin = true;
       initialized = true;
 
@@ -56,12 +79,19 @@ async function initializeFirebase() {
       db._Timestamp = Timestamp;
 
       console.log('✅ Firebase Admin SDK initialized successfully');
-      console.log(`📦 Project: ${process.env.FIREBASE_PROJECT_ID}`);
+      console.log(`📦 Project: ${projectId}`);
+      console.log(`🔐 Mode: ADMIN (bypasses Firestore security rules)`);
       return { db, app, isAdmin };
     } catch (error) {
-      console.error('❌ Firebase Admin SDK initialization failed:', error.message);
-      console.log('   Falling back to Firebase Client SDK...');
+      console.error('❌ Firebase Admin SDK initialization FAILED:', error.message);
+      if (error.stack) {
+        console.error('   Stack:', error.stack.split('\n').slice(0, 3).join('\n   '));
+      }
+      console.log('   Will attempt Firebase Client SDK fallback...');
     }
+  } else {
+    console.log('⚠️  Firebase Admin credentials incomplete — falling back to Client SDK');
+    console.log('   To enable Admin SDK, set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY');
   }
 
   // Fallback to Firebase Client SDK
@@ -88,6 +118,8 @@ async function initializeFirebase() {
 
     console.log('✅ Firebase Client SDK initialized successfully');
     console.log(`📦 Project: ${firebaseClientConfig.projectId}`);
+    console.log(`⚠️  Mode: CLIENT (subject to Firestore security rules)`);
+    console.log(`   If you see "Missing or insufficient permissions", update your Firestore rules or use Admin SDK.`);
     return { db, app, isAdmin };
   } catch (error) {
     console.error('❌ Firebase Client SDK initialization failed:', error.message);
@@ -200,7 +232,7 @@ const UserService = {
       const userRef = getDocRef(Collections.USERS, userId);
       const docSnap = await getDocument(userRef);
 
-      if (!docSnap.exists()) {
+      if (!docSnap.exists) {
         return { success: false, error: 'Profile not found' };
       }
 
@@ -263,7 +295,7 @@ const TripService = {
       const tripRef = getDocRef(Collections.TRIPS, tripId);
       const docSnap = await getDocument(tripRef);
 
-      if (!docSnap.exists()) {
+      if (!docSnap.exists) {
         return { success: false, error: 'Trip not found' };
       }
 
@@ -338,7 +370,7 @@ const TripService = {
       const tripRef = getDocRef(Collections.TRIPS, tripId);
       const tripSnap = await getDocument(tripRef);
 
-      if (!tripSnap.exists()) {
+      if (!tripSnap.exists) {
         return { success: false, error: 'Trip not found' };
       }
 
@@ -433,7 +465,7 @@ const ItineraryService = {
       const itineraryRef = getDocRef(Collections.ITINERARIES, tripId);
       const docSnap = await getDocument(itineraryRef);
 
-      if (!docSnap.exists()) {
+      if (!docSnap.exists) {
         return { success: false, error: 'Itinerary not found' };
       }
 

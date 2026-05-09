@@ -9,7 +9,7 @@
 
 ## 🚀 Try the Live Demo
 
-**[Try JournoAI Now](https://mari-production.up.railway.app/)**
+**[Try JournoAI Now](https://web-production-e80883.up.railway.app/)**
 
 Experience the full platform live - create an account, plan accessible trips, and explore our health-aware travel features.
 
@@ -450,7 +450,7 @@ ISC License
 
 **Built for inclusive, health-aware travel experiences worldwide**
 
-🌍 **Live Demo:** [https://mari-production.up.railway.app/](https://mari-production.up.railway.app/)
+🌍 **Live Demo:** [https://web-production-e80883.up.railway.app/](https://web-production-e80883.up.railway.app/)
 
 Version: 2.1
 Last Updated: October 2025

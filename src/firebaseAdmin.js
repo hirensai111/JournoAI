@@ -178,9 +178,7 @@ async function getDocument(ref) {
 async function getDocuments(q) {
   if (isAdmin) {
     const snap = await q.get();
-    const docs = [];
-    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
-    return { forEach: (cb) => docs.forEach(cb), docs, empty: docs.length === 0 };
+    return { forEach: (cb) => snap.forEach(cb), docs: snap.docs, empty: snap.empty };
   }
   return db._getDocs(q);
 }

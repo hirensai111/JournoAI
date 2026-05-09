@@ -1,17 +1,20 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 /**
- * Firebase Client Service
- * Uses Firebase Client SDK to handle Firestore database operations
- * This works with the existing Firebase config without requiring service account
+ * Firebase Admin Service
+ * Uses Firebase Admin SDK for privileged server-side Firestore access.
+ * Falls back to Firebase Client SDK for local development without admin credentials.
  */
 
-// Firebase configuration
-const firebaseConfig = {
+let db = null;
+let app = null;
+let initialized = false;
+let isAdmin = false;
+
+// Firebase Client SDK fallback config
+const firebaseClientConfig = {
   apiKey: "AIzaSyAdYbPam_LOUGIDv8BBgLJpFBv-0mCt51E",
   authDomain: "journiai.firebaseapp.com",
   projectId: "journiai",
@@ -21,30 +24,76 @@ const firebaseConfig = {
   measurementId: "G-1T30VZSCMP"
 };
 
-let app = null;
-let db = null;
-let initialized = false;
-
-// Initialize Firebase
-function initializeFirebase() {
+async function initializeFirebase() {
   if (initialized) {
-    return { db, app };
+    return { db, app, isAdmin };
   }
 
+  // Try Firebase Admin SDK first (server-side, bypasses security rules)
+  const hasAdminCreds = process.env.FIREBASE_PROJECT_ID &&
+                        process.env.FIREBASE_CLIENT_EMAIL &&
+                        process.env.FIREBASE_PRIVATE_KEY;
+
+  if (hasAdminCreds) {
+    try {
+      const { initializeApp, cert } = await import('firebase-admin/app');
+      const { getFirestore, Timestamp, FieldValue } = await import('firebase-admin/firestore');
+
+      app = initializeApp({
+        credential: cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        }),
+      });
+
+      db = getFirestore(app);
+      isAdmin = true;
+      initialized = true;
+
+      // Patch admin db to expose compatible methods used by this module
+      db._serverTimestamp = () => FieldValue.serverTimestamp();
+      db._Timestamp = Timestamp;
+
+      console.log('✅ Firebase Admin SDK initialized successfully');
+      console.log(`📦 Project: ${process.env.FIREBASE_PROJECT_ID}`);
+      return { db, app, isAdmin };
+    } catch (error) {
+      console.error('❌ Firebase Admin SDK initialization failed:', error.message);
+      console.log('   Falling back to Firebase Client SDK...');
+    }
+  }
+
+  // Fallback to Firebase Client SDK
   try {
-    app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
+    const { initializeApp: initClient } = await import('firebase/app');
+    const { getFirestore: getClientDb, collection, doc, setDoc, getDoc, getDocs, query, where, orderBy, limit, serverTimestamp } = await import('firebase/firestore');
+
+    app = initClient(firebaseClientConfig);
+    db = getClientDb(app);
+    isAdmin = false;
     initialized = true;
+
+    // Patch client db to expose compatible methods used by this module
+    db._serverTimestamp = () => serverTimestamp();
+    db._collection = collection;
+    db._doc = doc;
+    db._setDoc = setDoc;
+    db._getDoc = getDoc;
+    db._getDocs = getDocs;
+    db._query = query;
+    db._where = where;
+    db._orderBy = orderBy;
+    db._limit = limit;
 
     console.log('✅ Firebase Client SDK initialized successfully');
-    console.log(`📦 Project: ${firebaseConfig.projectId}`);
-    return { db, app };
-
+    console.log(`📦 Project: ${firebaseClientConfig.projectId}`);
+    return { db, app, isAdmin };
   } catch (error) {
-    console.error('❌ Firebase initialization error:', error.message);
+    console.error('❌ Firebase Client SDK initialization failed:', error.message);
     console.log('   Continuing without Firestore');
     initialized = true;
-    return { db: null, app: null };
+    return { db: null, app: null, isAdmin: false };
   }
 }
 
@@ -59,6 +108,62 @@ const Collections = {
   WELLNESS_CHECKINS: 'wellness_checkins'
 };
 
+// Internal helpers that work with both Admin and Client SDKs
+function getDocRef(...pathSegments) {
+  if (isAdmin) {
+    return db.doc(pathSegments.join('/'));
+  }
+  return db._doc(db, ...pathSegments);
+}
+
+function getCollectionRef(...pathSegments) {
+  if (isAdmin) {
+    return db.collection(pathSegments.join('/'));
+  }
+  return db._collection(db, ...pathSegments);
+}
+
+async function setDocument(ref, data, options = {}) {
+  if (isAdmin) {
+    if (options.merge) {
+      await ref.set(data, { merge: true });
+    } else {
+      await ref.set(data);
+    }
+    return;
+  }
+  await db._setDoc(ref, data, options);
+}
+
+async function getDocument(ref) {
+  if (isAdmin) {
+    const snap = await ref.get();
+    return { exists: snap.exists, data: () => snap.data(), id: snap.id };
+  }
+  return db._getDoc(ref);
+}
+
+async function getDocuments(q) {
+  if (isAdmin) {
+    const snap = await q.get();
+    const docs = [];
+    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+    return { forEach: (cb) => docs.forEach(cb), docs, empty: docs.length === 0 };
+  }
+  return db._getDocs(q);
+}
+
+function buildQuery(collectionRef, ...constraints) {
+  if (isAdmin) {
+    return collectionRef.where(...constraints[0]);
+  }
+  return db._query(collectionRef, ...constraints);
+}
+
+function serverTimestamp() {
+  return db._serverTimestamp();
+}
+
 /**
  * User Profile Operations
  */
@@ -70,8 +175,8 @@ const UserService = {
     }
 
     try {
-      const userRef = doc(db, Collections.USERS, userId);
-      await setDoc(userRef, {
+      const userRef = getDocRef(Collections.USERS, userId);
+      await setDocument(userRef, {
         ...profileData,
         updated_at: serverTimestamp()
       }, { merge: true });
@@ -92,8 +197,8 @@ const UserService = {
     }
 
     try {
-      const userRef = doc(db, Collections.USERS, userId);
-      const docSnap = await getDoc(userRef);
+      const userRef = getDocRef(Collections.USERS, userId);
+      const docSnap = await getDocument(userRef);
 
       if (!docSnap.exists()) {
         return { success: false, error: 'Profile not found' };
@@ -120,7 +225,7 @@ const TripService = {
 
     try {
       const tripId = `trip_${Date.now()}_${userId.substring(0, 8)}`;
-      const tripRef = doc(db, Collections.TRIPS, tripId);
+      const tripRef = getDocRef(Collections.TRIPS, tripId);
 
       // Filter out undefined values (Firestore doesn't allow them)
       const cleanedTripData = Object.entries(tripData).reduce((acc, [key, value]) => {
@@ -134,10 +239,10 @@ const TripService = {
         ...cleanedTripData,
         user_id: userId,
         created_at: serverTimestamp(),
-        status: tripData.status || 'planning' // planning, confirmed, in_progress, completed
+        status: tripData.status || 'planning'
       };
 
-      await setDoc(tripRef, trip);
+      await setDocument(tripRef, trip);
       console.log(`✅ Trip created in Firestore: ${tripId}`);
       console.log(`   Destination: ${tripData.destination}`);
       console.log(`   Duration: ${tripData.duration || 'N/A'} days`);
@@ -155,8 +260,8 @@ const TripService = {
     }
 
     try {
-      const tripRef = doc(db, Collections.TRIPS, tripId);
-      const docSnap = await getDoc(tripRef);
+      const tripRef = getDocRef(Collections.TRIPS, tripId);
+      const docSnap = await getDocument(tripRef);
 
       if (!docSnap.exists()) {
         return { success: false, error: 'Trip not found' };
@@ -176,14 +281,19 @@ const TripService = {
     }
 
     try {
-      const tripsRef = collection(db, Collections.TRIPS);
-      const q = query(
-        tripsRef,
-        where('user_id', '==', userId),
-        orderBy('created_at', 'desc')
-      );
+      const tripsRef = getCollectionRef(Collections.TRIPS);
+      let q;
+      if (isAdmin) {
+        q = tripsRef.where('user_id', '==', userId).orderBy('created_at', 'desc');
+      } else {
+        q = db._query(
+          tripsRef,
+          db._where('user_id', '==', userId),
+          db._orderBy('created_at', 'desc')
+        );
+      }
 
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await getDocuments(q);
       const trips = [];
 
       querySnapshot.forEach((doc) => {
@@ -205,8 +315,8 @@ const TripService = {
     }
 
     try {
-      const tripRef = doc(db, Collections.TRIPS, tripId);
-      await setDoc(tripRef, {
+      const tripRef = getDocRef(Collections.TRIPS, tripId);
+      await setDocument(tripRef, {
         ...updates,
         updated_at: serverTimestamp()
       }, { merge: true });
@@ -219,18 +329,14 @@ const TripService = {
     }
   },
 
-  /**
-   * Update trip status based on dates and bookings
-   * Planning → Confirmed → In Progress → Completed
-   */
   async updateTripStatus(tripId) {
     if (!db) {
       return { success: true, status: 'planning' };
     }
 
     try {
-      const tripRef = doc(db, Collections.TRIPS, tripId);
-      const tripSnap = await getDoc(tripRef);
+      const tripRef = getDocRef(Collections.TRIPS, tripId);
+      const tripSnap = await getDocument(tripRef);
 
       if (!tripSnap.exists()) {
         return { success: false, error: 'Trip not found' };
@@ -243,21 +349,16 @@ const TripService = {
 
       let newStatus = trip.status;
 
-      // Determine new status
       if (now > endDate) {
-        // Trip has ended
         newStatus = 'completed';
       } else if (now >= startDate && now <= endDate) {
-        // Trip is happening now
         newStatus = 'in_progress';
       } else if (trip.status === 'planning' && trip.hotels?.length > 0 && trip.flights?.outbound?.length > 0) {
-        // User has selected hotels and flights
         newStatus = 'confirmed';
       }
 
-      // Update if status changed
       if (newStatus !== trip.status) {
-        await setDoc(tripRef, {
+        await setDocument(tripRef, {
           status: newStatus,
           status_updated_at: serverTimestamp()
         }, { merge: true });
@@ -273,17 +374,14 @@ const TripService = {
     }
   },
 
-  /**
-   * Confirm trip (user manually confirms bookings)
-   */
   async confirmTrip(tripId) {
     if (!db) {
       return { success: true };
     }
 
     try {
-      const tripRef = doc(db, Collections.TRIPS, tripId);
-      await setDoc(tripRef, {
+      const tripRef = getDocRef(Collections.TRIPS, tripId);
+      await setDocument(tripRef, {
         status: 'confirmed',
         confirmed_at: serverTimestamp(),
         updated_at: serverTimestamp()
@@ -309,8 +407,8 @@ const ItineraryService = {
     }
 
     try {
-      const itineraryRef = doc(db, Collections.ITINERARIES, tripId);
-      await setDoc(itineraryRef, {
+      const itineraryRef = getDocRef(Collections.ITINERARIES, tripId);
+      await setDocument(itineraryRef, {
         ...itineraryData,
         trip_id: tripId,
         user_id: userId,
@@ -332,8 +430,8 @@ const ItineraryService = {
     }
 
     try {
-      const itineraryRef = doc(db, Collections.ITINERARIES, tripId);
-      const docSnap = await getDoc(itineraryRef);
+      const itineraryRef = getDocRef(Collections.ITINERARIES, tripId);
+      const docSnap = await getDocument(itineraryRef);
 
       if (!docSnap.exists()) {
         return { success: false, error: 'Itinerary not found' };
@@ -360,9 +458,9 @@ const WellnessService = {
 
     try {
       const checkInId = `checkin_${Date.now()}_${userId.substring(0, 8)}`;
-      const checkInRef = doc(db, Collections.WELLNESS_CHECKINS, checkInId);
+      const checkInRef = getDocRef(Collections.WELLNESS_CHECKINS, checkInId);
 
-      await setDoc(checkInRef, {
+      await setDocument(checkInRef, {
         ...checkInData,
         user_id: userId,
         trip_id: tripId,
@@ -383,16 +481,21 @@ const WellnessService = {
     }
 
     try {
-      const checkInsRef = collection(db, Collections.WELLNESS_CHECKINS);
-      const q = query(
-        checkInsRef,
-        where('user_id', '==', userId),
-        where('trip_id', '==', tripId),
-        orderBy('created_at', 'desc'),
-        limit(limitCount)
-      );
+      const checkInsRef = getCollectionRef(Collections.WELLNESS_CHECKINS);
+      let q;
+      if (isAdmin) {
+        q = checkInsRef.where('user_id', '==', userId).where('trip_id', '==', tripId).orderBy('created_at', 'desc').limit(limitCount);
+      } else {
+        q = db._query(
+          checkInsRef,
+          db._where('user_id', '==', userId),
+          db._where('trip_id', '==', tripId),
+          db._orderBy('created_at', 'desc'),
+          db._limit(limitCount)
+        );
+      }
 
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await getDocuments(q);
       const checkIns = [];
 
       querySnapshot.forEach((doc) => {
@@ -407,7 +510,6 @@ const WellnessService = {
     }
   },
 
-  // Wellness Data Operations (Medications, Conditions, Allergies, etc.)
   async saveWellnessData(userId, collectionName, data) {
     if (!db) {
       console.log('📝 Would save wellness data:', { userId, collectionName, data });
@@ -415,8 +517,8 @@ const WellnessService = {
     }
 
     try {
-      const wellnessRef = doc(db, Collections.USERS, userId, 'wellness', collectionName);
-      await setDoc(wellnessRef, {
+      const wellnessRef = getDocRef(Collections.USERS, userId, 'wellness', collectionName);
+      await setDocument(wellnessRef, {
         items: data,
         updated_at: serverTimestamp()
       });
@@ -437,11 +539,11 @@ const WellnessService = {
     try {
       const path = `${Collections.USERS}/${userId}/wellness/${collectionName}`;
       console.log(`📖 Fetching wellness data from: ${path}`);
-      const wellnessRef = doc(db, Collections.USERS, userId, 'wellness', collectionName);
-      const docSnap = await getDoc(wellnessRef);
+      const wellnessRef = getDocRef(Collections.USERS, userId, 'wellness', collectionName);
+      const docSnap = await getDocument(wellnessRef);
 
-      console.log(`📖 Document exists: ${docSnap.exists()}`);
-      if (!docSnap.exists()) {
+      console.log(`📖 Document exists: ${docSnap.exists}`);
+      if (!docSnap.exists) {
         console.log(`⚠️ No ${collectionName} found for user: ${userId}`);
         return { success: true, data: [] };
       }
@@ -464,8 +566,8 @@ const WellnessService = {
     }
 
     try {
-      const insuranceRef = doc(db, Collections.USERS, userId, 'wellness', 'insurance');
-      await setDoc(insuranceRef, {
+      const insuranceRef = getDocRef(Collections.USERS, userId, 'wellness', 'insurance');
+      await setDocument(insuranceRef, {
         ...insuranceData,
         updated_at: serverTimestamp()
       });
@@ -484,10 +586,10 @@ const WellnessService = {
     }
 
     try {
-      const insuranceRef = doc(db, Collections.USERS, userId, 'wellness', 'insurance');
-      const docSnap = await getDoc(insuranceRef);
+      const insuranceRef = getDocRef(Collections.USERS, userId, 'wellness', 'insurance');
+      const docSnap = await getDocument(insuranceRef);
 
-      if (!docSnap.exists()) {
+      if (!docSnap.exists) {
         return { success: false, error: 'Insurance data not found' };
       }
 
@@ -501,7 +603,7 @@ const WellnessService = {
 };
 
 // Initialize on module load
-const { db: database, app: firebaseApp } = initializeFirebase();
+const { db: database, app: firebaseApp } = await initializeFirebase();
 
 export {
   database as db,
